@@ -7,7 +7,7 @@
       "Permanent capital: no forced exit; reinvest cash flow",
       "Sector-agnostic, tech-enabled sub-holding platforms in fragmented service niches (e.g. franchise networks, locksmith and access control)"
     ],
-    "status": "ACTIVE thesis (Karan's own). Numeric criteria below are placeholders until confirmed.",
+    "status": "ACTIVE thesis (Karan's own). Numeric criteria are market-benchmark estimates, not Karan's confirmed numbers.",
     "owner": "Karan Chulliparambil"
   },
   "industries": [
@@ -29,19 +29,21 @@
     "PA",
     "CT"
   ],
-  "revenue_min": 2000000,
-  "ebitda_min": 500000,
+  "revenue_min": 5000000,
+  "ebitda_min": 1000000,
   "ebitda_margin_min": 0.15,
   "asking_multiple_max": 6.0,
   "years_in_business_min": 15,
   "max_listing_age_days": 120,
   "model_assumptions": {
-    "debt_pct": 0.6,
+    "debt_pct": 0.5,
     "interest_rate": 0.1,
     "ebitda_growth": 0.05,
     "exit_multiple": 6.0,
     "hold_years": 6,
     "capex_pct_of_ebitda": 0.05,
     "tax_rate": 0.25
-  }
+  },
+  "revenue_max": 40000000,
+  "ebitda_max": 5000000
 }

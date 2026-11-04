@@ -4,7 +4,18 @@ First working slice: on-market sourcing → screening → returns model, plus a 
 
 ## Investment thesis
 
-This is Karan's active thesis. `buybox.json` holds the thesis plus buy-box criteria; the numeric criteria are placeholders to confirm before real use. The thesis is stored with the buy box, so every screening records which version it used.
+This is Karan's active thesis. `buybox.json` holds the thesis plus buy-box criteria. The numbers are **market-benchmark estimates**, not confirmed targets:
+
+| Criterion | Value | Basis |
+| --- | --- | --- |
+| EBITDA | $1M-$5M | Size bands where home-services add-ons trade (GF Data / Axial 2025 via CT Acquisitions) |
+| Revenue | $5M-$40M | Implied by $1M-$5M EBITDA at 12-25% margins |
+| EBITDA margin | 15%+ | "High-cash-flow" service niches |
+| Max price | 6.0x EBITDA | Add-ons typically 3.5-5x; $1-3M EBITDA businesses 4-6x |
+| Years in business | 15+ | Family-owned, legacy businesses (e.g. Tucker's Farm's 70-year-old locksmith platform) |
+| Debt / exit / hold | 50% / 6.0x / 6 years | Conservative; permanent capital means no forced exit |
+
+Sources: [CT Acquisitions, home services multiples (2026)](https://ctacquisitions.com/?p=3598), [Business Wire, Tucker's Farm locksmith platform (2025)](https://www.businesswire.com/news/home/20250313288677/en/Tuckers-Farm-Corporation-Acquires-One-of-the-Largest-Family-Owned-Locksmiths-in-the-US-10000-Doors-40-Trucks-70-Years-Old-and-Capitalizes-Tech-Enabled-Access-Control-Holding-Company). The thesis is stored with the buy box, so every screening records which version it used.
 
 **To change the thesis later:** edit `thesis.json`, then run `python -m pe.cli set-thesis thesis.json`. That creates a new buy-box version with the same criteria; past screenings keep the version they were scored against. `python -m pe.cli buybox` shows the current one and `buybox-history` lists every version.
 
