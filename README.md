@@ -97,7 +97,7 @@ It only accepts connections from your own computer (127.0.0.1). Changes need a p
 
 ```bash
 pip install pytest
-python -m pytest -q                      # 23 tests
+python -m pytest -q                      # 31 tests
 
 export PE_DB=demo.sqlite
 export PE_FIXTURE_SOURCES='{"source_a":"tests/fixtures/source_a.json","source_b":"tests/fixtures/source_b.json"}'
