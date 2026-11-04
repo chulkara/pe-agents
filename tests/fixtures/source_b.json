@@ -1,0 +1,9 @@
+[
+ {"external_id": "B-9", "url": "https://brokerco.test/deals/9", "business_name": "Hartwell Heating and Air LLC",
+  "industry": "HVAC", "state": "NJ", "revenue": "$4.9M", "ebitda": "$860K", "asking_price": "$3.9M",
+  "year_established": 1995, "posted_at": "{{days_ago:3}}", "description": "Broker teaser."},
+ {"external_id": "B-12", "url": "https://brokerco.test/deals/12",
+  "title": "Electrical contracting firm (confidential)", "industry": "Electrical", "state": "NJ",
+  "revenue": "$3,100,000", "ebitda": "$540,000", "asking_price": "$2,500,000", "year_established": 2003,
+  "posted_at": "{{days_ago:2}}", "description": "Same business, different broker."}
+]

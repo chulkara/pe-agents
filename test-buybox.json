@@ -1,0 +1,5 @@
+{"industries": ["HVAC", "Plumbing", "Electrical"], "states": ["NJ", "NY", "PA"],
+ "revenue_min": 1500000, "revenue_max": 10000000, "ebitda_min": 400000, "ebitda_margin_min": 0.12,
+ "asking_multiple_max": 5.5, "years_in_business_min": 10, "max_listing_age_days": 120,
+ "model_assumptions": {"debt_pct": 0.7, "interest_rate": 0.10, "ebitda_growth": 0.03, "exit_multiple": 5.0,
+                       "hold_years": 5, "capex_pct_of_ebitda": 0.05, "tax_rate": 0.25}}
