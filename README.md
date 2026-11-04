@@ -78,6 +78,14 @@ Two roles, kept separate. Neither can see the internal pipeline, valuations, scr
 - Requests are signature-checked with a 5-minute replay window, and duplicate deliveries are dropped by event ID.
 - Least-privilege scopes are listed in `pe/slackapp/api.py`. Secrets come from environment variables only.
 
+## Quickest way to try it
+
+```bash
+python3 -m pe.cli demo      # Windows: py -m pe.cli demo
+```
+
+This sets up test data, prints your demo admin secret, and opens the dashboard at http://127.0.0.1:8787. It uses `demo.sqlite`, separate from any real database.
+
 ## Dashboard
 
 ```bash
@@ -97,7 +105,7 @@ It only accepts connections from your own computer (127.0.0.1). Changes need a p
 
 ```bash
 pip install pytest
-python -m pytest -q                      # 31 tests
+python -m pytest -q                      # 32 tests
 
 export PE_DB=demo.sqlite
 export PE_FIXTURE_SOURCES='{"source_a":"tests/fixtures/source_a.json","source_b":"tests/fixtures/source_b.json"}'

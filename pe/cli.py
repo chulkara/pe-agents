@@ -31,6 +31,8 @@ def main(argv=None):
     bu = sub.add_parser("set-budget"); bu.add_argument("category"); bu.add_argument("limit", type=float); bu.add_argument("--auto", action="store_true")
     b = sub.add_parser("set-buybox"); b.add_argument("file"); b.add_argument("--label", required=True)
     dsh = sub.add_parser("dashboard"); dsh.add_argument("--port", type=int, default=8787)
+    dm = sub.add_parser("demo", help="One-step demo: sets up test data and opens the dashboard")
+    dm.add_argument("--port", type=int, default=8787)
     th = sub.add_parser("set-thesis"); th.add_argument("file", help="JSON file with the thesis object")
     sub.add_parser("buybox"); sub.add_parser("buybox-history")
     s = sub.add_parser("source"); s.add_argument("--sources", nargs="+", required=True); s.add_argument("--key")
@@ -47,6 +49,8 @@ def main(argv=None):
     for name, path in json.loads(os.environ.get("PE_FIXTURE_SOURCES", "{}")).items():
         sources.register(name, sources.fixture_source(path))
 
+    if a.cmd == "demo":
+        return demo(a.port)
     if a.cmd == "dashboard":
         from pe.web.server import serve
         httpd, _ = serve(a.db, a.port)
@@ -105,6 +109,42 @@ def main(argv=None):
             print(r["action_id"], r["kind"], r["version"], json.loads(r["audience_json"]), json.loads(r["payload_json"]))
     elif a.cmd in ("approve", "reject"):
         approvals.decide(conn, admin_mod.authenticate(conn), a.action_id, a.cmd == "approve"); print(a.cmd + "d")
+
+
+def demo(port):
+    """Everything in one command, for trying the system on test data. Uses demo.sqlite,
+    never your real pe.sqlite. Prints the admin secret the first time and saves it to
+    demo-admin-secret.txt (test data only; never do this with a real database)."""
+    import threading
+    import webbrowser
+    from pathlib import Path
+    from pe.web.server import serve
+
+    root = Path(__file__).resolve().parent.parent
+    db = str(root / "demo.sqlite")
+    secret_file = root / "demo-admin-secret.txt"
+    fixtures = {"source_a": str(root / "tests/fixtures/source_a.json"), "source_b": str(root / "tests/fixtures/source_b.json")}
+    for name, path in fixtures.items():
+        sources.register(name, sources.fixture_source(path))
+    conn = connect(db)
+    if not conn.execute("SELECT 1 FROM settings WHERE key='admin_secret_hash'").fetchone():
+        secret = admin_mod.init_admin(conn, "karan")
+        secret_file.write_text(secret + "\n", encoding="utf-8")
+        adm = admin_mod.authenticate(conn, secret)
+        buybox.set_buy_box(conn, adm, json.loads((root / "buybox.json").read_text(encoding="utf-8")), "BENCHMARK")
+        for name in fixtures:
+            sources.approve_source(conn, adm, name, "test data")
+    secret = secret_file.read_text(encoding="utf-8").strip() if secret_file.exists() else "(see your earlier demo run)"
+    httpd, _ = serve(db, port, fixtures)
+    url = f"http://127.0.0.1:{port}"
+    print(f"\nDeal Desk demo is running at {url}")
+    print(f"Sign in with this admin secret: {secret}")
+    print("Press Ctrl+C to stop.\n")
+    threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("Stopped")
 
 
 if __name__ == "__main__":
