@@ -78,6 +78,21 @@ Two roles, kept separate. Neither can see the internal pipeline, valuations, scr
 - Requests are signature-checked with a 5-minute replay window, and duplicate deliveries are dropped by event ID.
 - Least-privilege scopes are listed in `pe/slackapp/api.py`. Secrets come from environment variables only.
 
+## Dashboard
+
+```bash
+python3 -m pe.cli dashboard          # then open http://127.0.0.1:8787
+```
+
+Sign in with your admin secret. The dashboard shows:
+
+- **Pipeline:** every deal with its stage, financials, price multiple and flags. Click a deal to see each buy-box check with its evidence, what each source reported, the returns model (assumptions kept separate), open questions, the raw listings and version history. You can run sourcing and screening from here.
+- **Approvals:** every draft waiting for you, with the exact text and recipient. Approving marks it approved; nothing is sent until a real sender (email or Slack) is connected.
+- **Jobs:** status and progress, with pause, resume and cancel.
+- **Activity:** the audit log.
+
+It only accepts connections from your own computer (127.0.0.1). Changes need a per-session security token, sign-in locks for 5 minutes after 5 wrong tries, and listing text is always shown as plain text, never run as code.
+
 ## Run it
 
 ```bash

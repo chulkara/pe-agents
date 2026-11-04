@@ -17,6 +17,29 @@ AGENT = "analyst"
 CONFLICT_TOLERANCE = 0.05  # values from different sources more than 5% apart count as conflicting
 
 
+def show(value, label=""):
+    """Human-readable number for evidence text."""
+    if not isinstance(value, (int, float)):
+        return str(value)
+    l = label.lower()
+    if "margin" in l:
+        return f"{value * 100:.1f}%"
+    if "multiple" in l:
+        return f"{value:.2f}x"
+    if "days" in l or "years" in l:
+        return f"{value:.0f}"
+    if abs(value) >= 1000:
+        return f"${value / 1e6:.2f}M" if abs(value) >= 1e6 else f"${value / 1e3:.0f}K"
+    return f"{value:g}"
+
+
+def cite(v):
+    from urllib.parse import urlparse
+    u = urlparse(v["source_url"] or "")
+    where = (u.netloc + u.path) if u.netloc else (v["source_url"] or "unknown source")
+    return f"{where}, retrieved {(v['retrieved_at'] or '')[:10]}"
+
+
 def _one(facts, field):
     """-> (value, status, evidence). status: 'ok' | 'missing' | 'conflict'."""
     vals = facts.get(field, [])
@@ -25,7 +48,9 @@ def _one(facts, field):
     distinct = {}
     for v in vals:
         distinct.setdefault(json.dumps(v["value"]), v)
-    ev = "; ".join(f"{v['value']} ({v['source_url']}, retrieved {v['retrieved_at']})" for v in distinct.values())
+    ev = "; ".join(f"{show(v['value'], field)} ({cite(v)})" for v in distinct.values())
+    if len(distinct) == 1:
+        ev = "Source: " + "; ".join(cite(v) for v in vals)
     nums = [v["value"] for v in distinct.values()]
     if len(distinct) > 1:
         if all(isinstance(n, (int, float)) for n in nums) and (max(nums) - min(nums)) <= CONFLICT_TOLERANCE * max(nums):
@@ -59,7 +84,7 @@ def screen_deal(conn, deal_id, bb):
             results.append(_res(crit, "unknown", ev))
         else:
             ok = str(v).lower() in [x.lower() for x in c[crit]]
-            results.append(_res(crit, "pass" if ok else "fail", f"{label} is {v}. {ev}", v))
+            results.append(_res(crit, "pass" if ok else "fail", f"{label[0].upper() + label[1:]} is {v}. {ev}", v))
 
     def bound(crit, value, st, ev, label, lo=True):
         if crit not in c:
@@ -70,11 +95,11 @@ def screen_deal(conn, deal_id, bb):
         limit = c[crit]
         ok = value >= limit if lo else value <= limit
         results.append(_res(crit, "pass" if ok else "fail",
-                            f"{label} {value:,.2f} vs {'minimum' if lo else 'maximum'} {limit:,}. {ev}", value))
+                            f"{label} {show(value, label)} vs {'minimum' if lo else 'maximum'} {show(limit, label)}. {ev}", value))
 
     in_list("industries", "industry", "industry")
     in_list("states", "state", "state")
-    in_list("ownership_types", "ownership", "ownership (e.g. family-owned, founder-led)")
+    in_list("ownership_types", "ownership", "ownership")
 
     rev, rst, rev_ev = need("revenue", "annual revenue")
     bound("revenue_min", rev, rst, rev_ev, "Revenue")
@@ -95,7 +120,7 @@ def screen_deal(conn, deal_id, bb):
     if "ebitda_margin_min" in c:
         if est == "ok" and rst == "ok" and rev:
             calcs["ebitda_margin"] = e / rev
-            bound("ebitda_margin_min", e / rev, "ok", f"Calculated: EBITDA {e:,.0f} / revenue {rev:,.0f}", "EBITDA margin")
+            bound("ebitda_margin_min", e / rev, "ok", f"Calculated: EBITDA {show(e)} / revenue {show(rev)}", "EBITDA margin")
         else:
             results.append(_res("ebitda_margin_min", "unknown", "Needs both EBITDA and revenue"))
 
@@ -103,7 +128,7 @@ def screen_deal(conn, deal_id, bb):
     if "asking_multiple_max" in c:
         if est == "ok" and ast == "ok" and e:
             calcs["asking_multiple"] = ask / e
-            bound("asking_multiple_max", ask / e, "ok", f"Calculated: asking {ask:,.0f} / EBITDA {e:,.0f}", "Asking multiple", lo=False)
+            bound("asking_multiple_max", ask / e, "ok", f"Calculated: asking {show(ask)} / EBITDA {show(e)}", "Asking multiple", lo=False)
         else:
             results.append(_res("asking_multiple_max", "unknown", "Needs both asking price and EBITDA"))
 
@@ -117,10 +142,12 @@ def screen_deal(conn, deal_id, bb):
             results.append(_res("years_in_business_min", "unknown", y_ev))
 
     if "max_listing_age_days" in c:
-        p, pst, p_ev = _one(f, "posted_at")
+        # Several sites can list the same business on different dates; the newest posting counts.
+        posts = f.get("posted_at", [])
+        p, pst, p_ev = (max(v["value"] for v in posts), "ok", "") if posts else (None, "missing", "No source gives a posting date")
         if pst == "ok":
             age = (datetime.now(timezone.utc) - datetime.fromisoformat(p.replace("Z", "+00:00")).replace(tzinfo=timezone.utc)).days
-            bound("max_listing_age_days", age, "ok", f"Listing posted {p}", "Listing age (days)", lo=False)
+            bound("max_listing_age_days", age, "ok", f"Listing posted {str(p)[:10]}", "Listing age (days)", lo=False)
         else:
             results.append(_res("max_listing_age_days", "unknown", p_ev))
 

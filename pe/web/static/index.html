@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalling Deal Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Geist:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/app.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo"><span class="mark">K</span>Kalling <small>Deal Desk</small></div>
+    <nav class="tabs" id="tabs" hidden>
+      <button data-view="pipeline" aria-pressed="true">Pipeline</button>
+      <button data-view="queue">Approvals <span class="count" id="qCount"></span></button>
+      <button data-view="jobs">Jobs</button>
+      <button data-view="activity">Activity</button>
+    </nav>
+    <div class="who" id="who" hidden><span id="whoName"></span><button class="btn ghost sm" id="logout">Sign out</button></div>
+  </header>
+
+  <section class="login" id="login" hidden>
+    <div class="login-card">
+      <span class="pill">Local only · 127.0.0.1</span>
+      <h1>Sign in to your <b>deal desk</b></h1>
+      <p>Use the admin secret printed when you ran <code>init-admin</code>.</p>
+      <form id="loginForm">
+        <label for="secret">Admin secret</label>
+        <input id="secret" type="password" autocomplete="current-password" required>
+        <button class="btn primary" type="submit">Sign in</button>
+        <p class="err" id="loginErr" role="alert"></p>
+      </form>
+    </div>
+  </section>
+
+  <main id="app" hidden>
+    <section class="view" id="view-pipeline">
+      <div class="hero">
+        <div class="hero-copy">
+          <span class="pill" id="bbPill"></span>
+          <h1 id="heroTitle"></h1>
+          <p id="thesis"></p>
+          <div class="row">
+            <button class="btn lime" id="runSource">Run sourcing</button>
+            <button class="btn glass" id="runScreen">Screen new deals</button>
+            <span class="status" id="runStatus" role="status"></span>
+          </div>
+        </div>
+        <div class="stats" id="stats"></div>
+      </div>
+      <div class="filters" id="filters"></div>
+      <div class="grid-wrap"><table class="deals" id="dealTable"><thead><tr>
+        <th>Business</th><th>Stage</th><th class="r">Revenue</th><th class="r">EBITDA</th><th class="r">Asking</th><th class="r">Multiple</th><th>Flags</th>
+      </tr></thead><tbody></tbody></table></div>
+      <p class="empty" id="dealsEmpty" hidden>No deals yet. Run sourcing to pull listings from your approved sources.</p>
+    </section>
+
+    <section class="view" id="view-queue" hidden>
+      <div class="head"><h2>Waiting for <b>your approval</b></h2><p>Nothing leaves the system until you approve it here. You see the exact text and who it goes to.</p></div>
+      <div id="queueList" class="cards"></div>
+      <p class="empty" id="queueEmpty" hidden>Nothing waiting. Drafts from the agents will appear here.</p>
+    </section>
+
+    <section class="view" id="view-jobs" hidden>
+      <div class="head"><h2>Agent <b>jobs</b></h2><p>Pause or cancel takes effect after the item in progress. Progress is kept.</p></div>
+      <div class="grid-wrap"><table class="deals" id="jobTable"><thead><tr><th>Job</th><th>Status</th><th class="r">Items done</th><th class="r">Attempts</th><th>Result</th><th>Updated</th><th></th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section class="view" id="view-activity" hidden>
+      <div class="head"><h2>Audit <b>log</b></h2><p>Every agent action, approval and refusal, newest first.</p></div>
+      <ol class="log" id="log"></ol>
+    </section>
+  </main>
+
+  <aside class="drawer" id="drawer" hidden aria-label="Deal detail">
+    <div class="drawer-inner">
+      <button class="btn ghost sm close" id="closeDrawer">Close</button>
+      <div id="detail"></div>
+    </div>
+  </aside>
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+</body>
+</html>

@@ -49,6 +49,7 @@ def test_full_slice_and_duplicates(setup):
     overall, res = latest_screening(conn, hart["deal_id"])
     assert overall == "unknown"
     assert res["revenue_min"]["result"] == "unknown" and "disagree" in res["revenue_min"]["evidence"]
+    assert res["max_listing_age_days"]["result"] == "pass"  # two posting dates aren't a conflict
     assert conn.execute("SELECT COUNT(*) c FROM questions WHERE deal_id=? AND text LIKE 'Which annual revenue%'",
                         (hart["deal_id"],)).fetchone()["c"] == 1
     elec = conn.execute("SELECT deal_id FROM deals WHERE normalized_key LIKE 'fp:electrical%'").fetchall()

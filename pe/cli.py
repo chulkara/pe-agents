@@ -30,6 +30,7 @@ def main(argv=None):
     so = sub.add_parser("approve-source"); so.add_argument("name"); so.add_argument("--terms", required=True)
     bu = sub.add_parser("set-budget"); bu.add_argument("category"); bu.add_argument("limit", type=float); bu.add_argument("--auto", action="store_true")
     b = sub.add_parser("set-buybox"); b.add_argument("file"); b.add_argument("--label", required=True)
+    dsh = sub.add_parser("dashboard"); dsh.add_argument("--port", type=int, default=8787)
     th = sub.add_parser("set-thesis"); th.add_argument("file", help="JSON file with the thesis object")
     sub.add_parser("buybox"); sub.add_parser("buybox-history")
     s = sub.add_parser("source"); s.add_argument("--sources", nargs="+", required=True); s.add_argument("--key")
@@ -46,6 +47,15 @@ def main(argv=None):
     for name, path in json.loads(os.environ.get("PE_FIXTURE_SOURCES", "{}")).items():
         sources.register(name, sources.fixture_source(path))
 
+    if a.cmd == "dashboard":
+        from pe.web.server import serve
+        httpd, _ = serve(a.db, a.port)
+        print(f"Dashboard running at http://127.0.0.1:{a.port}  (Ctrl+C to stop)")
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("Stopped")
+        return
     if a.cmd == "init-admin":
         print("Admin secret (store it safely, shown once):", admin_mod.init_admin(conn, a.name))
     elif a.cmd == "approve-source":
