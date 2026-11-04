@@ -74,6 +74,7 @@ def screen_deal(conn, deal_id, bb):
 
     in_list("industries", "industry", "industry")
     in_list("states", "state", "state")
+    in_list("ownership_types", "ownership", "ownership (e.g. family-owned, founder-led)")
 
     rev, rst, rev_ev = need("revenue", "annual revenue")
     bound("revenue_min", rev, rst, rev_ev, "Revenue")

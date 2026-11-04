@@ -10,6 +10,7 @@ from .db import audit, now, tx
 KNOWN_CRITERIA = {
     "industries", "states", "revenue_min", "revenue_max", "ebitda_min", "ebitda_max",
     "ebitda_margin_min", "asking_multiple_max", "years_in_business_min", "max_listing_age_days",
+    "ownership_types",
 }
 
 
@@ -18,7 +19,7 @@ def set_buy_box(conn, admin, criteria, label, note=""):
     from .admin import Admin
     if not isinstance(admin, Admin):
         raise PermissionError("Only an authenticated admin can change the buy box")
-    unknown = set(criteria) - KNOWN_CRITERIA - {"model_assumptions"}
+    unknown = set(criteria) - KNOWN_CRITERIA - {"model_assumptions", "thesis"}
     if unknown:
         raise ValueError(f"Unknown criteria: {sorted(unknown)}")
     with tx(conn):

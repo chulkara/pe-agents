@@ -1,5 +1,6 @@
 import json
 import threading
+from datetime import datetime, timezone
 
 import pytest
 
@@ -228,3 +229,22 @@ def test_no_unapproved_send_or_spend(setup, admin):
     with pytest.raises(approvals.ApprovalRequired):
         approvals.execute(conn, pid, senders)
     assert conn.execute("SELECT COUNT(*) c FROM spend WHERE category='paid_services'").fetchone()["c"] == 0
+
+
+def test_ownership_criterion_and_thesis_stored(setup, admin):
+    conn = setup
+    crit = {**buybox.current(conn)["criteria"], "ownership_types": ["family-owned", "founder-led"],
+            "thesis": {"summary": "rollups of fragmented service niches"}}
+    buybox.set_buy_box(conn, admin, crit, "TEST")
+    from pe.agents import sourcing as s
+    base = {"source": "source_a", "url": "https://x.test/1", "industry": "HVAC", "state": "NJ", "revenue": "$4M",
+            "ebitda": "$800K", "asking_price": "$3.5M", "year_established": 1980,
+            "posted_at": datetime.now(timezone.utc).isoformat()}
+    fam = s.log_listing(conn, {**base, "external_id": "F1", "business_name": "Fam Air", "ownership": "family-owned"})
+    pe_owned = s.log_listing(conn, {**base, "external_id": "F2", "business_name": "PE Air", "ownership": "PE-backed"})
+    silent = s.log_listing(conn, {**base, "external_id": "F3", "business_name": "Quiet Air"})
+    res = {d: analyst.screen(conn, d)["overall"] for d in (fam["deal_id"], pe_owned["deal_id"], silent["deal_id"])}
+    assert res[fam["deal_id"]] == "pass"
+    assert res[pe_owned["deal_id"]] == "fail"
+    assert res[silent["deal_id"]] == "unknown"  # not stated -> unknown, never assumed family-owned
+    assert buybox.current(conn)["criteria"]["thesis"]["summary"].startswith("rollups")

@@ -2,6 +2,17 @@
 
 First working slice: on-market sourcing → screening → returns model, plus a Slack app for owners. Everything runs on test data. Nothing is deployed or connected to real sites, inboxes or Slack workspaces.
 
+## Investment thesis
+
+`thesis-draft-buybox.json` holds the thesis and a **draft** buy box. The thesis text is stored with the buy box, so every screening records which version it used. The numeric criteria are placeholders to confirm before use.
+
+- **Rollup power law:** platforms with a long reinvestment runway, targeting $30M+ EBITDA within 4-6 years, then hold or sell.
+- **Friction-heavy sourcing:** off-market, family-owned and founder-led businesses over banker-run auctions and public directories.
+- **Permanent capital:** no forced exit; cash flow is reinvested.
+- **Sector-agnostic platforms:** tech-enabled sub-holding companies in fragmented, high-cash-flow service niches (franchise networks, locksmith and access control).
+
+Ownership is now a screening criterion (`ownership_types`). A listing that doesn't state ownership screens as unknown and is never assumed family-owned. Because the thesis favors off-market sourcing, the off-market agent matters more than the on-market sourcing agent built first.
+
 ## What's built
 
 | Part | Status |
@@ -58,7 +69,7 @@ Two roles, kept separate. Neither can see the internal pipeline, valuations, scr
 
 ```bash
 pip install pytest
-python -m pytest -q                      # 22 tests
+python -m pytest -q                      # 23 tests
 
 export PE_DB=demo.sqlite
 export PE_FIXTURE_SOURCES='{"source_a":"tests/fixtures/source_a.json","source_b":"tests/fixtures/source_b.json"}'

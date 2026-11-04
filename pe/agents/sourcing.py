@@ -74,7 +74,8 @@ def log_listing(conn, raw, max_age_days=None):
 
     reported = {"revenue": revenue, "ebitda": ebitda, "cash_flow_sde": sde, "asking_price": asking,
                 "industry": raw.get("industry"), "state": raw.get("state"),
-                "year_established": raw.get("year_established"), "posted_at": raw.get("posted_at")}
+                "year_established": raw.get("year_established"), "posted_at": raw.get("posted_at"),
+                "ownership": raw.get("ownership")}
     for field, value in reported.items():
         if value is not None:  # missing stays missing: no fact row, screening will say unknown
             records.add_fact(conn, AGENT, deal_id, field, value, "reported",
