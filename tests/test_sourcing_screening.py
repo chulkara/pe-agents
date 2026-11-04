@@ -248,3 +248,15 @@ def test_ownership_criterion_and_thesis_stored(setup, admin):
     assert res[pe_owned["deal_id"]] == "fail"
     assert res[silent["deal_id"]] == "unknown"  # not stated -> unknown, never assumed family-owned
     assert buybox.current(conn)["criteria"]["thesis"]["summary"].startswith("rollups")
+
+
+def test_thesis_edit_keeps_criteria_and_history(setup, admin):
+    conn = setup
+    before = buybox.current(conn)
+    v = buybox.set_thesis(conn, admin, {"summary": "updated thesis"})
+    after = buybox.current(conn)
+    assert v == before["version"] + 1 and after["criteria"]["thesis"]["summary"] == "updated thesis"
+    assert {k: x for k, x in after["criteria"].items() if k != "thesis"} == {k: x for k, x in before["criteria"].items() if k != "thesis"}
+    assert len(buybox.history(conn)) == 2
+    with pytest.raises(PermissionError):
+        buybox.set_thesis(conn, "analyst", {"summary": "agent edit"})

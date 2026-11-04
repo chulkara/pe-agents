@@ -36,3 +36,16 @@ def current(conn):
     if not row:
         return None
     return {"version": row["version"], "label": row["label"], "criteria": json.loads(row["criteria_json"])}
+
+
+def set_thesis(conn, admin, thesis, note="Thesis edited"):
+    """Change only the thesis. Creates a new buy-box version; criteria stay exactly as they were."""
+    cur = current(conn)
+    if not cur:
+        raise RuntimeError("Set a buy box first")
+    return set_buy_box(conn, admin, {**cur["criteria"], "thesis": thesis}, cur["label"], note)
+
+
+def history(conn):
+    return [{"version": r["version"], "label": r["label"], "by": r["created_by"], "at": r["created_at"], "note": r["note"]}
+            for r in conn.execute("SELECT * FROM buy_box ORDER BY version")]

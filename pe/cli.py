@@ -30,6 +30,8 @@ def main(argv=None):
     so = sub.add_parser("approve-source"); so.add_argument("name"); so.add_argument("--terms", required=True)
     bu = sub.add_parser("set-budget"); bu.add_argument("category"); bu.add_argument("limit", type=float); bu.add_argument("--auto", action="store_true")
     b = sub.add_parser("set-buybox"); b.add_argument("file"); b.add_argument("--label", required=True)
+    th = sub.add_parser("set-thesis"); th.add_argument("file", help="JSON file with the thesis object")
+    sub.add_parser("buybox"); sub.add_parser("buybox-history")
     s = sub.add_parser("source"); s.add_argument("--sources", nargs="+", required=True); s.add_argument("--key")
     sc = sub.add_parser("screen"); sc.add_argument("--key")
     sub.add_parser("worker"); sub.add_parser("jobs"); sub.add_parser("deals"); sub.add_parser("queue")
@@ -53,6 +55,13 @@ def main(argv=None):
     elif a.cmd == "set-buybox":
         adm = admin_mod.authenticate(conn)
         print("buy box version", buybox.set_buy_box(conn, adm, json.load(open(a.file)), a.label))
+    elif a.cmd == "set-thesis":
+        print("buy box version", buybox.set_thesis(conn, admin_mod.authenticate(conn), json.load(open(a.file))))
+    elif a.cmd == "buybox":
+        print(json.dumps(buybox.current(conn), indent=2))
+    elif a.cmd == "buybox-history":
+        for h in buybox.history(conn):
+            print(h)
     elif a.cmd == "source":
         jid, new = jobs.submit(conn, "sourcing.run", {"sources": a.sources}, a.key or f"adhoc:{uuid.uuid4().hex}", actor="cli")
         print(jid, "submitted" if new else "already exists", jobs.run(conn, jid))

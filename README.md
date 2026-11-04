@@ -4,7 +4,9 @@ First working slice: on-market sourcing → screening → returns model, plus a 
 
 ## Investment thesis
 
-`thesis-draft-buybox.json` holds the thesis and a **draft** buy box. The thesis text is stored with the buy box, so every screening records which version it used. The numeric criteria are placeholders to confirm before use.
+This is Karan's active thesis. `buybox.json` holds the thesis plus buy-box criteria; the numeric criteria are placeholders to confirm before real use. The thesis is stored with the buy box, so every screening records which version it used.
+
+**To change the thesis later:** edit `thesis.json`, then run `python -m pe.cli set-thesis thesis.json`. That creates a new buy-box version with the same criteria; past screenings keep the version they were scored against. `python -m pe.cli buybox` shows the current one and `buybox-history` lists every version.
 
 - **Rollup power law:** platforms with a long reinvestment runway, targeting $30M+ EBITDA within 4-6 years, then hold or sell.
 - **Friction-heavy sourcing:** off-market, family-owned and founder-led businesses over banker-run auctions and public directories.
