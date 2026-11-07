@@ -62,4 +62,17 @@ The prototype remains browser-local. Live Maps discovery, email sending, and mod
 
 All of these are functional browser-local workflows. They do not constitute live autonomous agents or a production multi-user fund system. Maps discovery, email sending, model-powered analysis, authentication, shared database, and accounting integrations are still unconnected.
 
-The domain tests cover financial mechanics, stale-source reviews, migration, dependencies, closing handoffs, report revisions, and owner context. `npm test` runs both test files.
+The domain tests cover financial mechanics, stale-source reviews, migration, dependencies, closing handoffs, report revisions, and owner context. `npm test` runs all domain test files.
+
+## Deeper company research workspace
+
+Open a company → Research. Three independent assessments show buy-box fit, evidence coverage across six topics, and explicitly reported owner readiness. A company may fit all criteria while having no researched operating topics and no known intent to sell.
+
+- Explore services/revenue mix, ownership, customer profile, locations/territory, team/owner dependence, and named competitors.
+- Record observations with source type, reference, supporting excerpt, basis, and optional source date. Assumptions never satisfy source coverage.
+- Revise observations while retaining earlier records, check excerpts, and flag disagreements with a reason and review history. Disputed and superseded financials cannot silently become a clean screening or underwriting basis.
+- Turn unknowns into assigned, dated questions and queue follow-up preparation. Record sourced answers separately from completing the work item.
+- Save analyst interpretation with linked observations. Record dated owner priorities, timing, desired role, and promises; backdated notes do not override newer readiness.
+- Search/filter the source register and export the dossier, source history, notes, and questions.
+
+Coverage measures whether a topic has a source claim, not whether the business or claim has been independently verified. This remains manual, browser-local research; Maps discovery and model-powered investigation are not connected.

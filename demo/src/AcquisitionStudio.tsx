@@ -1,7 +1,7 @@
 import { useState, type ReactNode, type FormEvent } from 'react';
 import { ArrowRight, ArrowUpRight, Plus, Check, FileSearch, Phone, Mail, ClipboardList, ShieldCheck, Download, Clock3, Target, Building2, Calculator, GitBranch, Activity, Users, RefreshCw, CircleHelp } from 'lucide-react';
 import { id, today, nextDate, money, screen, type Workspace, type Company, type Evidence } from '../lib/domain';
-import { ops, effectiveFirm, sourceVersion, researchFields, researchAssessment, allEvidence, latestFinancial, newWork, prepareWork, approveWork, investmentBrief, modelDefaults, calculateModel, sensitivity, executionTemplate, completeExecution, closeToHolding, hundredDayPlan, reportNarrative, latestReports, type WorkKind, type WorkItem, type OwnerMemory, type ModelInputs, type Scenario, type InvestmentBrief, type ExecutionTask, type Holding, type OperatingReport, type Platform, type Investor } from '../lib/operating';
+import { ops, latestOwnerMemory, effectiveFirm, sourceVersion, researchFields, researchAssessment, allEvidence, latestFinancial, newWork, prepareWork, approveWork, investmentBrief, modelDefaults, calculateModel, sensitivity, executionTemplate, completeExecution, closeToHolding, hundredDayPlan, reportNarrative, latestReports, type WorkKind, type WorkItem, type OwnerMemory, type ModelInputs, type Scenario, type InvestmentBrief, type ExecutionTask, type Holding, type OperatingReport, type Platform, type Investor } from '../lib/operating';
 import './studio.css';
 export type StudioProps = {
     w: Workspace;
@@ -14,7 +14,7 @@ function Tag({ children, tone = '' }: {
     children: ReactNode;
     tone?: string;
 }) { return <span className={'badge ' + tone}>{children}</span>; }
-function Field({ label, name, value = '', type = 'text', options, rows, min, max, required = true, step }: {
+export function Field({ label, name, value = '', type = 'text', options, rows, min, max, required = true, step }: {
     label: string;
     name: string;
     value?: string | number;
@@ -26,12 +26,12 @@ function Field({ label, name, value = '', type = 'text', options, rows, min, max
     required?: boolean;
     step?: string;
 }) { return <label className="field"><span>{label}</span>{options ? <select name={name} aria-label={label} defaultValue={value}>{options.map(x => <option key={x}>{x}</option>)}</select> : rows ? <textarea name={name} aria-label={label} defaultValue={value} rows={rows} required={required} maxLength={30000}/> : <input name={name} aria-label={label} defaultValue={value} type={type} min={min} max={max} step={step || (type === 'number' ? 'any' : undefined)} required={required} maxLength={type === 'text' ? 1000 : undefined}/>}</label>; }
-const values = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); return Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>; };
-function Export({ name, text }: {
+export const values = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); return Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>; };
+export function Export({ name, text }: {
     name: string;
     text: string;
 }) { return <button className="btn" onClick={() => { const a = document.createElement('a'), u = URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.href = u; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); }}><Download size={15}/>Export</button>; }
-function useActions(p: StudioProps) { const [error, setError] = useState(''), [notice, setNotice] = useState(''); async function act(make: () => Workspace, event: string) { setError(''); setNotice(''); try {
+export function useActions(p: StudioProps) { const [error, setError] = useState(''), [notice, setNotice] = useState(''); async function act(make: () => Workspace, event: string) { setError(''); setNotice(''); try {
     const ok = await p.save(make(), event);
     if (ok)
         setNotice(event);
@@ -151,7 +151,7 @@ function Playbook(p: StudioProps) { const o = ops(p.w), { act, feedback } = useA
 export function OwnerBriefContext({ w, company }: {
     w: Workspace;
     company: Company;
-}) { const memory = ops(w).memories.find(m => m.companyId === company.id); if (!memory)
+}) { const memory = latestOwnerMemory(w,company); if (!memory)
     return null; return <div className="owner-brief-context"><div className="eyebrow">REMEMBER WHAT MATTERS TO THE OWNER</div><p><strong>Priorities:</strong> {memory.priorities || 'Unknown'}</p><p><strong>Timing:</strong> {memory.timing || 'Unknown'} · {memory.readiness}</p><p><strong>Future involvement:</strong> {memory.involvement || 'Unknown'}</p><p><strong>Promises made:</strong> {memory.promises || 'None recorded'}</p><small>{memory.date} · {memory.source}</small></div>; }
 function BriefDocument({ text }: {
     text: string;
