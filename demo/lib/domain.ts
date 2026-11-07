@@ -1,8 +1,10 @@
+import type {OperatingData} from './operating.ts';
 export type Evidence={id:string;field:string;value:string;source:string;excerpt:string;kind:'reported'|'assumption';date:string};
 export type Doc={id:string;name:string;text:string;evidence:Evidence[];stored:boolean;sample:boolean};
 export type Company={id:string;name:string;city:string;state:string;industry:string;owner:string;website:string;email:string;phone:string;status:string;nextAction:string;due:string;assignedTo:string;sample:boolean;evidence:Evidence[];documents:Doc[];conversations:{id:string;type:string;date:string;body:string;outcome:string}[];drafts:{id:string;body:string;approved:boolean}[]};
 export type Firm={name:string;type:string;strategy:string;industries:string;states:string;revenueMin:number;revenueMax:number;earningsMin:number;earningsMax:number;operator:string;reviewer:string;configured:boolean};
-export type Workspace={firm:Firm;companies:Company[];deals:{id:string;companyId:string;stage:string;memo:string;date:string}[];events:{id:string;text:string;date:string}[];proof:{baselineMinutes:number;currentMinutes:number;pilotTeams:number;payingCustomers:number}};
+export type Workspace={operating?:OperatingData;firm:Firm;companies:Company[];deals:{id:string;companyId:string;stage:string;memo:string;date:string}[];events:{id:string;text:string;date:string}[];proof:{baselineMinutes:number;currentMinutes:number;pilotTeams:number;payingCustomers:number}};
+export const states='AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
 export const id=()=>crypto.randomUUID();
 export const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
 export function nextDate(days=1){const d=new Date();d.setDate(d.getDate()+days);return d.toLocaleDateString('en-CA',{timeZone:'America/New_York'});}
