@@ -42,3 +42,9 @@ npm run preview
 ```
 
 `dist/` is the deployable static site. No API keys or secrets are required. This project is a prototype demonstration, not a production multi-user service.
+
+## Editorial workspace redesign
+
+Oliva (#C8C040), cotton blue (#B5D0D7), and vanilla (#FEE6A0) with warm light surfaces and dark navigation. The overview opens directly into the working desk, with an optional four-step tour. Company research, a structured owner call brief, editable outreach drafts, contact context, and the next action share a company workspace. Editing an approved draft returns it to review. Cmd/Ctrl+K searches companies. Mobile navigation opens from the menu button.
+
+The prototype remains browser-local. Live Maps discovery, email sending, and model-powered analysis are not connected.

@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {sample,parseCSV,extract,screen,number,money,safeURL} from '../lib/domain.ts';
+import {sample,parseCSV,extract,screen,number,money,safeURL,draft} from '../lib/domain.ts';
 test('CSV handles quoted commas and escaped quotes',()=>assert.deepEqual(parseCSV('name,state\n"Lock, Key ""Co""",NJ'),[['name','state'],['Lock, Key "Co"','NJ']]));
 test('financial labels preserve reporting year and source excerpt',()=>{const e=extract('Revenue (2025): $3,200,000\nEBITDA (2025): $640,000','source.txt');assert.equal(e.length,2);assert.equal(e[0].field,'revenue_2025');assert.equal(e[0].value,'3200000');assert.match(e[0].excerpt,/Revenue/);});
 test('same-year discrepancies are surfaced',()=>{const w=sample(),c=w.companies[3];c.documents.push({id:'other',name:'other.txt',text:'',evidence:extract('Revenue (2025): $4,200,000','other.txt'),sample:true,stored:false});assert.equal(screen(c,w.firm).status,'Resolve discrepancy');});
@@ -10,3 +10,6 @@ test('company universe starts independently from deals',()=>{const w=sample();as
 test('unsafe URLs and invalid amounts are rejected and financial precision preserved',()=>{assert.equal(safeURL('javascript:alert(1)'),'');assert.equal(number('call for details'),null);assert.equal(number('$3.2M'),3200000);assert.equal(money(3200000),'$3.2M');});
 test('multi-year financial CSVs keep the year of each column',()=>{const e=extract('metric,2024,2025\nRevenue,2200000,3200000\nEBITDA,400000,640000','financials.csv');assert.equal(e.length,4);assert.equal(e[1].field,'revenue_2025');assert.equal(e[1].value,'3200000');});
 test('simple JSON financial labels are supported',()=>assert.equal(extract('{"revenue":3200000,"ebitda":640000}','financials.json').length,2));
+
+test('outreach uses recorded company and reported service evidence',()=>{const w=sample(),c=w.companies[0],text=draft(c,w.firm);assert.match(text,/Hudson Key & Access/);assert.match(text,/commercial access control and door hardware/);assert.match(text,/Maya Bennett/);});
+test('outreach does not turn assumptions into company claims',()=>{const w=sample(),c=w.companies[0];c.evidence[0].kind='assumption';c.evidence[0].value='national market leader';assert.doesNotMatch(draft(c,w.firm),/national market leader/);});
