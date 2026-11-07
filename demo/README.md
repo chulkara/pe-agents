@@ -76,3 +76,15 @@ Open a company → Research. Three independent assessments show buy-box fit, evi
 - Search/filter the source register and export the dossier, source history, notes, and questions.
 
 Coverage measures whether a topic has a source claim, not whether the business or claim has been independently verified. This remains manual, browser-local research; Maps discovery and model-powered investigation are not connected.
+
+## Owner relationship memory
+
+Open a company → **Owner memory**, or use the relationship cards under **Relationships**.
+
+- Log a sourced, dated conversation with timing, employee concerns, legacy, desired involvement, and other priorities. Blank topics carry forward earlier recorded context, with a separate source/date per topic. Readiness only changes when explicitly discussed.
+- Search conversation history, retain original notes, and revise entries with a preserved earlier record. Operator interpretations remain labeled separately. Older free-text owner context and conversations remain available.
+- Track promises with a responsible person, date made, due date, optional linked conversation, fulfillment evidence, and an audit trail. Due today and overdue promises are calculated when the workspace is open. Changing a commitment or date requires a reason. Closing requires a recorded result or release from the owner.
+- Queue follow-through preparation in the existing work queue. Completing preparation alone does not fulfill the promise. Recording actual fulfillment closes linked work. Promise changes invalidate earlier prepared call approvals.
+- Prepare the next call using sourced priorities, changes over time, open commitments, and context-aware questions. Export the call brief or full relationship history.
+
+Records remain browser-local. There is no call recording, transcription, automatic sending, background reminders, or model-powered inference. Owner readiness and acquisition fit remain independent.
