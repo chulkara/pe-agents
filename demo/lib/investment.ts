@@ -1,3 +1,4 @@
+import {reviewPolicyVersion} from './experience.ts';
 import { id, today, nextDate, money, number, screen, type Company, type Workspace, type Evidence, type Firm } from './domain.ts';
 import { activeDocuments, fingerprint, sourceLocation } from './documents.ts';
 import { ownerContext } from './relationships.ts';
@@ -60,7 +61,7 @@ export type BriefSnapshot = {
 const topics = [['service_mix', 'Services & revenue mix', 'Send a revenue breakdown by service, including recurring and project work.'], ['customers', 'Customers & retention', 'Send customer-level revenue for the last three years, with lost and newly won customers.'], ['ownership', 'Ownership', 'Confirm the legal owners, ownership percentages, and who can authorize a sale.'], ['locations', 'Locations & territory', 'Provide the operating locations, service territory, and lease schedule.'], ['team', 'Team & owner dependence', 'Provide an employee roster and explain which responsibilities depend on the owner.'], ['competitors', 'Competition', 'Identify the main competitors and explain how customers choose between them.'], ['recurring_revenue', 'Recurring revenue', 'Provide contract terms, renewal dates, and evidence supporting recurring revenue.']] as const;
 const evidence = (c: Company) => [...c.evidence, ...activeDocuments(c).flatMap(d => d.evidence)].filter(e => !e.supersededBy);
 function firmFor(w: Workspace, c: Company): Firm { const p = w.operating?.platforms.find(x => x.id === w.operating?.assignments[c.id]); return p ? { ...w.firm, ...p } : w.firm; }
-export function investmentFingerprint(w: Workspace, c: Company) { return fingerprint(JSON.stringify({ name: c.name, city: c.city, state: c.state, industry: c.industry, docs: c.documents, evidence: c.evidence, firm: firmFor(w, c), memories: w.operating?.memories.filter(m => m.companyId === c.id) })); }
+export function investmentFingerprint(w: Workspace, c: Company) { return fingerprint(JSON.stringify({ name: c.name, city: c.city, state: c.state, industry: c.industry, docs: c.documents, evidence: c.evidence, firm: firmFor(w, c), reviewPolicy:reviewPolicyVersion(w), memories: w.operating?.memories.filter(m => m.companyId === c.id) })); }
 export function buildBriefSnapshot(w: Workspace, c: Company): BriefSnapshot {
     const sources: BriefSource[] = [], seen = new Map<string, string>(), docs = activeDocuments(c), rows = evidence(c), questions: BriefClaim[] = [], requests: BriefClaim[] = [], inconsistencies: BriefClaim[] = [];
     const addSource = (e: Evidence) => { if (seen.has(e.id))

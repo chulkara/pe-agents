@@ -1,3 +1,4 @@
+import {responsibleFor} from './experience.ts';
 import { id, today, nextDate, type Company, type Workspace } from './domain.ts';
 import { activeDocuments, fingerprint } from './documents.ts';
 import type { ExecutionTask, ExecutionPlan } from './operating.ts';
@@ -142,7 +143,7 @@ export function createExecutionRoom(w: Workspace, dealId: string): Workspace {
         ['Closing documents & advisor sign-off', 'Approval', 'Closing', 'Obtain advisor sign-offs on the final closing documents and unresolved conditions.', true],
         ['Confirm close with human authorization', 'Approval', 'Closing', 'Confirm funding and executed documents before recording the acquisition.', true]
     ];
-    const tasks: ExecutionItem[] = templates.map(([title, kind, category, nextAction, approval], i) => ({ id: id(), title, kind, category, nextAction, requiresApproval: approval, approver: approval ? w.firm.reviewer : '', owner: w.firm.operator, due: nextDate(3 + i * 4), status: 'Open', dependsOn: [], evidence: '', notes: '', critical: true, requestedFrom: '', advisorId: '', priority: 'Normal', revision: 1, reviews: [], history: [], sources: [] }));
+    const tasks: ExecutionItem[] = templates.map(([title, kind, category, nextAction, approval], i) => ({ id: id(), title, kind, category, nextAction, requiresApproval: approval, approver: approval ? w.firm.reviewer : '', owner: responsibleFor(w,'Execution'), due: nextDate(3 + i * 4), status: 'Open', dependsOn: [], evidence: '', notes: '', critical: true, requestedFrom: '', advisorId: '', priority: 'Normal', revision: 1, reviews: [], history: [], sources: [] }));
     tasks[5].dependsOn = tasks.slice(0, 5).map(t => t.id);
     tasks[6].dependsOn = [tasks[5].id];
     tasks[7].dependsOn = [tasks[6].id];

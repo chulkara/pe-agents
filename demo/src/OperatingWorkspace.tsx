@@ -14,7 +14,7 @@ const fmt = (v: number | null | undefined) => v === null || v === undefined ? 'â
 const count = (v: number | null | undefined) => v === null || v === undefined ? 'â€”' : String(v);
 const dateLabel = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 export default function OperatingWorkspace(p: StudioProps) {
-    const o = ops(p.w), { act, feedback } = useActions(p), [holdingId, setHolding] = useState(o.holdings[0]?.id || ''), [view, setView] = useState('Performance'), [editing, setEditing] = useState<string | null>(null), [reportOpen, setReportOpen] = useState(false), [stream, setStream] = useState('All workstreams'), [status, setStatus] = useState('Open priorities');
+    const o = ops(p.w), { act, feedback } = useActions(p), [holdingId, setHolding] = useState(p.focus?.holdingId||o.holdings[0]?.id || ''), [view, setView] = useState('Performance'), [editing, setEditing] = useState<string | null>(null), [reportOpen, setReportOpen] = useState(false), [stream, setStream] = useState('All workstreams'), [status, setStatus] = useState('Open priorities');
     const h = o.holdings.find(h => h.id === holdingId) || o.holdings[0], c = p.w.companies.find(c => c.id === h?.companyId), editorRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (editing !== null) {

@@ -12,8 +12,8 @@ const Badge = ({ children, tone = '' }: {
 }) => <span className={'badge ' + tone}>{children}</span>;
 const dateLabel = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No deadline';
 export default function ExecutionRoom(p: StudioProps) {
-    const o = ops(p.w), [dealId, setDeal] = useState(p.executionDealId || p.w.deals.find(d => !['Closed', 'Passed'].includes(d.stage))?.id || p.w.deals[0]?.id || ''), { act, feedback } = useActions(p);
-    const [view, setView] = useState('Action register'), [selected, setSelected] = useState(''), [adding, setAdding] = useState(false), [kind, setKind] = useState('All types'), [focus, setFocus] = useState('All items'), [query, setQuery] = useState(''), [owner, setOwner] = useState('All owners'), [advisorEdit, setAdvisorEdit] = useState<string | null>(null);
+    const o = ops(p.w), [dealId, setDeal] = useState(p.focus?.dealId||p.executionDealId || p.w.deals.find(d => !['Closed', 'Passed'].includes(d.stage))?.id || p.w.deals[0]?.id || ''), { act, feedback } = useActions(p);
+    const [view, setView] = useState(p.focus?.view||'Action register'), [selected, setSelected] = useState(p.focus?.taskId||''), [adding, setAdding] = useState(false), [kind, setKind] = useState('All types'), [focus, setFocus] = useState('All items'), [query, setQuery] = useState(''), [owner, setOwner] = useState('All owners'), [advisorEdit, setAdvisorEdit] = useState<string | null>(null);
     const deal = p.w.deals.find(d => d.id === dealId), c = p.w.companies.find(c => c.id === deal?.companyId), plan = o.execution.find(p => p.dealId === dealId), readonly = !!deal && ['Closed', 'Passed'].includes(deal.stage);
     const detailRef = useRef<HTMLDivElement>(null);
     useEffect(() => { if (selected || adding) {

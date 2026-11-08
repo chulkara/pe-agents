@@ -1,3 +1,4 @@
+import {preparationPolicyVersion,configuredTemplate,responsibleFor,type WorkspaceExperience} from './experience.ts';
 import {captureTransition,operatingUpdateText,dateValid} from './transition.ts';
 import type {TransitionRecord,OperatingProjectContext,OperatingReportDetails} from './transition.ts';
 import {executionCloseBlockers} from './execution.ts';
@@ -158,6 +159,7 @@ export type Investor = {
 export type ResearchQuestion = {id:string;companyId:string;topic:string;question:string;owner:string;due:string;status:'Open'|'Answered'|'Deferred';answer:string;source:string;workItemId?:string;createdAt:string;updatedAt:string};
 export type ResearchNote={id:string;companyId:string;body:string;evidenceIds:string[];date:string;author:string};
 export type OperatingData = {
+    experience?:WorkspaceExperience;
  ownerPromises?:OwnerPromise[];researchQuestions?:ResearchQuestion[];researchNotes?:ResearchNote[];
     schemaVersion: 1;
     mode: 'Guided' | 'Team';
@@ -177,7 +179,7 @@ export function hydrate(w: Workspace): Workspace { if (w.operating)
 export function ops(w: Workspace): OperatingData { return hydrate(w).operating!; }
 export function effectiveFirm(w: Workspace, c: Company): Firm { const p = ops(w).platforms.find(p => p.id === ops(w).assignments[c.id]); return p ? { ...w.firm, ...p, name: w.firm.name + ' / ' + p.name } : w.firm; }
 export function allEvidence(c: Company): Evidence[] { return [...c.evidence, ...c.documents.filter(d=>!d.supersededBy).flatMap(d => d.evidence)]; }
-export function sourceVersion(w: Workspace, c: Company): string { const o = ops(w); const data = JSON.stringify({ company: [c.name, c.city, c.state, c.industry, c.owner, c.website, c.email, c.phone, c.nextAction, c.due, c.evidence, c.documents, c.conversations], firm: effectiveFirm(w, c), memory: o.memories.filter(m => m.companyId === c.id),ownerPromises:(o.ownerPromises||[]).filter(m=>m.companyId===c.id),researchNotes:(o.researchNotes||[]).filter(n=>n.companyId===c.id),researchQuestions:(o.researchQuestions||[]).filter(q=>q.companyId===c.id) }); let hash = 2166136261; for (let i = 0; i < data.length; i++) {
+export function sourceVersion(w: Workspace, c: Company): string { const o = ops(w); const data = JSON.stringify({ company: [c.name, c.city, c.state, c.industry, c.owner, c.website, c.email, c.phone, c.nextAction, c.due, c.evidence, c.documents, c.conversations], firm: effectiveFirm(w, c), preparationPolicy:preparationPolicyVersion(w), memory: o.memories.filter(m => m.companyId === c.id),ownerPromises:(o.ownerPromises||[]).filter(m=>m.companyId===c.id),researchNotes:(o.researchNotes||[]).filter(n=>n.companyId===c.id),researchQuestions:(o.researchQuestions||[]).filter(q=>q.companyId===c.id) }); let hash = 2166136261; for (let i = 0; i < data.length; i++) {
     hash ^= data.charCodeAt(i);
     hash = Math.imul(hash, 16777619);
 } return (hash >>> 0).toString(16); }
@@ -189,7 +191,7 @@ export function researchDossier(w: Workspace, c: Company) { const a = researchAs
 export function investmentBrief(w:Workspace,c:Company){return briefText(buildBriefSnapshot(w,c));}
 export function newWork(c: Company, kind: WorkKind, owner: string): WorkItem { return { id: id(), companyId: c.id, title: kind === 'Follow-up' ? 'Follow up with the owner' : `${kind} · ${c.name}`, kind, owner, due: today(), priority: 'Normal', status: 'Queued', instructions: '', output: '', sourceVersion: '', preparedAt: '', reviewedBy: '', reviewedAt: '', nextAction: kind === 'Research dossier' ? 'Prepare an owner call' : kind === 'Owner call brief' ? 'Introduce yourself to the owner' : kind === 'Outreach draft' ? 'Review contact details and use approved outreach' : 'Review open questions with the owner', nextDue: nextDate(2) }; }
 export function prepareWork(w: Workspace, item: WorkItem): WorkItem { const c = w.companies.find(c => c.id === item.companyId); if (!c)
-    throw Error('The linked company no longer exists.'); const f = effectiveFirm(w, c); let output = item.kind === 'Research dossier' ? researchDossier(w, c) : item.kind === 'Owner call brief' ? callBrief(w, c) : item.kind === 'Outreach draft' ? draft(c, f) : item.kind === 'Investment brief' ? investmentBrief(w, c) : `FOLLOW-UP — ${c.name}\nLast conversation: ${c.conversations[0]?.body || 'No conversation recorded.'}\nNext action: ${c.nextAction || 'Agree on a next step.'}\n\n${item.instructions || 'Review the relationship and record your follow-up.'}`; if (item.instructions)
+    throw Error('The linked company no longer exists.'); const f = effectiveFirm(w, c); let output = item.kind === 'Research dossier' ? researchDossier(w, c) : item.kind === 'Owner call brief' ? callBrief(w, c) : item.kind === 'Outreach draft' ? draft(c, f) : item.kind === 'Investment brief' ? investmentBrief(w, c) : `FOLLOW-UP — ${c.name}\nLast conversation: ${c.conversations[0]?.body || 'No conversation recorded.'}\nNext action: ${c.nextAction || 'Agree on a next step.'}\n\n${item.instructions || 'Review the relationship and record your follow-up.'}`; const template=configuredTemplate(w,item.kind);if(template)output+='\n\nFIRM PREPARATION STANDARD\n'+template;if(w.operating?.experience?.standards.length)output+='\n\nREVIEW CHECKLIST\n'+w.operating.experience.standards.map(s=>'- '+s).join('\n');if (item.instructions)
     output += '\n\nOPERATOR INSTRUCTIONS\n' + item.instructions; return { ...item, output, sourceVersion: sourceVersion(w, c), preparedAt: new Date().toISOString(), status: 'In review', reviewedBy: '', reviewedAt: '' }; }
 export function approveWork(w: Workspace, itemId: string, output: string, nextAction: string, nextDue: string): Workspace { const o = ops(w), item = o.work.find(i => i.id === itemId), c = w.companies.find(c => c.id === item?.companyId); if (!item || !c)
     throw Error('Work item not found.'); if (item.status !== 'In review')
