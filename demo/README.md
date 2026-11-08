@@ -88,3 +88,13 @@ Open a company → **Owner memory**, or use the relationship cards under **Relat
 - Prepare the next call using sourced priorities, changes over time, open commitments, and context-aware questions. Export the call brief or full relationship history.
 
 Records remain browser-local. There is no call recording, transcription, automatic sending, background reminders, or model-powered inference. Owner readiness and acquisition fit remain independent.
+
+## Source-linked first-pass investment brief
+
+Use **Investment briefs**, or a company’s **Investment brief** tab. Upload a text-based PDF (up to 40 pages), CSV, TXT, MD, JSON, or paste captured source text. Uploading prepares an immutable draft automatically. Use **Upload revision** or select a revision when pasting corrected text; earlier documents are retained and excluded from current inputs.
+
+The brief includes business-quality evidence, financial periods and trends, concentration, discrepancies, unanswered questions, suggested follow-up requests, and owner context. Claim references open the captured excerpt and line/PDF-page location. Full captured text is stored once per document per snapshot. Margin and consecutive-year revenue growth disclose their formulas and input citations; adjusted EBITDA, SDE, forecasts, interim periods, and disputed figures remain separate. Missing information is explicit. Requests can be queued for review without sending anything.
+
+Changed inputs visibly mark older briefs **Out of date** and block new review approval or request queuing from them. Refreshing creates a new version with document and claim comparisons; old figures, source excerpts, and reviews remain available. Uploading a revision prepares this new version directly.
+
+Extraction is deterministic: labeled financial lines, year-column CSVs, simple text financial tables, labeled business observations, and selected quoted passages. General model-powered document understanding, OCR, earnings normalization, and complex table interpretation are not connected. Financial currency/units and accounting basis require review. Documents and brief history remain in browser storage; original binaries are not uploaded to a server.
