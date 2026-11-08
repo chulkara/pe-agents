@@ -7,7 +7,7 @@ import type { Workspace as Data } from '../lib/domain';
 import './cloud.css';
 export default function CloudApp() {
     const [view, setView] = useState<'demo' | 'account' | 'workspace'>('demo'), [client, setClient] = useState<SupabaseClient | null>(null), [user, setUser] = useState<User | null>(null), [firms, setFirms] = useState<CloudFirm[]>([]), [members, setMembers] = useState<Membership[]>([]), [record, setRecord] = useState<CloudRecord | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState(''), [mode, setMode] = useState('Sign in'), [connection, setConnection] = useState<CloudConfig>({ url: '', publishableKey: '' }), [checked, setChecked] = useState(false);
-    const identity = useRef(''), refreshSequence = useRef(0);
+    const identity = useRef(''), explicitDemo = useRef(false), refreshSequence = useRef(0);
     useEffect(() => { try {
         const cfg = deviceConnection(localStorage.getItem(CONFIG_KEY),localStorage.getItem(DISCONNECTED_KEY)==='true');
         if (cfg) {
@@ -26,7 +26,7 @@ export default function CloudApp() {
         setMembers([]);
         setRecord(null);
         return;
-    } identity.current = data.user.id; setUser(data.user); const list = await c.from('kalling_firms').select('id,name').order('created_at'); if (list.error)
+    } identity.current = data.user.id; setUser(data.user); if(!explicitDemo.current)setView(v=>v==='demo'?'account':v); const list = await c.from('kalling_firms').select('id,name').order('created_at'); if (list.error)
         throw Error('Cloud database is not ready: ' + list.error.message); const mem = await c.from('kalling_members').select('*').eq('user_id', data.user.id).eq('active', true); if (mem.error)
         throw Error(mem.error.message); if (sequence !== refreshSequence.current)
         return; setFirms(list.data || []); setMembers(mem.data || []); }
@@ -72,13 +72,13 @@ export default function CloudApp() {
             throw Error(error.message);
         await refresh();
     } }); }
-    const account = () => { setView('account'); setError(''); if (client)
+    const account = () => { explicitDemo.current=false;setView('account'); setError(''); if (client)
         void act(() => refresh()); };
     if (view === 'demo')
         return <Workspace openAccount={account}/>;
     if (view === 'workspace' && client && record && user)
         return <Workspace key={user.id + record.firmId} initialWorkspace={record.data} persist={saveCloud} cloud={{ firmId: record.firmId, role: record.role, email: user.email || user.id }} openAccount={account}/>;
-    return <div className="cloud-page"><header className="cloud-header"><button className="cloud-brand" onClick={() => setView('demo')}>kalling<span>.</span></button><button className="btn" onClick={() => setView('demo')}>Open local demo</button></header><main className="cloud-content"><div className="eyebrow">THE FOUNDATION / YOUR FIRM’S WORKSPACE</div><h1>Built around trust.<br /><span>Ready for real work.</span></h1><p className="cloud-intro">Kalling helps a small acquisition team find, evaluate, acquire, and operate businesses—with agents doing the preparation and people owning the decisions.</p>
+    return <div className="cloud-page"><header className="cloud-header"><button className="cloud-brand" onClick={() => {explicitDemo.current=true;setView('demo');}}>kalling<span>.</span></button><button className="btn" onClick={() => {explicitDemo.current=true;setView('demo');}}>Open local demo</button></header><main className="cloud-content"><div className="eyebrow">THE FOUNDATION / YOUR FIRM’S WORKSPACE</div><h1>Built around trust.<br /><span>Ready for real work.</span></h1><p className="cloud-intro">Kalling helps a small acquisition team find, evaluate, acquire, and operate businesses—with agents doing the preparation and people owning the decisions.</p>
  {error && <div className="error-banner" role="alert">{error}</div>}{notice && <div className="cloud-notice" role="status">{notice}</div>}
  {!client && checked && <section className="panel cloud-card"><div className="eyebrow">CLOUD NOT CONNECTED</div><h2>Connect your free Supabase project.</h2><p>The public demo stays local. Cloud mode requires the database migrations and scheduler in the repository’s production folder. Connecting does not copy your local records.</p><form onSubmit={e => { e.preventDefault(); void act(async () => { const config = validateCloudConfig(connection); localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); localStorage.removeItem(DISCONNECTED_KEY); setClient(await clientFor(config)); }); }}><label className="field"><span>Supabase project URL</span><input required type="url" value={connection.url} placeholder="https://your-project.supabase.co" onChange={e => setConnection({ ...connection, url: e.target.value })}/></label><label className="field"><span>Public publishable key · never a secret key</span><input required autoComplete="off" value={connection.publishableKey} onChange={e => setConnection({ ...connection, publishableKey: e.target.value })}/></label><button className="btn primary" disabled={busy}>Connect project</button></form><p className="footnote">Public connection settings stay on this device. Service-role keys are rejected. No paid services are enabled.</p></section>}
  {client && !user && <section className="panel cloud-card"><div className="cloud-tabs">{['Sign in', 'Create account'].map(x => <button className={'btn ' + (mode === x ? 'primary' : '')} key={x} onClick={() => setMode(x)}>{x}</button>)}</div><div className="eyebrow">KALLING CLOUD / CONNECTED</div><h2>Your own account. Your firm’s records.</h2><form onSubmit={authenticate}><label className="field"><span>Email address</span><input required type="email" name="email" autoComplete="email"/></label><label className="field"><span>Password</span><input required type="password" name="password" minLength={12} autoComplete={mode === 'Sign in' ? 'current-password' : 'new-password'}/></label><button className="btn primary" disabled={busy}>{busy ? 'Working…' : mode}</button></form><p>Account creation requires email confirmation. For initial free testing, the project administrator can provision a confirmed account through Supabase. Configure an email provider before external onboarding.</p></section>}

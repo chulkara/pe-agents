@@ -1,3 +1,4 @@
+import type {ResearchFlow} from './researchFlow.ts';
 import {preparationPolicyVersion,configuredTemplate,responsibleFor,type WorkspaceExperience} from './experience.ts';
 import {captureTransition,operatingUpdateText,dateValid} from './transition.ts';
 import type {TransitionRecord,OperatingProjectContext,OperatingReportDetails} from './transition.ts';
@@ -159,6 +160,7 @@ export type Investor = {
 export type ResearchQuestion = {id:string;companyId:string;topic:string;question:string;owner:string;due:string;status:'Open'|'Answered'|'Deferred';answer:string;source:string;workItemId?:string;createdAt:string;updatedAt:string};
 export type ResearchNote={id:string;companyId:string;body:string;evidenceIds:string[];date:string;author:string};
 export type OperatingData = {
+    researchFlows?:ResearchFlow[];
     experience?:WorkspaceExperience;
  ownerPromises?:OwnerPromise[];researchQuestions?:ResearchQuestion[];researchNotes?:ResearchNote[];
     schemaVersion: 1;
