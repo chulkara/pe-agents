@@ -98,3 +98,13 @@ The brief includes business-quality evidence, financial periods and trends, conc
 Changed inputs visibly mark older briefs **Out of date** and block new review approval or request queuing from them. Refreshing creates a new version with document and claim comparisons; old figures, source excerpts, and reviews remain available. Uploading a revision prepares this new version directly.
 
 Extraction is deterministic: labeled financial lines, year-column CSVs, simple text financial tables, labeled business observations, and selected quoted passages. General model-powered document understanding, OCR, earnings normalization, and complex table interpretation are not connected. Financial currency/units and accounting basis require review. Documents and brief history remain in browser storage; original binaries are not uploaded to a server.
+
+## Evidence-linked acquisition model
+
+Open **Underwriting**. The input ledger separates reported annual EBITDA from user assumptions for enterprise value, financing, fees, working capital, capital spending, growth, tax, and exit terms. Reported EBITDA is locked until explicitly switched to an assumption. Eligible source quotes can supply values or remain background references; quoted acquisition terms remain underwriting assumptions. Missing EBITDA or purchase price is left blank.
+
+Each saved version records inputs, captured source excerpts and locations, input-specific notes, the version rationale, its parent version, author, calculation engine, and calculated results. Compare two versions to see input/basis changes, old/new source excerpts, reasons, and combined changes in equity funding, MOIC, IRR, annual cash, and exit proceeds. These comparisons show complete-case differences rather than assigning isolated return contributions to individual assumptions.
+
+Document revisions and disagreements flag historical scenarios without changing their inputs. Reported evidence must be refreshed or explicitly replaced by an assumption before saving a new current version. Stale evidence blocks a new review of the older version. Review notes append to the saved record; the close handoff retains the model inputs and evidence audit. Earlier models remain available with their basis classified as unverified assumptions when no source history was captured.
+
+The annual cash-flow mechanics remain simplified and visible beside the model. Sources/uses, amortization, seller-note repayment, additional equity funding, sensitivity, and return calculations are deterministic. This remains browser-local and does not involve live lender quotes, accounting-system connections, or model-powered financial analysis.
