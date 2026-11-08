@@ -1,3 +1,5 @@
+import {captureTransition,operatingUpdateText,dateValid} from './transition.ts';
+import type {TransitionRecord,OperatingProjectContext,OperatingReportDetails} from './transition.ts';
 import {executionCloseBlockers} from './execution.ts';
 import type {ExecutionDetails,DealAdvisor} from './execution.ts';
 import type {ModelAudit} from './modelEvidence.ts';
@@ -97,6 +99,7 @@ export type Scenario = {
     inputs: ModelInputs;
 };
 export type ExecutionTask = Partial<ExecutionDetails> & {
+    operating?:OperatingProjectContext;
     id: string;
     title: string;
     category: string;
@@ -115,14 +118,14 @@ export type ExecutionPlan = {
     dealId: string;
     tasks: ExecutionTask[];
 };
-export type OperatingReport = {
+export type OperatingReport = Partial<OperatingReportDetails> & {
     id: string;
     period: string;
     revenue: number;
     ebitda: number;
     cash: number;
-    budgetRevenue: number;
-    budgetEbitda: number;
+    budgetRevenue: number|null;
+    budgetEbitda: number|null;
     source: string;
     notes: string;
     metric: string;
@@ -130,6 +133,7 @@ export type OperatingReport = {
     createdAt: string;
 };
 export type Holding = {
+    transition?:TransitionRecord;
     id: string;
     companyId: string;
     dealId: string;
@@ -252,17 +256,16 @@ export function completeExecution(tasks: ExecutionTask[], taskId: string, patch:
 } if (item.status === 'Done' && patch.status && patch.status !== 'Done' && tasks.some(x => x.status === 'Done' && x.dependsOn.includes(item.id)))
     throw Error('Reopen completed dependent tasks first.'); return tasks.map(x => x.id === taskId ? { ...x, ...patch } : x); }
 export function hundredDayPlan(owner: string, start = today()): ExecutionTask[] { return [['Meet employees and agree on responsibilities', 'People', 7], ['Contact key customers and protect continuity', 'Customers', 14], ['Set reporting, cash controls, and budget', 'Finance', 30], ['Address open diligence findings', 'Risk', 45], ['Review the acquisition case against actuals', 'Strategy', 100]].map(([title, category, days]) => ({ id: id(), title: String(title), category: String(category), owner, due: (() => { const date = new Date(start + 'T12:00:00'); date.setDate(date.getDate() + Number(days)); return date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); })(), status: 'Open', dependsOn: [], evidence: '', notes: '', critical: false })); }
-export function closeToHolding(w: Workspace, dealId: string, closedOn: string): Workspace { const o = ops(w), deal = w.deals.find(d => d.id === dealId), plan = o.execution.find(p => p.dealId === dealId); if (!deal || !plan)
+export function closeToHolding(w: Workspace, dealId: string, closedOn: string, modelId?:string): Workspace { const o = ops(w), deal = w.deals.find(d => d.id === dealId), plan = o.execution.find(p => p.dealId === dealId); if (!deal || !plan)
     throw Error('Set up the execution plan first.'); if (o.holdings.some(h => h.dealId === dealId))
     throw Error('This deal is already in the portfolio.'); if (plan.tasks.some(t => t.critical && t.status !== 'Done'))
     throw Error('Complete all critical closing workstreams first.'); if (plan.workspaceVersion && executionCloseBlockers(plan,w.companies.find(c=>c.id===deal.companyId)!).length)
     throw Error('Resolve critical execution evidence and approval blockers before recording the close.'); if (deal.stage === 'Passed')
-    throw Error('A passed opportunity cannot be recorded as closed.'); if (!/^\d{4}-\d{2}-\d{2}$/.test(closedOn) || Number.isNaN(Date.parse(closedOn + 'T12:00:00')) || closedOn > today())
-    throw Error('Use the actual close date, today or earlier.'); const model = o.models.find(m => m.companyId === deal.companyId); const holding: Holding = { id: id(), companyId: deal.companyId, dealId, closedOn, investmentCase: deal.memo, modelSnapshot: model ? JSON.stringify({inputs:model.inputs,audit:model.audit}, null, 2) : 'No underwriting scenario recorded.', sample: w.companies.find(c => c.id === deal.companyId)?.sample || false, plan: hundredDayPlan(w.firm.operator, closedOn), reports: [] }; return { ...w, deals: w.deals.map(d => d.id === dealId ? { ...d, stage: 'Closed' } : d), operating: { ...o, holdings: [holding, ...o.holdings] } }; }
+    throw Error('A passed opportunity cannot be recorded as closed.'); if (!dateValid(closedOn) || closedOn > today())
+    throw Error('Use the actual close date, today or earlier.'); const model = o.models.find(m => m.companyId === deal.companyId); const holding: Holding = { id: id(), companyId: deal.companyId, dealId, closedOn, investmentCase: deal.memo, modelSnapshot: model ? JSON.stringify({inputs:model.inputs,audit:model.audit}, null, 2) : 'No underwriting scenario recorded.', sample: w.companies.find(c => c.id === deal.companyId)?.sample || false, plan: hundredDayPlan(w.firm.operator, closedOn), reports: [] }; return { ...w, deals: w.deals.map(d => d.id === dealId ? { ...d, stage: 'Closed' } : d), operating: { ...o, holdings: [captureTransition(w,holding,modelId), ...o.holdings] } }; }
 export function latestReports(reports: OperatingReport[]) { const seen = new Set<string>(); return [...reports].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).filter(r => { if (seen.has(r.period))
     return false; seen.add(r.period); return true; }).sort((a, b) => b.period.localeCompare(a.period)); }
-export function reportNarrative(c: Company, h: Holding) { const report = latestReports(h.reports)[0]; if (!report)
-    return 'No operating report recorded.'; const previous = latestReports(h.reports).find(r => r.period < report.period); return `${c.name}${h.sample ? ' — FICTIONAL SAMPLE' : ''}\nOPERATING UPDATE — ${report.period}\nRevenue: ${money(report.revenue)} vs budget ${money(report.budgetRevenue)} (${money(report.revenue - report.budgetRevenue)} variance).\nEBITDA: ${money(report.ebitda)} vs budget ${money(report.budgetEbitda)} (${money(report.ebitda - report.budgetEbitda)} variance).\nCash balance: ${money(report.cash)}.\n${previous ? `Compared with ${previous.period}: revenue ${money(report.revenue - previous.revenue)}; EBITDA ${money(report.ebitda - previous.ebitda)}.` : 'No earlier month recorded for comparison.'}\n${report.metric ? `${report.metric}: ${report.metricValue}\n` : ''}Management notes: ${report.notes || 'None provided.'}\nSource: ${report.source}\n100-day plan: ${h.plan.filter(t => t.status === 'Done').length}/${h.plan.length} actions complete.\nPrepared from manually entered management data; human review required.`; }
+export function reportNarrative(c:Company,h:Holding){return operatingUpdateText(c,h);}
 export function callBrief(w:Workspace,c:Company){
  const plan=relationshipPlan(w,c),sorted={...c,conversations:[...c.conversations].filter(x=>x.date<=today()).sort((a,b)=>b.date.localeCompare(a.date))};
  if(plan.lastConversation)sorted.conversations=[plan.lastConversation];

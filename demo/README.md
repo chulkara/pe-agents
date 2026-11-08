@@ -120,3 +120,15 @@ Execution now opens from a reviewed opportunity, including a direct link on its 
 - Completion requires supporting information and completed dependencies. Cycles are rejected. Critical outstanding work, stale document references, and missing approvals block recording the close. Closed and passed execution rooms are read-only. Text exports include responsibilities, requests, sources, decision history, and before/after records.
 
 Coordination remains browser-local. Advisor assignment does not create accounts, invite anyone, send requests, or provide shared data-room access. Recorded approvals do not verify reviewer identity, sign documents, or authorize funds. Deadlines are tracked in the workspace; external notifications are not connected.
+
+### Acquisition-to-operations transition
+
+At close, choose the underwriting version to preserve (or explicitly record that no baseline exists). The portfolio handoff copies that model and its input evidence, the investment rationale, saved brief context, diligence findings, owner priorities, and open commitments. Later changes to company research or underwriting leave this acquisition case unchanged.
+
+Unresolved noncritical execution items, research questions, and owner commitments become proposed operating priorities alongside the initial 100-day playbook. Completed findings remain inspectable and can be turned into proposed projects explicitly. Each project has a responsible owner, deadline, outcome, measure of completion, next step, and links back to its captured findings. Team agreement and completion evidence are explicit. Changes retain the prior plan, rationale, and person recording them.
+
+Portfolio separates Performance, First 100 days, Diligence handoff, and Acquisition case. Monthly reports record actual revenue, EBITDA, cash balance, optional management budgets, capital spending, working-capital investment/release, acquisition-customer retention, and staffing. Reports require a source, rationale, and owned follow-up; revising a month retains earlier values and sources. Missing optional values remain unknown.
+
+Actual-to-case EBITDA comparison uses the frozen model's acquisition-year annual EBITDA divided by 12, clearly labeled as an even monthly guide rather than an original monthly forecast. It includes only confirmed complete calendar months after close that have finished and fit entirely within one modeled acquisition year. No seasonality is assumed, partial months are excluded, cash balance is never equated with cash to equity, and absent revenue or operating forecasts are not invented. Changes to reported acquisition customer/staff baselines are flagged for reconciliation. This does not calculate realized investment returns.
+
+Earlier portfolio records can prepare a structured baseline from their stored close snapshot without reconstructing historical diligence from current research. A separate fictional transition example demonstrates two completed operating months. The workspace remains browser-local; accounting, payroll, CRM, and shared management integrations are not connected.
