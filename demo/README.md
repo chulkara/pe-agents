@@ -108,3 +108,15 @@ Each saved version records inputs, captured source excerpts and locations, input
 Document revisions and disagreements flag historical scenarios without changing their inputs. Reported evidence must be refreshed or explicitly replaced by an assumption before saving a new current version. Stale evidence blocks a new review of the older version. Review notes append to the saved record; the close handoff retains the model inputs and evidence audit. Earlier models remain available with their basis classified as unverified assumptions when no source history was captured.
 
 The annual cash-flow mechanics remain simplified and visible beside the model. Sources/uses, amortization, seller-note repayment, additional equity funding, sensitivity, and return calculations are deterministic. This remains browser-local and does not involve live lender quotes, accounting-system connections, or model-powered financial analysis.
+
+### Deal execution workspace
+
+Execution now opens from a reviewed opportunity, including a direct link on its opportunity card. Each room retains its own action register, advisor responsibilities, named approvals, dependencies, and closing readiness. The eight-item starting playbook is editable; existing execution plans and portfolio plans retain their records.
+
+- Document requests, diligence questions, advisor tasks, lender requests, and approvals have an accountable owner, deadline, and explicit next action. Blocked work requires an explanation. Search and filter by type, owner, open/completed, overdue, or attention needed.
+- Assign advisors and their scope, then link them to individual items. Bringing unresolved research questions into diligence preserves the company research record and avoids duplicate imports.
+- Record answers or advisor confirmation, attach current document snapshots, and preserve before/after updates with reasons. Changed supporting documents flag items and their downstream dependencies for review; historical excerpts remain in the item history.
+- Approvals apply to a saved revision and require reasoning. Changes requested become an explicit next action. Subsequent edits require a fresh decision; named reviewers and the person recording their decision are shown separately.
+- Completion requires supporting information and completed dependencies. Cycles are rejected. Critical outstanding work, stale document references, and missing approvals block recording the close. Closed and passed execution rooms are read-only. Text exports include responsibilities, requests, sources, decision history, and before/after records.
+
+Coordination remains browser-local. Advisor assignment does not create accounts, invite anyone, send requests, or provide shared data-room access. Recorded approvals do not verify reviewer identity, sign documents, or authorize funds. Deadlines are tracked in the workspace; external notifications are not connected.

@@ -1,3 +1,5 @@
+import {executionCloseBlockers} from './execution.ts';
+import type {ExecutionDetails,DealAdvisor} from './execution.ts';
 import type {ModelAudit} from './modelEvidence.ts';
 import {buildBriefSnapshot,briefText,type BriefSnapshot} from './investment.ts';
 import { relationshipCallText, relationshipPlan, ownerReadinessEntry, ownerContextText } from './relationships.ts';
@@ -94,19 +96,21 @@ export type Scenario = {
     sourceVersion: string;
     inputs: ModelInputs;
 };
-export type ExecutionTask = {
+export type ExecutionTask = Partial<ExecutionDetails> & {
     id: string;
     title: string;
     category: string;
     owner: string;
     due: string;
-    status: 'Open' | 'In progress' | 'Blocked' | 'Done';
+    status: 'Open' | 'In progress' | 'Blocked' | 'Awaiting approval' | 'Done';
     dependsOn: string[];
     evidence: string;
     notes: string;
     critical: boolean;
 };
 export type ExecutionPlan = {
+    workspaceVersion?:1;
+    advisors?:DealAdvisor[];
     id: string;
     dealId: string;
     tasks: ExecutionTask[];
@@ -251,7 +255,9 @@ export function hundredDayPlan(owner: string, start = today()): ExecutionTask[] 
 export function closeToHolding(w: Workspace, dealId: string, closedOn: string): Workspace { const o = ops(w), deal = w.deals.find(d => d.id === dealId), plan = o.execution.find(p => p.dealId === dealId); if (!deal || !plan)
     throw Error('Set up the execution plan first.'); if (o.holdings.some(h => h.dealId === dealId))
     throw Error('This deal is already in the portfolio.'); if (plan.tasks.some(t => t.critical && t.status !== 'Done'))
-    throw Error('Complete all critical closing workstreams first.'); if (!/^\d{4}-\d{2}-\d{2}$/.test(closedOn) || Number.isNaN(Date.parse(closedOn + 'T12:00:00')) || closedOn > today())
+    throw Error('Complete all critical closing workstreams first.'); if (plan.workspaceVersion && executionCloseBlockers(plan,w.companies.find(c=>c.id===deal.companyId)!).length)
+    throw Error('Resolve critical execution evidence and approval blockers before recording the close.'); if (deal.stage === 'Passed')
+    throw Error('A passed opportunity cannot be recorded as closed.'); if (!/^\d{4}-\d{2}-\d{2}$/.test(closedOn) || Number.isNaN(Date.parse(closedOn + 'T12:00:00')) || closedOn > today())
     throw Error('Use the actual close date, today or earlier.'); const model = o.models.find(m => m.companyId === deal.companyId); const holding: Holding = { id: id(), companyId: deal.companyId, dealId, closedOn, investmentCase: deal.memo, modelSnapshot: model ? JSON.stringify({inputs:model.inputs,audit:model.audit}, null, 2) : 'No underwriting scenario recorded.', sample: w.companies.find(c => c.id === deal.companyId)?.sample || false, plan: hundredDayPlan(w.firm.operator, closedOn), reports: [] }; return { ...w, deals: w.deals.map(d => d.id === dealId ? { ...d, stage: 'Closed' } : d), operating: { ...o, holdings: [holding, ...o.holdings] } }; }
 export function latestReports(reports: OperatingReport[]) { const seen = new Set<string>(); return [...reports].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).filter(r => { if (seen.has(r.period))
     return false; seen.add(r.period); return true; }).sort((a, b) => b.period.localeCompare(a.period)); }
