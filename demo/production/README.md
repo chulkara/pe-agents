@@ -4,7 +4,7 @@ Mission: Kalling helps a small acquisition team find, evaluate, acquire, and ope
 
 ## Activation state
 
-This folder contains executable PostgreSQL migrations and isolation/queue tests. The frontend exposes **Accounts & cloud** in the sidebar. A Supabase project must be provisioned and configured before hosted accounts, cloud saves, original-file storage, or unattended jobs are active. The GitHub Pages demo continues working locally without any project or credentials. Never describe publishing the frontend as activating the backend.
+This folder contains executable PostgreSQL migrations and isolation/queue tests. The frontend exposes **Accounts & cloud** in the sidebar. The Kalling Free project is now provisioned and the foundation tables, private bucket and database scheduler are active. The hosted app includes only its public connection settings. Account creation, original-file transport and a nonempty background job still need an authenticated end-to-end acceptance test. The GitHub Pages demo continues working locally without any project or credentials. Never describe publishing the frontend as activating the backend.
 
 ## Zero-cost architecture
 
@@ -19,7 +19,7 @@ At implementation time the free allowance was 500 MB database and 1 GB files. Ch
 ## Activate on a dedicated Free project
 
 1. Create/select a dedicated **Free** Supabase project. Do not apply these migrations to an unrelated application. Keep email confirmation enabled. Configure strong passwords (at least 12 characters), reasonable auth rate limits and the exact frontend Site URL / redirect allowlist. Use the GitHub Pages URL returned by deployment, including `/pe-agents/`.
-2. Apply `migrations/001_foundation.sql` once as `postgres`, then `migrations/002_scheduler.sql`. Supabase Cron is `pg_cron`; the second migration adds only two named jobs. Migration 001 creates tables, fixed-path functions, role grants, policies and the **nonpublic** `kalling-private` bucket. Do not reapply an already-applied migration; append changes instead.
+2. Apply `migrations/001_foundation.sql` once as `postgres`, then `migrations/002_scheduler.sql`. Supabase Cron is `pg_cron`; the second migration adds only two named jobs. Apply the additive `migrations/20261108215809_kalling_invitation_rls.sql` hardening migration as well: it explicitly enables invitation-table RLS and revokes direct client grants. On the live Kalling project these protections were already verified after using the SQL editor’s Run and enable RLS option. Migration 001 creates tables, fixed-path functions, role grants, policies and the **nonpublic** `kalling-private` bucket. Do not reapply an already-applied migration; append changes instead.
 3. Provision the initial verified test account in the Supabase Auth dashboard, or configure confirmation email delivery before using Create account. Supabase's default email service is limited and may only deliver to project-team addresses. External onboarding and password recovery need a configured email provider; no paid provider or outbound messages are configured here. Use the dashboard for pilot account recovery until email delivery is configured. Do not disable email verification to bypass this limitation.
 4. In **Accounts & cloud**, enter the project HTTPS URL and **publishable** key (or legacy `anon` key). These are public connection settings, not admin credentials. The app rejects service-role / secret keys. No service-role key is needed in the browser, GitHub repository or this implementation's scheduler.
 5. Sign in, create an empty firm, and open it. Records save to PostgreSQL rather than browser workspace storage. Add a company before uploading originals in **Account, files & jobs → Private files**. Existing local records are not silently copied into cloud storage.
@@ -78,3 +78,11 @@ select cron.unschedule('kalling-foundation-log-retention');
 ```
 
 This stops execution without deleting firm records or stored files. The frontend can still inspect queued status. No deployment secret or billing change is needed.
+
+## Live project verification · November 8, 2026
+
+The project `ymbciapnzdmymtthevjp` is in US East under the Kalling Free organization, with creation quoted at $0/month. All nine Kalling tables have RLS enabled; invitation records have no direct anon/authenticated read grants; the original-file bucket is nonpublic and limited to 5 MB per object. Both named cron schedules are active and a database worker tick was observed. Public privileged RPCs have no anonymous execution grant.
+
+The security advisor reports an informational no-policy finding for the invitation table: default-deny is intentional because only checked server functions manage invitations. It also flags the authenticated SECURITY DEFINER write RPCs for review. Those are intentional privileged entrypoints with explicit authorization checks and fixed search paths, covered by role-isolation tests; this is not an independent security audit. Do not describe all advisor findings as cleared.
+
+The frontend uses the public project URL and publishable key automatically. Device overrides and explicit disconnect remain available. The default Auth email service requires confirmation and is suitable only for limited internal testing. In Supabase Authentication → URL Configuration, set the Site URL and allowed redirect URL to the exact deployed frontend URL before onboarding; the connector cannot change those settings. Hosted login, file uploads/downloads, and a nonempty background job have not yet been verified with a real signed-in account.

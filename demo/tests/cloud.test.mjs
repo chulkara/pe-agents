@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateCloudConfig, emptyCloudWorkspace, fileType, writeCloudWorkspace, uploadCloudDocument } from '../lib/cloud.ts';
+import { deviceConnection, validateCloudConfig, emptyCloudWorkspace, fileType, writeCloudWorkspace, uploadCloudDocument } from '../lib/cloud.ts';
 const jwt = role => `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ role })).toString('base64url')}.test-signature`;
 test('cloud configuration accepts public project settings and rejects privileged keys and unrelated hosts', () => { assert.equal(validateCloudConfig({ url: 'https://project-ref.supabase.co/', publishableKey: jwt('anon') }).url, 'https://project-ref.supabase.co'); for (const key of [jwt('service_role'), 'sb_secret_never-send-this', 'invalid'])
     assert.throws(() => validateCloudConfig({ url: 'https://project-ref.supabase.co', publishableKey: key }), /public publishable/); for (const url of ['http://project.supabase.co', 'https://evil.example', 'https://project.supabase.co.evil.example', 'https://project.supabase.co/path'])
@@ -13,3 +13,10 @@ test('original uploads are size bounded, immutable, and finalized only after sto
         finalized++;
         return { data: null, error: null };
     } return { data: [{ id: 'doc', object_path: 'firm/doc/random' }], error: null }; }, storage: { from: () => ({ upload: async (path, file, opts) => { options = opts; return { error: { message: 'Network error' } }; } }) } }; await assert.rejects(uploadCloudDocument(client, 'firm', 'company', new File(['abc'], 'f.txt')), /Upload incomplete/); assert.equal(finalized, 0); assert.equal(options.upsert, false); });
+
+test('deployed project connects without manual key entry while respecting device disconnects and overrides',()=>{
+    const config=deviceConnection(null,false);assert.equal(config.url,'https://ymbciapnzdmymtthevjp.supabase.co');assert.match(config.publishableKey,/^sb_publishable_/);
+    assert.equal(deviceConnection(null,true),null);
+    const custom={url:'https://another-project.supabase.co',publishableKey:jwt('anon')};assert.deepEqual(deviceConnection(JSON.stringify(custom),false),custom);
+    assert.throws(()=>deviceConnection(JSON.stringify({...custom,publishableKey:jwt('service_role')}),false),/public publishable/);
+});

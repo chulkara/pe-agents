@@ -17,7 +17,7 @@ catch (e) {
 } }
 const scalar = async (sql, args = []) => Object.values((await db.query(sql, args)).rows[0])[0];
 const call = async (user, sql, args = []) => as(user, () => scalar(sql, args));
-before(async () => { db = new PGlite(); await db.exec(await readFile(new URL('./bootstrap.sql', import.meta.url), 'utf8')); await db.exec(await readFile(new URL('../migrations/001_foundation.sql', import.meta.url), 'utf8')); for (const [id, email, confirmed] of [[owner, 'owner@test.example', true], [other, 'other@test.example', true], [analyst, 'analyst@test.example', true], [viewer, 'viewer@test.example', true], [unverified, 'new@test.example', false]])
+before(async () => { db = new PGlite(); await db.exec(await readFile(new URL('./bootstrap.sql', import.meta.url), 'utf8')); await db.exec(await readFile(new URL('../migrations/001_foundation.sql', import.meta.url), 'utf8')); await db.exec(await readFile(new URL('../migrations/20261108215809_kalling_invitation_rls.sql', import.meta.url),'utf8')); for (const [id, email, confirmed] of [[owner, 'owner@test.example', true], [other, 'other@test.example', true], [analyst, 'analyst@test.example', true], [viewer, 'viewer@test.example', true], [unverified, 'new@test.example', false]])
     await db.query('insert into auth.users values($1,$2,$3)', [id, email, confirmed ? new Date() : null]); firm = await call(owner, 'select public.kalling_create_firm($1,$2)', ['Firm A', workspace]); firm2 = await call(other, 'select public.kalling_create_firm($1,$2)', ['Firm B', workspace]); });
 after(async () => db?.close());
 test('anonymous identities and unconfirmed accounts cannot create firms', async () => { await assert.rejects(call(null, 'select public.kalling_create_firm($1,$2)', ['Bad', workspace]), /Sign in/); await assert.rejects(call(unverified, 'select public.kalling_create_firm($1,$2)', ['Bad', workspace]), /Confirm/); await db.exec('set role anon'); try {
@@ -57,3 +57,11 @@ test('snapshot retention is bounded while the server audit remains available', a
     await call(other, 'select public.kalling_save_workspace($1,$2,$3,$4)', [firm2, v, workspace, 'Retention verification']);
 } assert.equal(await call(other, 'select count(*) from public.kalling_workspace_versions where firm_id=$1', [firm2]), 10); assert.equal(await call(other, "select count(*) from public.kalling_audit where firm_id=$1 and event='workspace.saved'", [firm2]), 12); });
 test('unused invitations lose authority when their issuer loses administrator access', async () => { const token = await call(other, 'select public.kalling_invite_member($1,$2,$3)', [firm2, 'owner@test.example', 'admin']); await call(owner, 'select public.kalling_accept_invite($1)', [token]); const pending = await call(owner, 'select public.kalling_invite_member($1,$2,$3)', [firm2, 'analyst@test.example', 'analyst']); await call(other, 'select public.kalling_set_member($1,$2,$3,$4)', [firm2, owner, 'analyst', true]); await assert.rejects(call(analyst, 'select public.kalling_accept_invite($1)', [pending]), /unavailable/); await assert.rejects(as(owner, () => db.query('select token_hash from kalling_private.invites')), /permission denied/); });
+
+test('invitation table stays default-deny even if a client read grant is accidentally introduced', async () => {
+    assert.equal(await scalar("select relrowsecurity from pg_class where oid='kalling_private.invites'::regclass"),true);
+    assert.equal(await scalar("select has_table_privilege('authenticated','kalling_private.invites','SELECT')"),false);
+    await db.exec('grant select on kalling_private.invites to authenticated');
+    try { assert.equal(await call(owner,'select count(*) from kalling_private.invites'),0); }
+    finally { await db.exec('revoke select on kalling_private.invites from authenticated'); }
+});

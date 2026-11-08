@@ -1,3 +1,4 @@
+import {deployedCloudProject} from './cloudProject.ts';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sample, type Workspace } from './domain.ts';
 import { hydrate } from './operating.ts';
@@ -46,6 +47,8 @@ export type CloudRecord = {
     role: Membership['role'];
 };
 export const CONFIG_KEY = 'kalling-cloud-public-config-v1';
+export const DISCONNECTED_KEY = 'kalling-cloud-disconnected-v1';
+export function deviceConnection(raw:string|null,disconnected:boolean):CloudConfig|null { return raw?validateCloudConfig(JSON.parse(raw)):disconnected?null:validateCloudConfig(deployedCloudProject); }
 export function validateCloudConfig(c: CloudConfig): CloudConfig {
     const url = c.url.trim().replace(/\/$/, '');
     if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url))
