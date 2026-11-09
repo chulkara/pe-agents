@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import {readPacket,runLocalResearch,localModel} from './local-agent-runner.mjs';
+import {readPacket,runLocalResearch,localModel,localSafetyPolicy} from './local-agent-runner.mjs';
 import {localModels} from '../lib/agentProtocol.ts';
 import {mkdir,readFile,writeFile,rename} from 'node:fs/promises';
 import {homedir} from 'node:os';
 import {join} from 'node:path';
 const args=process.argv.slice(2),command=args.shift();
+if(localSafetyPolicy!=='local-only-required-v2')throw Error('Worker safety versions do not match. Update both local worker scripts before continuing.');
 const help=`Kalling local research — no paid API or cloud fallback\n\nPrerequisites: Node 22.13+ and Ollama in local-only mode.\n  node --experimental-strip-types scripts/local-research.mjs configure-local-only\n  node --experimental-strip-types scripts/local-research.mjs doctor\n  node --experimental-strip-types scripts/local-research.mjs run /path/assignment.json\n  node --experimental-strip-types scripts/local-research.mjs run /path/assignment.json --model qwen3:8b\n\nCtrl+C pauses the assignment. Run the same command to resume saved steps.\nImport the resulting result.json through Company → Research → Local research.\nSee docs/local-research-pilot.md for setup, source limits and evaluation.`;
 if(!command||command==='help'||command==='--help'){console.log(help);process.exit(0);}
 const controller=new AbortController();process.once('SIGINT',()=>{controller.abort();console.log('\nStopping after the current checkpoint…');});process.once('SIGTERM',()=>controller.abort());

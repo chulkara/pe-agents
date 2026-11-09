@@ -4,6 +4,7 @@ import {homedir} from 'node:os';
 import {agentVersion,validatePacket,validateExtraction,validateComparisons,validateResult,extractionSchema,comparisonSchema,duplicateCandidates,researchUnknowns,localModels} from '../lib/agentProtocol.ts';
 
 const endpoint='http://127.0.0.1:11434';
+export const localSafetyPolicy='local-only-required-v2';
 const maxReplyBytes=100000;
 const allowedRoutes=new Set(['/api/status','/api/tags','/api/show','/api/chat']);
 export async function localRequest(path,body,signal,transport=fetch){
