@@ -13,6 +13,7 @@ export type AgentPacket = {
 export type AgentClaim = {id:string; topic:AgentTopic; value:string; quote:string; sourceId:string};
 export type AgentComparison = {claimIds:string[]; reason:string};
 export type AgentResult = {
+  executionPolicy:'local-only-required-v2';
   version:1; playbook:typeof agentVersion; id:string; scopeId:string; inputHash:string;
   model:string; modelDigest:string; provider:'Ollama local'; completedAt:string;
   claims:AgentClaim[]; comparisons:AgentComparison[]; unknowns:string[]; questions:string[];
@@ -70,6 +71,7 @@ export function researchUnknowns(claims:AgentClaim[]){return [...agentTopics.fil
 export async function validateResult(value:unknown,p:AgentPacket):Promise<AgentResult>{
   await validatePacket(p);const r=value as AgentResult;
   requireThat(r&&JSON.stringify(r).length<=80000&&r.version===1&&r.playbook===agentVersion&&r.id===p.id&&r.scopeId===p.scopeId&&r.inputHash===p.inputHash,'This result belongs to another assignment or source version.');
+  requireThat(r.executionPolicy==='local-only-required-v2','This result uses an older or unknown worker safety policy. Update the local worker and run the assignment again with live local-only checks.');
   requireThat(r.provider==='Ollama local'&&localModels.includes(r.model)&&string(r.modelDigest,1,120)&&string(r.completedAt,10,40)&&Number.isFinite(Date.parse(r.completedAt)),'Invalid local model metadata.');
   requireThat(Array.isArray(r.claims)&&r.claims.length<=18&&new Set(r.claims.map(c=>c.id)).size===r.claims.length,'Invalid claim list.');
   for(const c of r.claims){const s=p.sources.find(s=>s.id===c.sourceId);requireThat(s,'Unknown source reference.');const checked=validateExtraction({claims:[c],questions:[]},s);requireThat(checked.claims.length===1&&string(c.id,1,120),'Invalid cited claim.');}

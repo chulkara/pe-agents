@@ -19,7 +19,7 @@ try{
   }else if(command==='doctor'){
     if(args.length)throw Error('doctor takes no arguments.');
     console.log('Checking local Ollama at 127.0.0.1:11434; no hosted provider is contacted.');
-    const digest=await localModel('qwen3:4b',controller.signal);console.log('Local qwen3:4b available. Digest: '+digest);console.log('Ready. No inference request was made.');
+    const digest=await localModel('qwen3:4b',controller.signal);console.log('Verified running Ollama: cloud features disabled.');console.log('Local qwen3:4b available. Digest: '+digest);console.log('Ready. No inference request was made.');
   }else if(command==='run'){
     const file=args.shift();if(!file)throw Error('Supply the exported assignment JSON path.');let model='qwen3:4b';
     if(args.length){if(args.length!==2||args[0]!=='--model'||!localModels.includes(args[1]))throw Error('Only --model qwen3:4b or --model qwen3:8b is supported.');model=args[1];}

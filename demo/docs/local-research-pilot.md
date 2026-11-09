@@ -6,7 +6,7 @@ Status: local runner and workspace import/review integration. Real-model perform
 
 Use your existing Mac for inference. This pilot makes no paid model API calls, purchases no data, adds no subscription and creates no hosted model service. Electricity, internet, storage and existing equipment are excluded from the $0 model-API figure. Existing hosted workspace/file limits still apply. Website capture uses the existing free public reader or a manually copied permitted excerpt; a rate limit stops capture instead of buying credits. No Maps or Apollo credits are used.
 
-The runner calls only `http://127.0.0.1:11434`, refuses redirects and cloud model names/aliases, requires an already-downloaded local model, and has no paid fallback. Disable Ollama cloud features as instructed below. Model choice is deliberately restricted to local Qwen3-4B or Qwen3-8B. Both Windows and macOS can run the same Node runner with their appropriate Ollama installation. The web workspace remains browser-based.
+The runner calls only `http://127.0.0.1:11434`, refuses redirects and cloud model names/aliases, requires an already-downloaded local model, and has no paid fallback. It checks the running daemon's `/api/status` before model inspection/inference and requires `cloud.disabled` to be the boolean `true`. Missing, false, malformed, timed-out or unsupported status stops work before a model prompt is sent. It rechecks the cloud flag and model digest before each new inference step, including after resuming. The transport permits only status, local model metadata and chat endpoints; no cloud/web-search tools are exposed. Disable Ollama cloud features as instructed below. Model choice is deliberately restricted to local Qwen3-4B or Qwen3-8B. Both Windows and macOS can run the same Node runner with their appropriate Ollama installation. The web workspace remains browser-based.
 
 This release reads **captured excerpts**, up to six source snapshots. It does not autonomously search the web, discover Maps listings, access accounting systems, send messages or read private documents. Its useful first assignment is to extract sourced proposals, compare statements, flag shared-website records, keep unknowns visible and prepare the evidence for the existing call brief. Large-scale source discovery is a later connector.
 
@@ -30,7 +30,19 @@ ollama pull qwen3:4b
 node --experimental-strip-types scripts/local-research.mjs doctor
 ```
 
+The doctor must print **Verified running Ollama: cloud features disabled.** A settings file alone is insufficient evidence: quit and reopen Ollama after configuring it. If the running server cannot report its cloud-disabled status, update Ollama and stop until verification passes. There is no fallback that skips this check. This is a check of the trusted local server's reported state, not an OS firewall or an independent audit of Ollama. Updates/downloads, public website capture and optional cloud workspace storage are separate network activity.
+
 The current [qwen3:4b distribution](https://ollama.com/library/qwen3:4b) is approximately 2.5 GB on disk and uses Apache 2.0. Runtime memory is greater than download size and depends on context. We start with 4B, one job at a time, an 8K context window and bounded output. Actual speed and quality must be benchmarked on this fanless Mac. 16 GB does not guarantee an acceptable latency or factual quality. Consider `qwen3:8b` only after the baseline, using a new assignment to preserve model provenance.
+
+## Updating an earlier downloaded copy
+
+Changes to GitHub do not update a ZIP already extracted on your Mac. Download/extract the current repository into a new folder, or replace `scripts/local-agent-runner.mjs`, `scripts/local-research.mjs` and `lib/agentProtocol.ts` with their current repository versions. Keep private assignment/checkpoint files outside the public repository. Run doctor again and require the explicit live cloud-disabled confirmation.
+
+Results and checkpoints carry the `local-only-required-v2` policy. The workspace rejects older-policy results, and the worker does not reuse pre-policy checkpoints. Preserve old files for diagnosis and create a fresh assignment if any real work was produced by the earlier worker. The policy field is an untrusted file marker, not a signed security attestation; review/import still relies on your trusted local worker and human source checks.
+
+## First real target
+
+Start with Maffey's Security Group in Elizabeth, NJ, at `https://maffeys.com/`. Create a real company record, set industry to Locksmith and Access Control, and leave owner/contact/financial fields unknown unless separately sourced. Capture its public website, export one local research assignment, run it, then import and classify each claim. Confirm the local-only doctor first. No outreach is sent. After this single case, work through the remaining nine targets and a controlled duplicate case in a separate test workspace.
 
 ## Complete one assignment
 
@@ -55,7 +67,7 @@ Elapsed review time covers the current review visit. Override the minutes field 
 - A malformed response or invented quotation fails validation and retains checkpoints. Retry once after investigating. If the allowance is exhausted, preserve the failure and export a new assignment; do not silently broaden the limits.
 - Two workers cannot execute the same assignment concurrently. A dead process lock can be recovered automatically; a malformed lock requires inspection.
 - Cancelling in the web workspace prevents importing/accepting a result. Stop any separately running local process with Ctrl+C. The UI does not claim to remotely stop a disconnected computer.
-- Completed results reopen without new model calls. Changed model digests, source snapshots or assignment scopes cannot reuse an in-progress checkpoint.
+- Completed current-policy results reopen without new model calls. This reads a saved result and does not require an active model. Changed model digests, source snapshots, assignment scopes or older safety policies cannot reuse an in-progress checkpoint.
 - Source or company changes block a pending import/review. Preserve the old result for diagnosis and export a fresh assignment.
 
 ## Ten-target evaluation
@@ -96,5 +108,7 @@ Promote the pilot only after all ten targets are reviewed, unsupported material 
 This is an explicit file-transfer pilot, not a remote multi-tenant worker service. Workspace authorization remains with existing local/cloud controls; result files are untrusted proposals, not signed attestations. Never accept a file as proof of model identity or cost independently of the trusted local worker. A future hosted worker needs authenticated job claims, firm isolation at each tool boundary, dedicated result storage and server-controlled usage accounting. Keeping that adapter behind the same assignment contract allows hosted processing later without changing customer workflows.
 
 The existing cloud workspace JSON limit remains in force. This pilot caps assignment history at 30 and keeps source text in existing capture records; it does not upload private local checkpoints or model weights to Supabase. Dedicated agent tables are deferred until the file-transfer pilot proves useful. No cloud migration is part of this release.
+
+Official runtime-status implementation: [server StatusHandler](https://github.com/ollama/ollama/blob/main/server/routes.go) and [CloudStatus response fields](https://github.com/ollama/ollama/blob/main/api/types.go). The endpoint is experimental; an incompatible version fails closed.
 
 Official references: [Ollama macOS requirements](https://docs.ollama.com/macos), [local-only configuration](https://docs.ollama.com/faq), [structured outputs](https://docs.ollama.com/capabilities/structured-outputs), [chat API](https://docs.ollama.com/api/chat), [Qwen3-4B model](https://ollama.com/library/qwen3:4b).

@@ -20,7 +20,7 @@ Retrieval and conservative statement extraction are connected. Call preparation 
 
 ## Model-backed agents
 
-The [local research pilot](docs/local-research-pilot.md) adds a portable Node runner for local-only Ollama, source-versioned assignments, resumable checkpoints and human-reviewed imports in Company → Research. Start with Qwen3-4B on the M1 MacBook Air with 16 GB. No paid API fallback or cloud model service is configured. The [ten-target CSV](docs/research-pilot-targets.csv) is a starting evaluation set; real-model results and human labels are still pending.
+The [local research pilot](docs/local-research-pilot.md) adds a portable Node runner for local-only Ollama, source-versioned assignments, resumable checkpoints and human-reviewed imports in Company → Research. Start with Qwen3-4B on the M1 MacBook Air with 16 GB. The worker requires a live cloud-disabled server status before each new model call and blocks older safety-policy results/checkpoints. No paid API fallback or cloud model service is configured. The [ten-target CSV](docs/research-pilot-targets.csv) is a starting evaluation set; real-model results and human labels are still pending.
 
 Call preparation and outreach retain the existing reviewed-source workflow. The [agent runtime implementation plan](docs/agent-runtime-plan.md) describes the broader hosted runner and seven playbooks. The existing Supabase scheduler remains a record-reference audit only; it does not execute these local jobs.
 
