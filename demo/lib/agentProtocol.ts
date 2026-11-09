@@ -11,12 +11,14 @@ export type AgentPacket = {
   sources:AgentSource[];
 };
 export type AgentClaim = {id:string; topic:AgentTopic; value:string; quote:string; sourceId:string};
+export type AgentRejection = {sourceId:string;claimIndex:number;reason:'Unknown source passage'|'Invalid claim fields'|'Duplicate proposal'};
 export type AgentComparison = {claimIds:string[]; reason:string};
 export type AgentResult = {
   executionPolicy:'local-only-required-v2';
   version:1; playbook:typeof agentVersion; id:string; scopeId:string; inputHash:string;
   model:string; modelDigest:string; provider:'Ollama local'; completedAt:string;
   claims:AgentClaim[]; comparisons:AgentComparison[]; unknowns:string[]; questions:string[];
+  rejections?:AgentRejection[];
   duplicateCandidates:{companyId:string; reason:string}[];
   metrics:{apiCostUSD:0; elapsedMs:number; promptTokens:number; outputTokens:number; calls:number; resumed:boolean; usageIncomplete:boolean};
 };
@@ -58,6 +60,39 @@ export function validateExtraction(value:unknown, source:AgentSource):{claims:Ag
   requireThat(new Set(claims.map(c=>c.topic+'|'+c.quote)).size===claims.length,'The model repeated a claim.');
   return {claims,questions:v.questions};
 }
+/** Literal, contiguous spans. The model selects IDs; application code copies source text. */
+export function sourcePassages(source:AgentSource):{id:string;text:string}[]{
+  const passages:{id:string;text:string}[]=[];
+  for(const match of source.text.matchAll(/[^\r\n]+/g)){
+    const block=match[0];let start=0;
+    while(start<block.length&&passages.length<40){
+      let end=Math.min(start+420,block.length);
+      if(end<block.length){const space=block.lastIndexOf(' ',end);if(space>start+180)end=space;const previous=block.charCodeAt(end-1),next=block.charCodeAt(end);if(previous>=0xd800&&previous<=0xdbff&&next>=0xdc00&&next<=0xdfff)end--;}
+      const text=block.slice(start,end).trim();start=end;
+      if(text.length>=15&&!instructionLike.test(text))passages.push({id:'P'+(passages.length+1),text});
+    }
+    if(passages.length>=40)break;
+  }
+  return passages;
+}
+export function passageSelectionSchema(source:AgentSource){
+  const passages=sourcePassages(source);requireThat(passages.length,'No usable safe source passages were found. Review the capture and export a new assignment.');
+  return {type:'object',additionalProperties:false,properties:{claims:{type:'array',maxItems:3,items:{type:'object',additionalProperties:false,properties:{topic:{type:'string',enum:agentTopics},value:{type:'string',maxLength:240},passageId:{type:'string',enum:passages.map(p=>p.id)}},required:['topic','value','passageId']}},questions:{type:'array',maxItems:3,items:{type:'string',maxLength:300}}},required:['claims','questions']};
+}
+export function validatePassageSelection(value:unknown,source:AgentSource):{claims:AgentClaim[];questions:string[];rejections:AgentRejection[]}{
+  const v=value as {claims:{topic:AgentTopic;value:string;passageId:string}[];questions:string[]};
+  requireThat(v&&Array.isArray(v.claims)&&v.claims.length<=3&&strings(v.questions,3,300),'The model did not return a bounded extraction.');
+  const passages=sourcePassages(source),claims:AgentClaim[]=[],rejections:AgentRejection[]=[];
+  for(const [index,c]of v.claims.entries()){
+    const reject=(reason:AgentRejection['reason'])=>rejections.push({sourceId:source.id,claimIndex:index,reason});
+    if(!c||typeof c!=='object'||Object.keys(c).some(k=>!['topic','value','passageId'].includes(k))||!agentTopics.includes(c.topic)||!string(c.value,1,240)||instructionLike.test(c.value)){reject('Invalid claim fields');continue;}
+    const p=passages.find(p=>p.id===c.passageId);if(!p){reject('Unknown source passage');continue;}
+    if(claims.some(x=>x.topic===c.topic&&x.quote===p.text)){reject('Duplicate proposal');continue;}
+    const checked=validateExtraction({claims:[{topic:c.topic,value:c.value,quote:p.text}],questions:[]},source).claims[0];
+    claims.push({...checked,id:source.id+'-claim-'+index});
+  }
+  return {claims,questions:v.questions,rejections};
+}
 export const comparisonSchema={type:'object',additionalProperties:false,properties:{comparisons:{type:'array',maxItems:6,items:{type:'object',additionalProperties:false,properties:{claimIds:{type:'array',minItems:2,maxItems:4,items:{type:'string'}},reason:{type:'string',maxLength:450}},required:['claimIds','reason']}}},required:['comparisons']};
 export function validateComparisons(value:unknown,claims:AgentClaim[]):AgentComparison[]{
   const v=value as {comparisons:AgentComparison[]};
@@ -75,6 +110,7 @@ export async function validateResult(value:unknown,p:AgentPacket):Promise<AgentR
   requireThat(r.provider==='Ollama local'&&localModels.includes(r.model)&&string(r.modelDigest,1,120)&&string(r.completedAt,10,40)&&Number.isFinite(Date.parse(r.completedAt)),'Invalid local model metadata.');
   requireThat(Array.isArray(r.claims)&&r.claims.length<=18&&new Set(r.claims.map(c=>c.id)).size===r.claims.length,'Invalid claim list.');
   for(const c of r.claims){const s=p.sources.find(s=>s.id===c.sourceId);requireThat(s,'Unknown source reference.');const checked=validateExtraction({claims:[c],questions:[]},s);requireThat(checked.claims.length===1&&string(c.id,1,120),'Invalid cited claim.');}
+  if(r.rejections!==undefined)requireThat(Array.isArray(r.rejections)&&r.rejections.length<=18&&r.rejections.every(x=>x&&p.sources.some(s=>s.id===x.sourceId)&&Number.isInteger(x.claimIndex)&&x.claimIndex>=0&&x.claimIndex<3&&['Unknown source passage','Invalid claim fields','Duplicate proposal'].includes(x.reason))&&new Set(r.rejections.map(x=>x.sourceId+':'+x.claimIndex)).size===r.rejections.length,'Invalid rejected-proposal diagnostics.');
   validateComparisons({comparisons:r.comparisons},r.claims);
   requireThat(strings(r.unknowns,12)&&strings(r.questions,18,300)&&JSON.stringify(r.unknowns)===JSON.stringify(researchUnknowns(r.claims)),'Invalid unknowns or questions.');
   requireThat(JSON.stringify(r.duplicateCandidates)===JSON.stringify(duplicateCandidates(p)),'Duplicate candidates do not match the scoped company list.');

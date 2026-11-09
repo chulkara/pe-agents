@@ -54,7 +54,7 @@ Start with Maffey's Security Group in Elizabeth, NJ, at `https://maffeys.com/`. 
 node --experimental-strip-types scripts/local-research.mjs run "/Users/YOUR_NAME/Downloads/kalling-research-ASSIGNMENT_ID.json"
 ```
 
-4. The worker extracts up to three claims per source, validates exact quotations, then compares the proposed claims. Same-website matches are possible duplicates/branches, not automatic merges. It writes private checkpoints under `~/.kalling-agent/SCOPE_ID/ASSIGNMENT_ID/`. The browser can close while the local worker continues. Sleeping or turning off the computer interrupts processing.
+4. The worker selects up to three claims per source using numbered source passages, copies each quotation directly from the source snapshot, then compares the proposed claims. It never asks the model to reproduce a quotation. Invalid passage selections, unexpected claim fields and duplicate proposals are omitted and reported in the result; malformed response envelopes/JSON still stop the step. Same-website matches are possible duplicates/branches, not automatic merges. It writes private checkpoints under `~/.kalling-agent/SCOPE_ID/ASSIGNMENT_ID/`. The browser can close while the local worker continues. Sleeping or turning off the computer interrupts processing.
 5. Import the `result.json` path printed by the worker through **Import result** in the company's Local research panel. Import adds proposals only. Wrong assignments, changed source/context versions, cancelled assignments and repeated imports are rejected.
 6. Open the sources. Classify every claim **Supported**, **Unsupported** or **Unclear**. Confirm business identity and interpretation, add review notes and the next action. Finishing review adds only Supported claims to the evidence library. No records are merged and no owner intent is inferred. Model-proposed comparisons and duplicate flags still need investigation.
 7. Prepare the existing sourced call brief from accepted evidence, review it, then prepare/review the outreach draft. Nothing is sent.
@@ -64,11 +64,21 @@ Elapsed review time covers the current review visit. Override the minutes field 
 ## Interruption and failure checks
 
 - During the second source or comparison step, press Ctrl+C. Run the **same command** to resume. Completed steps are reused. The interrupted call may run again; token accounting is labeled incomplete if its response was lost. At most two attempts per step and fourteen inference calls per assignment are allowed. No paid fallback occurs.
-- A malformed response or invented quotation fails validation and retains checkpoints. Retry once after investigating. If the allowance is exhausted, preserve the failure and export a new assignment; do not silently broaden the limits.
+- Malformed response JSON/envelopes fail validation and retain checkpoints. Source-passage selections have two attempts per versioned step; all calls, including earlier quote-extraction failures, count toward the same fourteen-call assignment cap. When resuming an earlier quote failure, the worker reuses only successful legacy source steps that still pass exact-source validation and retries failed sources with the new passage-selection step. It does not erase old attempts, checkpoints or usage. If the global allowance is exhausted, preserve the failure and export a new assignment.
 - Two workers cannot execute the same assignment concurrently. A dead process lock can be recovered automatically; a malformed lock requires inspection.
 - Cancelling in the web workspace prevents importing/accepting a result. Stop any separately running local process with Ctrl+C. The UI does not claim to remotely stop a disconnected computer.
 - Completed current-policy results reopen without new model calls. This reads a saved result and does not require an active model. Changed model digests, source snapshots, assignment scopes or older safety policies cannot reuse an in-progress checkpoint.
 - Source or company changes block a pending import/review. Preserve the old result for diagnosis and export a fresh assignment.
+
+## If an earlier run failed exact-quotation validation
+
+An exact-source error means a candidate quotation or interpretation failed a validation rule; the old error alone does not identify whether the cause was paraphrasing, punctuation, instruction-like text or another mismatch. It does not indicate a cloud-mode failure. The earlier extraction design asked a small model to reproduce a quote exactly. The current worker asks it to select a numbered, literal source passage, and application code attaches the original quote. No fuzzy matching or invented replacement quote is used.
+
+Update `lib/agentProtocol.ts` and `scripts/local-agent-runner.mjs` in the downloaded demo folder from the current repository, keep the local-only Ollama server running, and rerun the same assignment command. New source steps show `:passages-v1` in the progress line. Saved valid legacy sources are rechecked and reused; previous attempts and token usage remain in the journal. Cancel/export a fresh assignment only if its source snapshot changed or the total call allowance is exhausted. Do not delete the checkpoint to bypass a limit.
+
+Each source is divided into at most forty literal contiguous passages, each 15–420 characters. Long lines are split at word boundaries where possible; whitespace, spelling, punctuation and Unicode are copied from the original rather than normalized. Instruction-like spans are omitted. Passage selection establishes citation presence, not semantic support: a model can still attach a real passage to a wrong interpretation. Human claim review remains required.
+
+Import shows any omitted-proposal diagnostics. Inspect gaps rather than treating a partial dossier as complete. The pilot metrics track omitted proposals separately; supported-claim percentages do not include these omissions or measure recall. A zero-claim result can document an information gap, but it is not a successful business assessment.
 
 ## Ten-target evaluation
 
