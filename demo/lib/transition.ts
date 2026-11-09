@@ -1,3 +1,5 @@
+import {continuity} from './continuity.ts';
+import type {Communication,DocumentMonitor} from './continuity.ts';
 import { id, today, money, type Workspace, type Company } from './domain.ts';
 import { calculateModel, hundredDayPlan, latestFinancial, latestReports, type Holding, type ExecutionTask, type OperatingReport, type Scenario, type ModelInputs } from './operating.ts';
 import { executionItem } from './execution.ts';
@@ -23,6 +25,7 @@ export type TransitionFinding = {
     }[];
 };
 export type TransitionRecord = {
+    communications?:Communication[];documentMonitors?:DocumentMonitor[];
     version: 1;
     capturedAt: string;
     capturedBy: string;
@@ -91,6 +94,7 @@ export type OperatingMetrics = {
     workingCapital: number | null;
 };
 export type OperatingReportDetails = {
+    accountingBasis?:'Accrual'|'Cash'|'Unspecified';accountingImportId?:string;
     fullMonth: boolean;
     operations: OperatingMetrics;
     changeReason: string;
@@ -101,7 +105,7 @@ export type OperatingReportDetails = {
     owner: string;
     due: string;
 };
-export type OperatingReportInput = Pick<OperatingReport, 'period' | 'revenue' | 'ebitda' | 'cash' | 'budgetRevenue' | 'budgetEbitda' | 'source' | 'notes'> & Pick<OperatingReportDetails, 'fullMonth' | 'operations' | 'changeReason' | 'nextAction' | 'owner' | 'due'>;
+export type OperatingReportInput = Pick<OperatingReport, 'period' | 'revenue' | 'ebitda' | 'cash' | 'budgetRevenue' | 'budgetEbitda' | 'source' | 'notes'> & Pick<OperatingReportDetails, 'fullMonth' | 'operations' | 'changeReason' | 'nextAction' | 'owner' | 'due'> & Pick<OperatingReportDetails,'accountingBasis'|'accountingImportId'>;
 export const emptyOperatingMetrics = (): OperatingMetrics => ({ customerCohort: null, retainedCustomers: null, employeesAtClose: null, headcount: null, capex: null, workingCapital: null });
 export function dateValid(s: string) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(s))
@@ -171,7 +175,7 @@ export function captureTransition(w: Workspace, h: Holding, modelId?: string, le
         if (m)
             ownerContext.push({ topic: key, text: m[key]!, source: m.source, date: m.date });
     }
-    const transition: TransitionRecord = { version: 1, capturedAt: new Date().toISOString(), capturedBy: w.firm.operator, legacy, model: model ? structuredClone(model) : undefined, modelEvidenceState: !model ? 'No model recorded' : legacy ? 'Legacy snapshot' : (model.underwritingV2?.evidenceFingerprint||model.audit?.evidenceFingerprint) === modelEvidenceFingerprint(c) ? 'Current when captured' : 'Earlier evidence when captured', findings: structuredClone(findings), reportedFinancials: legacy ? [] : ['revenue', 'ebitda'].map(metric => { const f = latestFinancial(c, metric); return { metric, value: f.value, period: f.period, sources: f.sources.map(s => ({ label: s.source, excerpt: s.excerpt })) }; }), brief: b ? { id: b.id, version: b.version, approved: b.approved, body: b.body } : undefined, ownerContext };
+    const transition: TransitionRecord = { communications:legacy?[]:structuredClone(continuity(w).communications.filter(m=>m.companyId===h.companyId&&(!m.dealId||m.dealId===h.dealId))),documentMonitors:legacy?[]:structuredClone(continuity(w).monitors.filter(m=>m.companyId===h.companyId&&(!m.dealId||m.dealId===h.dealId))),version: 1, capturedAt: new Date().toISOString(), capturedBy: w.firm.operator, legacy, model: model ? structuredClone(model) : undefined, modelEvidenceState: !model ? 'No model recorded' : legacy ? 'Legacy snapshot' : (model.underwritingV2?.evidenceFingerprint||model.audit?.evidenceFingerprint) === modelEvidenceFingerprint(c) ? 'Current when captured' : 'Earlier evidence when captured', findings: structuredClone(findings), reportedFinancials: legacy ? [] : ['revenue', 'ebitda'].map(metric => { const f = latestFinancial(c, metric); return { metric, value: f.value, period: f.period, sources: f.sources.map(s => ({ label: s.source, excerpt: s.excerpt })) }; }), brief: b ? { id: b.id, version: b.version, approved: b.approved, body: b.body } : undefined, ownerContext };
     const plan = [...decoratePlan(h.plan, w.firm.operator), ...findings.filter(f => f.unresolved).map(f => projectFromFinding(h, f, w.firm.operator))];
     for (const t of plan)
         if (!projectContext(t).history.length) {
@@ -258,6 +262,7 @@ export function saveOperatingReport(w: Workspace, holdingId: string, input: Oper
         throw Error('Explain the report or revision in at least 20 characters.');
     if (!input.nextAction.trim() || !input.owner.trim() || !dateValid(input.due))
         throw Error('Record a responsible owner, next action, and follow-up deadline.');
+    if (input.accountingBasis && !['Accrual','Cash','Unspecified'].includes(input.accountingBasis)) throw Error('Choose a valid accounting basis.');
     const previous = latestReports(h.reports).find(r => r.period === input.period), r: OperatingReport = { ...structuredClone(input), id: id(), metric: previous?.metric || '', metricValue: previous?.metricValue || '', createdAt: new Date().toISOString(), recordedBy: w.firm.operator, revisionOf: previous?.id, revision: (previous?.revision || (previous ? 1 : 0)) + 1 };
     return put(w, { ...h, reports: [r, ...h.reports] });
 }
@@ -318,7 +323,7 @@ export function createOperatingExample(w: Workspace): Workspace {
     for (let i = 0; i < 2; i++) {
         const d = new Date(closedOn + 'T12:00:00Z');
         d.setUTCMonth(d.getUTCMonth() + i);
-        const report: OperatingReportInput = { period: d.toISOString().slice(0, 7), revenue: i ? 280000 : 265000, ebitda: i ? 56000 : 51000, cash: i ? 120000 : 100000, budgetRevenue: 275000, budgetEbitda: 55000, source: 'FICTIONAL management accounts and customer / staff schedules', notes: i ? 'One customer left the original cohort; revenue recovered. Review retention and the open technician role.' : 'Transition costs reduced earnings. Confirm renewal ownership and establish a monthly close routine.', fullMonth: true, operations: { customerCohort: 50, retainedCustomers: i ? 47 : 48, employeesAtClose: 12, headcount: i ? 11 : 12, capex: i ? 4000 : 3000, workingCapital: i ? 2000 : 1500 }, changeReason: 'Illustrative monthly results to demonstrate operating performance against the acquisition case.', owner: w.firm.operator, nextAction: 'Review customer renewals and the staffing gap at the next operating meeting.', due: operatingDate(today(), 7) };
+        const report: OperatingReportInput = { accountingBasis:'Accrual',period: d.toISOString().slice(0, 7), revenue: i ? 280000 : 265000, ebitda: i ? 56000 : 51000, cash: i ? 120000 : 100000, budgetRevenue: 275000, budgetEbitda: 55000, source: 'FICTIONAL management accounts and customer / staff schedules', notes: i ? 'One customer left the original cohort; revenue recovered. Review retention and the open technician role.' : 'Transition costs reduced earnings. Confirm renewal ownership and establish a monthly close routine.', fullMonth: true, operations: { customerCohort: 50, retainedCustomers: i ? 47 : 48, employeesAtClose: 12, headcount: i ? 11 : 12, capex: i ? 4000 : 3000, workingCapital: i ? 2000 : 1500 }, changeReason: 'Illustrative monthly results to demonstrate operating performance against the acquisition case.', owner: w.firm.operator, nextAction: 'Review customer renewals and the staffing gap at the next operating meeting.', due: operatingDate(today(), 7) };
         result = saveOperatingReport(result, h.id, report);
     }
     return result;

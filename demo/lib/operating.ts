@@ -1,3 +1,7 @@
+import type {ContinuityData} from './continuity.ts';
+import {monitorCloseBlockers} from './continuity.ts';
+import type {AccountingData} from './accounting.ts';
+import type {PortfolioPack} from './portfolioReporting.ts';
 import type {UWRecord} from './underwriting.ts';
 import type {ResearchFlow} from './researchFlow.ts';
 import {preparationPolicyVersion,configuredTemplate,responsibleFor,type WorkspaceExperience} from './experience.ts';
@@ -162,6 +166,7 @@ export type Investor = {
 export type ResearchQuestion = {id:string;companyId:string;topic:string;question:string;owner:string;due:string;status:'Open'|'Answered'|'Deferred';answer:string;source:string;workItemId?:string;createdAt:string;updatedAt:string};
 export type ResearchNote={id:string;companyId:string;body:string;evidenceIds:string[];date:string;author:string};
 export type OperatingData = {
+    continuity?:ContinuityData;accounting?:AccountingData;portfolioPacks?:PortfolioPack[];
     researchFlows?:ResearchFlow[];
     experience?:WorkspaceExperience;
  ownerPromises?:OwnerPromise[];researchQuestions?:ResearchQuestion[];researchNotes?:ResearchNote[];
@@ -265,7 +270,7 @@ export function hundredDayPlan(owner: string, start = today()): ExecutionTask[] 
 export function closeToHolding(w: Workspace, dealId: string, closedOn: string, modelId?:string): Workspace { const o = ops(w), deal = w.deals.find(d => d.id === dealId), plan = o.execution.find(p => p.dealId === dealId); if (!deal || !plan)
     throw Error('Set up the execution plan first.'); if (o.holdings.some(h => h.dealId === dealId))
     throw Error('This deal is already in the portfolio.'); if (plan.tasks.some(t => t.critical && t.status !== 'Done'))
-    throw Error('Complete all critical closing workstreams first.'); if (plan.workspaceVersion && executionCloseBlockers(plan,w.companies.find(c=>c.id===deal.companyId)!).length)
+    throw Error('Complete all critical closing workstreams first.'); if (monitorCloseBlockers(w,deal.companyId,dealId).length) throw Error('Resolve critical document monitoring exceptions before recording the close.'); if (plan.workspaceVersion && executionCloseBlockers(plan,w.companies.find(c=>c.id===deal.companyId)!).length)
     throw Error('Resolve critical execution evidence and approval blockers before recording the close.'); if (deal.stage === 'Passed')
     throw Error('A passed opportunity cannot be recorded as closed.'); if (!dateValid(closedOn) || closedOn > today())
     throw Error('Use the actual close date, today or earlier.'); const model = o.models.find(m => m.companyId === deal.companyId); const holding: Holding = { id: id(), companyId: deal.companyId, dealId, closedOn, investmentCase: deal.memo, modelSnapshot: model ? JSON.stringify({inputs:model.inputs,audit:model.audit,underwritingV2:model.underwritingV2}, null, 2) : 'No underwriting scenario recorded.', sample: w.companies.find(c => c.id === deal.companyId)?.sample || false, plan: hundredDayPlan(w.firm.operator, closedOn), reports: [] }; return { ...w, deals: w.deals.map(d => d.id === dealId ? { ...d, stage: 'Closed' } : d), operating: { ...o, holdings: [captureTransition(w,holding,modelId), ...o.holdings] } }; }
