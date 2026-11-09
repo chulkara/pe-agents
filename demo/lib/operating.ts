@@ -1,3 +1,4 @@
+import type {OutreachAgentData} from './outreachAgent.ts';
 import {hasOutreachPlaceholders} from './outreachTemplates.ts';
 import type {ContinuityData} from './continuity.ts';
 import {monitorCloseBlockers} from './continuity.ts';
@@ -170,6 +171,7 @@ export type ResearchQuestion = {id:string;companyId:string;topic:string;question
 export type ResearchNote={id:string;companyId:string;body:string;evidenceIds:string[];date:string;author:string};
 export type OperatingData = {
     agents?:AgentData;
+    outreachAgent?:OutreachAgentData;
     continuity?:ContinuityData;accounting?:AccountingData;portfolioPacks?:PortfolioPack[];
     researchFlows?:ResearchFlow[];
     experience?:WorkspaceExperience;

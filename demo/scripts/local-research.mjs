@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import {readPacket,runLocalResearch,localModel,localSafetyPolicy} from './local-agent-runner.mjs';
+import {readPacket,runLocalResearch,runLocalOutreach,localModel,localSafetyPolicy,localRunnerVersion} from './local-agent-runner.mjs';
 import {localModels} from '../lib/agentProtocol.ts';
 import {mkdir,readFile,writeFile,rename} from 'node:fs/promises';
 import {homedir} from 'node:os';
 import {join} from 'node:path';
 const args=process.argv.slice(2),command=args.shift();
-if(localSafetyPolicy!=='local-only-required-v2')throw Error('Worker safety versions do not match. Update both local worker scripts before continuing.');
-const help=`Kalling local research — no paid API or cloud fallback\n\nPrerequisites: Node 22.13+ and Ollama in local-only mode.\n  node --experimental-strip-types scripts/local-research.mjs configure-local-only\n  node --experimental-strip-types scripts/local-research.mjs doctor\n  node --experimental-strip-types scripts/local-research.mjs run /path/assignment.json\n  node --experimental-strip-types scripts/local-research.mjs run /path/assignment.json --model qwen3:8b\n\nCtrl+C pauses the assignment. Run the same command to resume saved steps.\nImport the resulting result.json through Company → Research → Local research.\nSee docs/local-research-pilot.md for setup, source limits and evaluation.`;
+if(localSafetyPolicy!=='local-only-required-v2'||localRunnerVersion!=='local-playbooks-v2')throw Error('Worker safety versions do not match. Update both local worker scripts before continuing.');
+const help=`Kalling local research and outreach — no paid API or cloud fallback\n\nPrerequisites: Node 22.13+ and Ollama in local-only mode.\n  node --experimental-strip-types scripts/local-research.mjs configure-local-only\n  node --experimental-strip-types scripts/local-research.mjs doctor\n  node --experimental-strip-types scripts/local-research.mjs run /path/assignment.json\n  node --experimental-strip-types scripts/local-research.mjs run /path/assignment.json --model qwen3:8b\n\nCtrl+C pauses the assignment. Run the same command to resume saved steps.\nImport the resulting result.json through Company → Research → Local research, or Outreach → Local Qwen drafting.\nSee docs/local-research-pilot.md for setup, source limits and evaluation.`;
 if(!command||command==='help'||command==='--help'){console.log(help);process.exit(0);}
 const controller=new AbortController();process.once('SIGINT',()=>{controller.abort();console.log('\nStopping after the current checkpoint…');});process.once('SIGTERM',()=>controller.abort());
 try{
@@ -24,7 +24,7 @@ try{
   }else if(command==='run'){
     const file=args.shift();if(!file)throw Error('Supply the exported assignment JSON path.');let model='qwen3:4b';
     if(args.length){if(args.length!==2||args[0]!=='--model'||!localModels.includes(args[1]))throw Error('Only --model qwen3:4b or --model qwen3:8b is supported.');model=args[1];}
-    const packet=await readPacket(file),out=await runLocalResearch(packet,{model,signal:controller.signal,onProgress:p=>console.log(p.step?`${p.step} · ${p.status}`:p.status)});
+    const packet=await readPacket(file),run=packet.playbook==='local-outreach-v1'?runLocalOutreach:runLocalResearch,out=await run(packet,{model,signal:controller.signal,onProgress:p=>console.log(p.step?`${p.step} · ${p.status}`:p.status)});
     console.log('Import this result into Kalling:\n'+out.path);console.log('Model API charge: $0. Hardware, electricity and internet are excluded.');
   }else throw Error('Unknown command.\n'+help);
 }catch(e){console.error(e.message||e);process.exitCode=controller.signal.aborted?130:1;}

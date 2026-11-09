@@ -5,7 +5,7 @@ import {hydrate,ops} from '../lib/operating.ts';
 import {publicWebsite,sameBusinessSite,pageLinks,capturePage,fetchWebsitePage,companyFlow,startResearch,saveResearchPage,pauseResearch,manualResearch,acceptResearch,preparedFacts,prepareSourcedCall,reviewSourcedCall,prepareSourcedOutreach,reviseSourcedOutreach,approveSourcedOutreach,approvedCopy,packetIsCurrent,flowStatus} from '../lib/researchFlow.ts';
 const url='https://company.co/';
 const excerpt='Our family-owned locksmith company serves commercial customers throughout New Jersey. Our experienced technicians install access control systems and repair commercial door hardware. We serve residential customers and institutional clients from our Jersey City showroom.';
-function setup(){const w=hydrate(sample());w.companies=[{...w.companies[0],id:'real',name:'Test Locksmith',website:url,sample:false,evidence:[],documents:[],conversations:[],drafts:[],owner:'',email:''}];return w;}
+function setup(){const w=hydrate(sample());w.firm={...w.firm,name:'Harbor Acquisition Partners',operator:'Alex Morgan'};w.companies=[{...w.companies[0],id:'real',name:'Test Locksmith',website:url,sample:false,evidence:[],documents:[],conversations:[],drafts:[],owner:'',email:''}];return w;}
 const c=w=>w.companies[0];
 function checked(){let w=manualResearch(setup(),c(setup()),{url,title:'Company services',excerpt});const r=companyFlow(w,c(w)).runs[0];return acceptResearch(w,c(w),r.id,r.candidates.map(x=>x.id),true,'Reviewer');}
 function briefed(){let w=checked();w=prepareSourcedCall(w,c(w),'Operator');return reviewSourcedCall(w,c(w),companyFlow(w,c(w)).briefs[0].id,'Reviewer',true);}

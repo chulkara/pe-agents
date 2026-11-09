@@ -62,3 +62,13 @@ npm run preview
 GitHub repository: `chulkara/pe-agents`, app source under `demo/`. The root `.github/workflows/pages.yml` tests, builds, and publishes `demo/dist/` to GitHub Pages. Relative asset paths support `/pe-agents/`. No new Pages hosting service is required.
 
 The automated suite covers financial mechanics, evidence revisions, stale preparation, ownership context, research URL boundaries and reader failures, source review, recipient review, immutable drafts, exact approved copies, firm isolation, storage, queues, and closing/operating handoffs. Browser QA also exercises a live public company website in the local demo without transmitting outreach.
+
+## Local Qwen outreach
+
+Outreach now has a model-backed writing playbook using the same guarded local
+worker as research. Confirm a real buyer profile, select reviewed company facts,
+export/run/import the assignment and review the resulting prose and references.
+The former fixed-template form has been removed. See
+[local outreach setup, worker updates and review](docs/local-outreach-pilot.md).
+No model API charges or automatic sending are introduced. Automated tests use
+simulated responses; actual Qwen writing quality still requires review on the Mac.
