@@ -1,3 +1,4 @@
+import type {UWRecord} from './underwriting.ts';
 import type {ResearchFlow} from './researchFlow.ts';
 import {preparationPolicyVersion,configuredTemplate,responsibleFor,type WorkspaceExperience} from './experience.ts';
 import {captureTransition,operatingUpdateText,dateValid} from './transition.ts';
@@ -92,6 +93,7 @@ export type ModelInputs = {
     ebitdaBasis: string;
 };
 export type Scenario = {
+    underwritingV2?:UWRecord;
     audit?:ModelAudit;
     id: string;
     companyId: string;
@@ -266,7 +268,7 @@ export function closeToHolding(w: Workspace, dealId: string, closedOn: string, m
     throw Error('Complete all critical closing workstreams first.'); if (plan.workspaceVersion && executionCloseBlockers(plan,w.companies.find(c=>c.id===deal.companyId)!).length)
     throw Error('Resolve critical execution evidence and approval blockers before recording the close.'); if (deal.stage === 'Passed')
     throw Error('A passed opportunity cannot be recorded as closed.'); if (!dateValid(closedOn) || closedOn > today())
-    throw Error('Use the actual close date, today or earlier.'); const model = o.models.find(m => m.companyId === deal.companyId); const holding: Holding = { id: id(), companyId: deal.companyId, dealId, closedOn, investmentCase: deal.memo, modelSnapshot: model ? JSON.stringify({inputs:model.inputs,audit:model.audit}, null, 2) : 'No underwriting scenario recorded.', sample: w.companies.find(c => c.id === deal.companyId)?.sample || false, plan: hundredDayPlan(w.firm.operator, closedOn), reports: [] }; return { ...w, deals: w.deals.map(d => d.id === dealId ? { ...d, stage: 'Closed' } : d), operating: { ...o, holdings: [captureTransition(w,holding,modelId), ...o.holdings] } }; }
+    throw Error('Use the actual close date, today or earlier.'); const model = o.models.find(m => m.companyId === deal.companyId); const holding: Holding = { id: id(), companyId: deal.companyId, dealId, closedOn, investmentCase: deal.memo, modelSnapshot: model ? JSON.stringify({inputs:model.inputs,audit:model.audit,underwritingV2:model.underwritingV2}, null, 2) : 'No underwriting scenario recorded.', sample: w.companies.find(c => c.id === deal.companyId)?.sample || false, plan: hundredDayPlan(w.firm.operator, closedOn), reports: [] }; return { ...w, deals: w.deals.map(d => d.id === dealId ? { ...d, stage: 'Closed' } : d), operating: { ...o, holdings: [captureTransition(w,holding,modelId), ...o.holdings] } }; }
 export function latestReports(reports: OperatingReport[]) { const seen = new Set<string>(); return [...reports].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).filter(r => { if (seen.has(r.period))
     return false; seen.add(r.period); return true; }).sort((a, b) => b.period.localeCompare(a.period)); }
 export function reportNarrative(c:Company,h:Holding){return operatingUpdateText(c,h);}

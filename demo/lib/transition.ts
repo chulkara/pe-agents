@@ -1,7 +1,7 @@
 import { id, today, money, type Workspace, type Company } from './domain.ts';
 import { calculateModel, hundredDayPlan, latestFinancial, latestReports, type Holding, type ExecutionTask, type OperatingReport, type Scenario, type ModelInputs } from './operating.ts';
 import { executionItem } from './execution.ts';
-import { modelEvidenceFingerprint } from './modelEvidence.ts';
+import { modelEvidenceFingerprint,scenarioResult } from './modelEvidence.ts';
 export const operatingWorkstreams = ['Customer retention', 'Staffing', 'Financial reporting', 'Improvement projects', 'Investment case'] as const;
 export type OperatingWorkstream = typeof operatingWorkstreams[number];
 export type TransitionFinding = {
@@ -119,10 +119,11 @@ function parseSavedModel(h: Holding): Scenario | undefined {
     try {
         const data = JSON.parse(h.modelSnapshot);
         const inputs = data.inputs || data;
-        if (!inputs?.ebitda || !inputs?.price)
+        if (!data.underwritingV2 && (!inputs?.ebitda || !inputs?.price))
             return undefined;
-        calculateModel(inputs);
-        return { id: 'legacy-close-model', companyId: h.companyId, version: 0, createdAt: h.closedOn, sourceVersion: 'Legacy close snapshot', inputs: structuredClone(inputs), audit: data.audit ? structuredClone(data.audit) : undefined };
+        if (!data.underwritingV2) calculateModel(inputs);
+        else if (data.underwritingV2.engineVersion !== 'annual-underwriting-v2' || !data.underwritingV2.results?.[data.underwritingV2.activeCase]) return undefined;
+        return { id: 'legacy-close-model', companyId: h.companyId, version: 0, createdAt: h.closedOn, sourceVersion: 'Legacy close snapshot', inputs: structuredClone(inputs), audit: data.audit ? structuredClone(data.audit) : undefined,underwritingV2:data.underwritingV2?structuredClone(data.underwritingV2):undefined };
     }
     catch {
         return undefined;
@@ -170,14 +171,14 @@ export function captureTransition(w: Workspace, h: Holding, modelId?: string, le
         if (m)
             ownerContext.push({ topic: key, text: m[key]!, source: m.source, date: m.date });
     }
-    const transition: TransitionRecord = { version: 1, capturedAt: new Date().toISOString(), capturedBy: w.firm.operator, legacy, model: model ? structuredClone(model) : undefined, modelEvidenceState: !model ? 'No model recorded' : legacy ? 'Legacy snapshot' : model.audit?.evidenceFingerprint === modelEvidenceFingerprint(c) ? 'Current when captured' : 'Earlier evidence when captured', findings: structuredClone(findings), reportedFinancials: legacy ? [] : ['revenue', 'ebitda'].map(metric => { const f = latestFinancial(c, metric); return { metric, value: f.value, period: f.period, sources: f.sources.map(s => ({ label: s.source, excerpt: s.excerpt })) }; }), brief: b ? { id: b.id, version: b.version, approved: b.approved, body: b.body } : undefined, ownerContext };
+    const transition: TransitionRecord = { version: 1, capturedAt: new Date().toISOString(), capturedBy: w.firm.operator, legacy, model: model ? structuredClone(model) : undefined, modelEvidenceState: !model ? 'No model recorded' : legacy ? 'Legacy snapshot' : (model.underwritingV2?.evidenceFingerprint||model.audit?.evidenceFingerprint) === modelEvidenceFingerprint(c) ? 'Current when captured' : 'Earlier evidence when captured', findings: structuredClone(findings), reportedFinancials: legacy ? [] : ['revenue', 'ebitda'].map(metric => { const f = latestFinancial(c, metric); return { metric, value: f.value, period: f.period, sources: f.sources.map(s => ({ label: s.source, excerpt: s.excerpt })) }; }), brief: b ? { id: b.id, version: b.version, approved: b.approved, body: b.body } : undefined, ownerContext };
     const plan = [...decoratePlan(h.plan, w.firm.operator), ...findings.filter(f => f.unresolved).map(f => projectFromFinding(h, f, w.firm.operator))];
     for (const t of plan)
         if (!projectContext(t).history.length) {
             const context = projectContext(t);
             t.operating = { ...context, history: [{ id: id(), date: transition.capturedAt, by: w.firm.operator, reason: legacy ? 'Prepared from the stored close record; historical diligence context was not reconstructed.' : 'Prepared at close. This is a proposed priority until the operating team agrees it.', after: projectSnapshot(t) }] };
         }
-    return { ...h, transition, modelSnapshot: legacy ? h.modelSnapshot : model ? JSON.stringify({ inputs: model.inputs, audit: model.audit }, null, 2) : 'No underwriting scenario recorded.', plan };
+    return { ...h, transition, modelSnapshot: legacy ? h.modelSnapshot : model ? JSON.stringify({ inputs: model.inputs, audit: model.audit,underwritingV2:model.underwritingV2 }, null, 2) : 'No underwriting scenario recorded.', plan };
 }
 function holding(w: Workspace, holdingId: string) {
     const o = w.operating, h = o?.holdings.find(h => h.id === holdingId);
@@ -266,7 +267,7 @@ export function baselineResult(h: Holding) {
     if (!m)
         return undefined;
     try {
-        return m.audit?.result || calculateModel(m.inputs);
+        return scenarioResult(m);
     }
     catch {
         return undefined;
@@ -286,14 +287,14 @@ export function reportCaseComparison(h: Holding, r: OperatingReport, asOf = toda
     const row = !reason ? result!.rows.find(row => first >= anniversary(h.closedOn, row.year - 1) && last < anniversary(h.closedOn, row.year)) : undefined;
     if (!reason && !row)
         reason = 'The month spans an acquisition-year boundary or is outside the saved model horizon.';
-    return { eligible: !!row, reason, year: row?.year || null, ebitda: row ? row.ebitda / 12 : null, capex: row ? model!.inputs.capex / 12 : null, workingCapital: row ? model!.inputs.annualWC / 12 : null, variance: row ? r.ebitda - row.ebitda / 12 : null };
+    return { eligible: !!row, reason, year: row?.year || null, ebitda: row ? row.ebitda / 12 : null, capex: row ? (model!.underwritingV2?.results[model!.underwritingV2.activeCase].rows.find(y=>y.year===row.year)?.capex??model!.inputs.capex) / 12 : null, workingCapital: row ? (model!.underwritingV2?.results[model!.underwritingV2.activeCase].rows.find(y=>y.year===row.year)?.deltaNwc??model!.inputs.annualWC) / 12 : null, variance: row ? r.ebitda - row.ebitda / 12 : null };
 }
 export function operatingPerformance(h: Holding, asOf = today()) {
     const reports = latestReports(h.reports), rows = reports.map(report => ({ report, ...reportCaseComparison(h, report, asOf) })), included = rows.filter(r => r.eligible), actual = included.reduce((s, r) => s + r.report.ebitda, 0), expected = included.reduce((s, r) => s + r.ebitda!, 0), latest = reports[0], m = latest?.operations, retention = m?.customerCohort && m.retainedCustomers !== null ? m.retainedCustomers / m.customerCohort * 100 : null;
     const cohorts = [...new Set(reports.map(r => r.operations?.customerCohort).filter(v => v !== undefined && v !== null))];
     return { reports, rows, included, actual: included.length ? actual : null, expected: included.length ? expected : null, variance: included.length ? actual - expected : null, variancePercent: included.length && expected !== 0 ? (actual - expected) / Math.abs(expected) * 100 : null, retention, cohortChanged: cohorts.length > 1, staffBaselineChanged: new Set(reports.map(r => r.operations?.employeesAtClose).filter(v => v !== undefined && v !== null)).size > 1, staffChange: m && m.headcount !== null && m.employeesAtClose !== null ? m.headcount - m.employeesAtClose : null, open: h.plan.filter(t => t.status !== 'Done'), overdue: h.plan.filter(t => t.status !== 'Done' && t.due < asOf), proposed: h.plan.filter(t => projectContext(t).agreement === 'Proposed') };
 }
-export function operatingUpdateText(c: Company, h: Holding) { const p = operatingPerformance(h), r = p.reports[0], m = h.transition?.model, fmt = (v: number | null | undefined) => v === null || v === undefined ? 'Unknown' : money(v); return `OPERATING UPDATE — ${c.name}${h.sample ? ' (FICTIONAL SAMPLE)' : ''}\nActual close: ${h.closedOn} · Day ${dayOfOwnership(h)}\nOriginal acquisition case: ${m ? m.inputs.name + ' · v' + m.version : 'No captured model'}\n${p.included.length} complete comparable months\nEBITDA actual ${fmt(p.actual)} · acquisition-case monthly guide ${fmt(p.expected)} · variance ${fmt(p.variance)}\nMethod: saved annual acquisition-year EBITDA divided by 12; even monthly allocation, no seasonality. Excludes partial, unconfirmed, unfinished, and acquisition-year boundary months. Revenue and cash balance have no acquisition-case forecast in this model.\n\nLATEST OPERATING REPORT\n${r ? `${r.period} · revision ${r.revision || 1}\nRevenue ${money(r.revenue)} · management budget ${fmt(r.budgetRevenue)}\nEBITDA ${money(r.ebitda)} · management budget ${fmt(r.budgetEbitda)}\nCash balance ${money(r.cash)}\nCustomer retention ${p.retention === null ? 'Unknown' : p.retention.toFixed(1) + '%'} · staff change ${p.staffChange ?? 'Unknown'}\nSource: ${r.source}\nNotes: ${r.notes}\nNext: ${r.nextAction || 'Not recorded'} · ${r.owner || 'Unassigned'} · ${r.due || 'Unscheduled'}` : 'No operating results recorded.'}\n\nFIRST 100 DAYS\n${h.plan.map(t => `${t.status} · ${t.title}\n${projectContext(t).agreement} · ${t.owner} · ${t.due}\nNext: ${t.nextAction || 'Not recorded'}\nOutcome: ${projectContext(t).outcome}\nMeasure: ${projectContext(t).measure}\nEvidence: ${t.evidence || 'Not recorded'}`).join('\n\n')}\n\nCARRIED FINDINGS\n${h.transition?.findings.map(f => `${f.origin} · ${f.title}\nStatus at handoff: ${f.status}\n${f.detail}\nSource: ${f.source}\n${f.references.map(r => r.label + '\n' + r.excerpt).join('\n')}`).join('\n\n') || 'No historical findings captured.'}\n\nPrepared from manually recorded sources. Original acquisition assumptions remain unchanged; current reports are not independently verified.`; }
+export function operatingUpdateText(c: Company, h: Holding) { const p = operatingPerformance(h), r = p.reports[0], m = h.transition?.model, fmt = (v: number | null | undefined) => v === null || v === undefined ? 'Unknown' : money(v); return `OPERATING UPDATE — ${c.name}${h.sample ? ' (FICTIONAL SAMPLE)' : ''}\nActual close: ${h.closedOn} · Day ${dayOfOwnership(h)}\nOriginal acquisition case: ${m ? m.inputs.name + ' · v' + m.version : 'No captured model'}\n${p.included.length} complete comparable months\nEBITDA actual ${fmt(p.actual)} · acquisition-case monthly guide ${fmt(p.expected)} · variance ${fmt(p.variance)}\nMethod: saved annual acquisition-year EBITDA divided by 12; even monthly allocation, no seasonality. Excludes partial, unconfirmed, unfinished, and acquisition-year boundary months. ${m?.underwritingV2 ? 'Revenue and operating cash assumptions are retained in the saved annual underwriting case; this operating comparison currently uses EBITDA.' : 'Revenue and cash balance have no acquisition-case forecast in this model.'}\n\nLATEST OPERATING REPORT\n${r ? `${r.period} · revision ${r.revision || 1}\nRevenue ${money(r.revenue)} · management budget ${fmt(r.budgetRevenue)}\nEBITDA ${money(r.ebitda)} · management budget ${fmt(r.budgetEbitda)}\nCash balance ${money(r.cash)}\nCustomer retention ${p.retention === null ? 'Unknown' : p.retention.toFixed(1) + '%'} · staff change ${p.staffChange ?? 'Unknown'}\nSource: ${r.source}\nNotes: ${r.notes}\nNext: ${r.nextAction || 'Not recorded'} · ${r.owner || 'Unassigned'} · ${r.due || 'Unscheduled'}` : 'No operating results recorded.'}\n\nFIRST 100 DAYS\n${h.plan.map(t => `${t.status} · ${t.title}\n${projectContext(t).agreement} · ${t.owner} · ${t.due}\nNext: ${t.nextAction || 'Not recorded'}\nOutcome: ${projectContext(t).outcome}\nMeasure: ${projectContext(t).measure}\nEvidence: ${t.evidence || 'Not recorded'}`).join('\n\n')}\n\nCARRIED FINDINGS\n${h.transition?.findings.map(f => `${f.origin} · ${f.title}\nStatus at handoff: ${f.status}\n${f.detail}\nSource: ${f.source}\n${f.references.map(r => r.label + '\n' + r.excerpt).join('\n')}`).join('\n\n') || 'No historical findings captured.'}\n\nPrepared from manually recorded sources. Original acquisition assumptions remain unchanged; current reports are not independently verified.`; }
 export function createOperatingExample(w: Workspace): Workspace {
     const o = w.operating, c = w.companies.find(c => c.sample && c.documents.length) || w.companies.find(c => c.sample);
     if (!o || !c)

@@ -30,8 +30,8 @@ Retrieval and conservative statement extraction are connected. Call preparation 
 
 - **Evidence library:** services, customers, ownership, locations, team, competitors; checked excerpts, assumptions, disputes, revisions, analyst notes, and assigned research questions. Strategic fit, evidence completeness, and owner readiness remain separate.
 - **Owner memory:** timing, employee concerns, legacy, desired involvement, promises, conversation history, and next actions.
-- **Documents and investment briefs:** PDF/text ingestion, labeled financial observations, trends, concentration, discrepancies, information requests, source snapshots, and human review. OCR and earnings normalization are not implemented.
-- **Underwriting:** evidence vs. assumptions, purchase price, financing, fees, working capital, operating projections, returns, sensitivities, and scenario revisions. Calculations are simplified and labeled.
+- **Documents and investment briefs:** PDF/text ingestion, labeled financial observations, trends, concentration, discrepancies, information requests, source snapshots, and human review. OCR is not implemented; earnings adjustments require explicit analyst selection in Underwriting.
+- **Underwriting v2:** source reconciliation and signed EBITDA adjustments; annual operating forecasts; multi-tranche acquisition debt, PIK, revolvers, sweeps, rollover, and funding shortfalls; DCF and sensitivity; reverse price ceilings; Base/Downside/Severe comparisons; immutable versions/reviews; and editable Excel export. The selected saved case carries into the operating baseline. See [calculation conventions, references, and limits](docs/underwriting-v2.md).
 - **Execution:** diligence requests, responsibilities, deadlines, dependencies, approvals, and a human-confirmed close.
 - **Portfolio:** first-100-days plans, sourced actuals, investment-case snapshots, variance reporting, and report revisions.
 - **Work queue:** assigned requests and deadlines. Research/call/outreach requests route into the single sourced company workflow instead of offering a second approval path. Earlier output snapshots remain readable.
