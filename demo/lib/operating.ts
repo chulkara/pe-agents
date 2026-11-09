@@ -4,6 +4,7 @@ import type {AccountingData} from './accounting.ts';
 import type {PortfolioPack} from './portfolioReporting.ts';
 import type {UWRecord} from './underwriting.ts';
 import type {ResearchFlow} from './researchFlow.ts';
+import type {AgentData} from './researchAgent.ts';
 import {preparationPolicyVersion,configuredTemplate,responsibleFor,type WorkspaceExperience} from './experience.ts';
 import {captureTransition,operatingUpdateText,dateValid} from './transition.ts';
 import type {TransitionRecord,OperatingProjectContext,OperatingReportDetails} from './transition.ts';
@@ -15,6 +16,7 @@ import { relationshipCallText, relationshipPlan, ownerReadinessEntry, ownerConte
 import { id, today, nextDate, number, money, screen, brief, draft, type Workspace, type Company, type Firm, type Evidence } from './domain.ts';
 export type WorkKind = 'Research dossier' | 'Owner call brief' | 'Outreach draft' | 'Investment brief' | 'Follow-up';
 export type WorkItem = {
+    agentRunId?:string;
     briefId?:string;briefRequestKey?:string;
     id: string;
     companyId: string;
@@ -166,6 +168,7 @@ export type Investor = {
 export type ResearchQuestion = {id:string;companyId:string;topic:string;question:string;owner:string;due:string;status:'Open'|'Answered'|'Deferred';answer:string;source:string;workItemId?:string;createdAt:string;updatedAt:string};
 export type ResearchNote={id:string;companyId:string;body:string;evidenceIds:string[];date:string;author:string};
 export type OperatingData = {
+    agents?:AgentData;
     continuity?:ContinuityData;accounting?:AccountingData;portfolioPacks?:PortfolioPack[];
     researchFlows?:ResearchFlow[];
     experience?:WorkspaceExperience;

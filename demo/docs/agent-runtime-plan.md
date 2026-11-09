@@ -1,6 +1,6 @@
 # Kalling agent runtime plan
 
-Status: implementation design. Model-backed agents are not activated by this document or the associated legacy-code cleanup. The current application has deterministic workflow tools, browser website capture, source/version review, financial calculations, and a database-only record-audit job. It has no model API connection or unattended acquisition-research worker.
+Status: broader hosted-runtime implementation design. The subsequent [local research pilot](local-research-pilot.md) now implements bounded local Ollama execution, checkpoints, source-versioned exports and human-reviewed imports. It requires installation/run on the user's computer; actual model quality and the ten human-reviewed targets remain pending. The hosted model adapter and unattended cloud acquisition worker below are still planned. The Supabase scheduled job remains a database-only record audit.
 
 The product promise remains: agents do the preparation; people own the decisions. An agent is a bounded assignment executed with an existing model, Kalling instructions, permitted tools, firm context, and a defined deliverable. We own the workflow and controls; an initial release does not need a trained foundation model or seven separately purchased agent products.
 
