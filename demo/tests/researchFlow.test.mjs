@@ -9,7 +9,8 @@ function setup(){const w=hydrate(sample());w.companies=[{...w.companies[0],id:'r
 const c=w=>w.companies[0];
 function checked(){let w=manualResearch(setup(),c(setup()),{url,title:'Company services',excerpt});const r=companyFlow(w,c(w)).runs[0];return acceptResearch(w,c(w),r.id,r.candidates.map(x=>x.id),true,'Reviewer');}
 function briefed(){let w=checked();w=prepareSourcedCall(w,c(w),'Operator');return reviewSourcedCall(w,c(w),companyFlow(w,c(w)).briefs[0].id,'Reviewer',true);}
-function drafted(){let w=briefed();return prepareSourcedOutreach(w,c(w),companyFlow(w,c(w)).briefs[0].id,'Operator');}
+function preparation(w,patch={}){return {templateId:'acquisition-inquiry',senderName:'Alex Morgan',addressee:'Test Locksmith Management Team',rationale:'Your commercial access control installation services are relevant to our acquisition focus.',factId:companyFlow(w,c(w)).briefs[0].facts[0].id,channel:'Email',...patch};}
+function drafted(){let w=briefed();return prepareSourcedOutreach(w,c(w),companyFlow(w,c(w)).briefs[0].id,'Operator',preparation(w));}
 function addressed(){let w=drafted(),d=companyFlow(w,c(w)).drafts[0];return reviseSourcedOutreach(w,c(w),d.id,{subject:d.subject,body:d.body,channel:'Email',recipient:'review@example.test',recipientBasis:'Test-only recipient checked in QA.'},'Operator');}
 function approved(){let w=addressed();return approveSourcedOutreach(w,c(w),companyFlow(w,c(w)).drafts[0].id,'Reviewer',true);}
 test('public reader URLs reject private endpoints, credentials, tokens, files, and reader loops',()=>{for(const value of ['http://company.co','https://127.0.0.1','https://0x7f000001','https://[::1]','https://a.local','https://a.localdomain','https://a.internal','https://user:pass@company.co','https://company.co/?token=x','https://company.co/#secret','https://company.co:8080','https://project.supabase.co','https://r.jina.ai','https://company.co/a.pdf'])assert.throws(()=>publicWebsite(value),undefined,value);assert.equal(publicWebsite(url),url);});
@@ -22,7 +23,7 @@ test('live research rejects sample records and checkpoints planned pages without
 test('unreviewed statements cannot enter the brief and review requires identity confirmation',()=>{const w=manualResearch(setup(),c(setup()),{url,title:'Company',excerpt}),r=companyFlow(w,c(w)).runs[0];assert.equal(preparedFacts(c(w)).length,0);assert.throws(()=>prepareSourcedCall(w,c(w),'Operator'),/Review the latest/);assert.throws(()=>acceptResearch(w,c(w),r.id,[r.candidates[0].id],false,'Reviewer'),/Confirm/);assert.throws(()=>acceptResearch(w,c(w),r.id,['missing'],true,'Reviewer'),/valid source/);});
 test('all checked statements in one topic remain current; new captures supersede earlier claims',()=>{let w=checked();const initial=preparedFacts(c(w));assert.ok(initial.filter(x=>x.topic==='service_mix').length===2);w=manualResearch(w,c(w),{url,title:'Updated',excerpt});const r=companyFlow(w,c(w)).runs[0];w=acceptResearch(w,c(w),r.id,r.candidates.map(x=>x.id),true,'Reviewer');assert.equal(preparedFacts(c(w)).length,initial.length);assert.equal(c(w).evidence.filter(x=>x.supersededBy).length,initial.length);});
 test('assumptions, disputed evidence, and unchecked statements are excluded from preparation',()=>{const w=checked();w.companies[0].evidence[0].kind='assumption';w.companies[0].evidence[1].disputed=true;delete w.companies[0].evidence[2].checkedAt;const facts=preparedFacts(c(w));assert.equal(facts.length,c(w).evidence.length-3);});
-test('brief creation does not invalidate itself and outreach requires a reviewed current brief',()=>{let w=checked();w=prepareSourcedCall(w,c(w),'Operator');const b=companyFlow(w,c(w)).briefs[0];assert.equal(packetIsCurrent(w,c(w),b),true);assert.throws(()=>prepareSourcedOutreach(w,c(w),b.id,'Operator'),/Review a current/);w=reviewSourcedCall(w,c(w),b.id,'Reviewer',true);w=prepareSourcedOutreach(w,c(w),b.id,'Operator');assert.equal(packetIsCurrent(w,c(w),b),true);assert.equal(flowStatus(w,c(w)),'Review outreach');});
+test('brief creation does not invalidate itself and outreach requires a reviewed current brief',()=>{let w=checked();w=prepareSourcedCall(w,c(w),'Operator');const b=companyFlow(w,c(w)).briefs[0];assert.equal(packetIsCurrent(w,c(w),b),true);assert.throws(()=>prepareSourcedOutreach(w,c(w),b.id,'Operator'),/Review a current/);w=reviewSourcedCall(w,c(w),b.id,'Reviewer',true);w=prepareSourcedOutreach(w,c(w),b.id,'Operator',preparation(w));assert.equal(packetIsCurrent(w,c(w),b),true);assert.equal(flowStatus(w,c(w)),'Review outreach');});
 test('source refresh invalidates approvals even before new claims are accepted',()=>{let w=approved(),d=companyFlow(w,c(w)).drafts[0];w=startResearch(w,c(w));assert.equal(packetIsCurrent(w,c(w),d),false);assert.throws(()=>approvedCopy(w,c(w),d),/current human-reviewed/);});
 test('changed owner history, promises, contact, and strategy invalidate prior preparation',()=>{for(const mutate of [w=>w.companies[0].conversations.push({id:'call',date:'2026-11-08',type:'Call',body:'Please call in January.',outcome:'Later'}),w=>w.companies[0].owner='New owner',w=>w.companies[0].email='new@example.test',w=>w.firm.strategy='Different thesis',w=>{w.operating.ownerPromises=[{id:'promise',companyId:'real',text:'Call in January',status:'Open'}];}]){const w=approved(),d=companyFlow(w,c(w)).drafts[0];mutate(w);assert.equal(packetIsCurrent(w,c(w),d),false);assert.throws(()=>approvedCopy(w,c(w),d));}});
 test('recipient validation and human review gate exact draft approval',()=>{const w=drafted(),d=companyFlow(w,c(w)).drafts[0];assert.throws(()=>approveSourcedOutreach(w,c(w),d.id,'Reviewer',false),/Review the recipient/);assert.throws(()=>approveSourcedOutreach(w,c(w),d.id,'Reviewer',true),/valid email/);let n=addressed(),x=companyFlow(n,c(n)).drafts[0];x.recipientBasis='';assert.throws(()=>approveSourcedOutreach(n,c(n),x.id,'Reviewer',true),/how the recipient/);});
@@ -32,3 +33,36 @@ test('changing the business website requires fresh research before preparing a n
 test('older captured claims omitted from a new page review cannot silently enter the next brief',()=>{let w=checked();const old=c(w).evidence.find(x=>x.field==='ownership');w=manualResearch(w,c(w),{url,title:'Updated',excerpt:'Our experienced locksmith technicians install access control systems for commercial businesses.'});const r=companyFlow(w,c(w)).runs[0];w=acceptResearch(w,c(w),r.id,r.candidates.filter(x=>x.topic==='service_mix').map(x=>x.id),true,'Reviewer');assert.equal(preparedFacts(c(w)).some(x=>x.id===old.id),false);assert.ok(c(w).evidence.find(x=>x.id===old.id).reviewHistory.some(x=>x.action==='Source re-review'));});
 test('unrelated platform and next-action housekeeping do not invalidate sourced outreach',()=>{const w=approved(),d=companyFlow(w,c(w)).drafts[0];w.operating.platforms.push({id:'unrelated',name:'Other platform'});w.companies[0].nextAction='Call on Tuesday';w.companies[0].due='2027-01-01';assert.equal(packetIsCurrent(w,c(w),d),true);});
 test('brief snapshots retain the company name recorded when prepared',()=>{const w=briefed(),b=companyFlow(w,c(w)).briefs[0];assert.equal(b.companyName,'Test Locksmith');w.companies[0].name='Changed name';assert.equal(b.companyName,'Test Locksmith');assert.equal(packetIsCurrent(w,c(w),b),false);});
+
+
+test('formal drafts retain the chosen source and analyst rationale without quoting the website in the email',()=>{
+ const w=drafted(),d=companyFlow(w,c(w)).drafts[0];
+ assert.match(d.body,/Dear Test Locksmith Management Team,/);
+ assert.match(d.body,/potential acquisition of Test Locksmith/);
+ assert.match(d.body,/commercial access control installation services/);
+ assert.doesNotMatch(d.body,/Hi |there,|caught my attention|I.m looking to get to know|Our family-owned/);
+ assert.equal(d.templateVersion,'formal-acquisition-v1');assert.equal(d.facts[0].id,d.preparation.factId);assert.equal(d.review,undefined);
+});
+test('template preparation requires an explicit reason and a fact from the reviewed current brief',()=>{
+ const w=briefed(),b=companyFlow(w,c(w)).briefs[0];
+ assert.throws(()=>prepareSourcedOutreach(w,c(w),b.id,'Operator'),/Choose a formal/);
+ assert.throws(()=>prepareSourcedOutreach(w,c(w),b.id,'Operator',preparation(w,{factId:'not-in-brief'})),/Select a checked/);
+ assert.throws(()=>prepareSourcedOutreach(w,c(w),b.id,'Operator',preparation(w,{rationale:''})),/specific reason/);
+});
+test('letter preparation never carries over an email address as the postal recipient',()=>{
+ let w=briefed();w.companies[0].email='owner@example.test';w=prepareSourcedCall(w,c(w),'Operator');const b=companyFlow(w,c(w)).briefs[0];w=reviewSourcedCall(w,c(w),b.id,'Reviewer',true);
+ w=prepareSourcedOutreach(w,c(w),b.id,'Operator',preparation(w,{channel:'Letter',templateId:'owner-introduction'}));const d=companyFlow(w,c(w)).drafts[0];
+ assert.equal(d.channel,'Letter');assert.equal(d.recipient,'');assert.match(d.body,/direct this inquiry to the owner/);assert.match(d.subject,/Owner introduction request:/);
+});
+test('replacing an approved draft retains its exact history and resets recipient verification and approval',()=>{
+ let w=approved();const old=companyFlow(w,c(w)).drafts[0];w=prepareSourcedOutreach(w,c(w),old.briefId,'Operator',preparation(w,{templateId:'owner-introduction'}));
+ const [next,previous]=companyFlow(w,c(w)).drafts;assert.equal(previous.id,old.id);assert.deepEqual(previous,old);assert.equal(next.review,undefined);assert.equal(next.recipientBasis,'');assert.equal(next.version,old.version+1);
+ assert.throws(()=>approvedCopy(w,c(w),next),/reviewed/);
+});
+test('approval blocks unresolved placeholders and requires earlier templates to be replaced',()=>{
+ let w=addressed(),d=companyFlow(w,c(w)).drafts[0];
+ w=reviseSourcedOutreach(w,c(w),d.id,{body:d.body+'\n[Insert the owner name]',subject:d.subject,channel:d.channel,recipient:d.recipient,recipientBasis:d.recipientBasis},'Operator');d=companyFlow(w,c(w)).drafts[0];
+ assert.throws(()=>approveSourcedOutreach(w,c(w),d.id,'Reviewer',true),/placeholders/);
+ w=addressed();d=companyFlow(w,c(w)).drafts[0];delete d.templateVersion;
+ assert.throws(()=>approveSourcedOutreach(w,c(w),d.id,'Reviewer',true),/formal acquisition template/);
+});

@@ -1,3 +1,4 @@
+import {hasOutreachPlaceholders} from './outreachTemplates.ts';
 import type {ContinuityData} from './continuity.ts';
 import {monitorCloseBlockers} from './continuity.ts';
 import type {AccountingData} from './accounting.ts';
@@ -209,7 +210,7 @@ export function approveWork(w: Workspace, itemId: string, output: string, nextAc
     throw Error('Work item not found.'); if (item.status !== 'In review')
     throw Error('Prepare this item before approving it.'); if (item.sourceVersion !== sourceVersion(w, c))
     throw Error('The company record changed. Prepare a fresh output before approving.'); if (!output.trim() || !nextAction.trim() || !nextDue)
-    throw Error('An output, next action, and date are required.'); let updated = { ...c, nextAction, due: nextDue }; if (item.kind === 'Outreach draft')
+    throw Error('An output, next action, and date are required.'); if(item.kind==='Outreach draft'&&hasOutreachPlaceholders(output))throw Error('Complete the company-specific reason and remove all correspondence placeholders before approval.'); let updated = { ...c, nextAction, due: nextDue }; if (item.kind === 'Outreach draft')
     updated = { ...updated, drafts: [{ id: id(), body: output, approved: true }, ...c.drafts] }; return { ...w, companies: w.companies.map(x => x.id === c.id ? updated : x), operating: { ...o, work: o.work.map(x => x.id === itemId ? { ...x, output, nextAction, nextDue, status: 'Approved', reviewedBy: w.firm.reviewer, reviewedAt: new Date().toISOString() } : x) } }; }
 export function modelDefaults(c: Company): ModelInputs { const e = latestFinancial(c, 'ebitda'); return { name: 'Base case', ebitda: e.value || 0, price: 0, fees: 0, initialWC: 0, debt: 0, rate: 9, amortYears: 10, sellerNote: 0, sellerRate: 6, growth: 3, exitMultiple: 5, years: 5, tax: 25, capex: 0, annualWC: 0, ebitdaBasis: e.value !== null ? `${e.period} · ${e.sources.map(s => s.source).join('; ')}` : 'User assumption — no unambiguous reported EBITDA' }; }
 export function validateModel(i: ModelInputs) { const nums = ['ebitda', 'price', 'fees', 'initialWC', 'debt', 'rate', 'amortYears', 'sellerNote', 'sellerRate', 'growth', 'exitMultiple', 'years', 'tax', 'capex', 'annualWC'] as const; for (const k of nums)
