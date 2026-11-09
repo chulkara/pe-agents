@@ -18,6 +18,10 @@ Briefs and drafts retain immutable prepared snapshots. Changed evidence, refresh
 
 Retrieval and conservative statement extraction are connected. Call preparation and outreach use structured templates, not an LLM. Named agents do not imply autonomous investment judgment. No paid API credits are used. Third-party free service availability and limits can change.
 
+## Model-backed agents
+
+The current preparation tools are rules/templates; model-backed acquisition agents are not activated. The [agent runtime implementation plan](docs/agent-runtime-plan.md) defines one shared runner, seven specialist playbooks, scoped tools, source/version checks, human review, evaluation and cost controls. The existing scheduler remains a record-reference audit only.
+
 ## Workspaces and security boundary
 
 - **Local demo:** browser-local records under `kalling-pages-demo-v1`, six explicitly fictional sample companies, no shared team access. Real-company progress excludes samples. Clear site storage to reset local records; export a backup through Activity log first.
