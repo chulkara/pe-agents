@@ -1,0 +1,56 @@
+# Owner portal
+
+An invited business owner gets one private page for their sale. It shows:
+
+* **Their business.**
+* **Next steps:** what they need to do and what your team will do.
+* **Document requests.** Each request says what is needed, why, who can see it, and whom to contact.
+* **Interested buyers.**
+* **Messages** with your team.
+* **Their documents.**
+
+Owners never see your workspace, notes, research, other companies or other portals.
+
+## Firm side
+
+Open a company and go to the **Owner portal** tab.
+
+1. **Create the portal.** Enter the owner's name and email, a help contact and an optional welcome note.
+2. **Request documents.** Start from a common request, such as financial statements, tax returns, a customer summary, the lease, a team overview, licenses and insurance, or vehicles and equipment. Edit every field so it reads plainly. Each request must include:
+   * what is needed
+   * why it is needed
+   * who can see it
+   * a contact for questions
+3. **Add buyers** and **next steps.** Everything on these tabs is visible to the owner. List only buyers who agreed to be named.
+4. **Create an invitation link** and send it yourself. Kalling sends no email. The link works once, only for the owner's email address, and expires after 14 days. Creating a new link cancels the old one.
+5. **Review what comes back.** Download the files, then **Accept**, **Ask for a change** with a note, or mark the request **Not needed**. **Owner's view** shows exactly what the owner sees.
+
+Changing the owner's email, or closing the portal, removes the earlier owner's access immediately. Records are kept.
+
+## Owner side
+
+The owner opens the link, signs in or creates an account with the invited email, and lands on their portal. They can come back any time at the same address with `#owner` at the end.
+
+* **Progress saves as they go.** Each file is stored when it finishes uploading, and notes save automatically. A request shows "Saved — not sent yet" until the owner presses **Send for review**. Leaving and returning keeps everything.
+* **Documents they already provided are remembered.** Uploading the same file again links the earlier copy instead of storing a duplicate, and the owner is told when that happens. Any earlier document can also be reused for another request.
+* **Requests that need a change** move to the top, with your note explaining what is missing.
+
+## Security and limits
+
+* **Database tables.** Migration `production/migrations/004_owner_portal.sql` adds owner-scoped tables and a private `kalling-portal` storage bucket. Access is decided by the database:
+  * Firm members read the portal according to their role.
+  * The owner gets access only after accepting an invitation, with a confirmed account whose email matches the invited address.
+* **Invitation tokens.** Tokens are random and stored only as SHA-256 hashes.
+* **Uploads.** Files can only go to a path the uploader reserved, and are checked against the reserved size and type before they count as stored.
+* **Downloads.** Downloads re-check portal access every time.
+* **Pilot limits:**
+  * 10 MB per file, 100 files and 200 MB per portal
+  * 40 requests, 20 buyers and 12 next steps per portal
+  * 50 portals per firm
+* **Tests.** `production/tests/ownerPortal.test.mjs` runs these rules against real PostgreSQL. `tests/portal.test.mjs` covers the same behaviour in the browser demo store.
+
+**Before inviting a real owner:** Supabase's default email service only delivers confirmation emails to project team addresses. An outside owner can't confirm a new account until a custom SMTP sender is configured in Supabase Authentication, or until an administrator creates and confirms the account from the dashboard.
+
+## Local demo
+
+Without a cloud account, the portal works entirely in one browser. Records are kept in local storage and file contents in IndexedDB. **Open as the owner** opens the invitation in a new tab, where the owner enters the invited email instead of a password. This is for demonstration only. Use a cloud firm for real owners.

@@ -12,7 +12,7 @@ export const useAgentRuntime=()=>useContext(Ctx);
 export function useComputer(backend:AgentBackend|null,busy=false){
   const [view,setView]=useState<ComputerView>({state:'checking',name:'',detail:'Checking the research computer…',count:0});
   const refresh=useCallback(async()=>{if(!backend)return;try{setView(await backend.computer());}catch(e){setView({state:'unreachable',name:'',detail:e instanceof Error?e.message:'Status unavailable.',count:0});}},[backend]);
-  useEffect(()=>{if(!backend)return;let live=true;const go=()=>{if(live&&document.visibilityState!=='hidden')void refresh();};go();const t=setInterval(go,busy?5000:12000);return()=>{live=false;clearInterval(t);};},[backend,busy,refresh]);
+  useEffect(()=>{if(!backend)return;let live=true;const go=()=>{if(live&&document.visibilityState!=='hidden')void refresh();};go();const t=setInterval(go,busy?5000:view.state==='unreachable'?60000:12000);return()=>{live=false;clearInterval(t);};},[backend,busy,refresh,view.state==='unreachable']);// eslint-disable-line react-hooks/exhaustive-deps
   return {view,refresh};
 }
 export function useJobs(backend:AgentBackend|null,ids:string[]){
