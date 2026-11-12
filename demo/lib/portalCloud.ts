@@ -14,6 +14,7 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
   const store:PortalStore={
     mode:'cloud',side:o.side,
     async listForCompany(companyId){return (await rows<PortalRow>(client.from('kalling_portals').select('*').eq('firm_id',o.firmId!).eq('company_id',companyId).order('created_at',{ascending:false}))).map(portal);},
+    async firmPortals(){if(o.side!=='firm'||!o.firmId)return [];return (await rows<PortalRow>(client.from('kalling_portals').select('*').eq('firm_id',o.firmId).order('created_at',{ascending:false}))).map(portal);},
     async myPortals(){return (await rows<PortalRow>(client.from('kalling_portals').select('*').eq('status','Active').order('accepted_at',{ascending:false}))).map(portal);},
     async create(i:CreatePortalInput){return call<string>('kalling_portal_create',{p_firm:o.firmId,p_company:i.companyId,p_business:i.businessName,p_owner_name:i.ownerName,p_owner_email:i.ownerEmail,p_help:i.help,p_welcome:i.welcome||''});},
     async load(id){

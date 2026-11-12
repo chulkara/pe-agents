@@ -36,7 +36,7 @@ export function setStage(w:Workspace,companyId:string,to:SellStage,actor:string,
   const c=w.companies.find(x=>x.id===companyId);need(c,'Company not found.');
   need(sellStages.includes(to),'Unknown stage.');
   const from=dealStage(c,ctx);need(canMove(from,to),from==='Closed'||from==='Lost'?`Reopen ${c.name} as Qualified first.`:`${c.name} is already ${to}.`);
-  const next={...c,sellStage:to,stageChangedAt:now()} as DealCompany;
+  const next={...c,sellStage:to,stageChangedAt:now(),nextAction:stageChecklist[to][0]} as DealCompany;
   return {...w,companies:w.companies.map(x=>x.id===companyId?next:x),events:[{id:uid(),text:`${actor} moved ${c.name} from ${from} to ${to}.`,date:now()},...w.events]};
 }
 export const daysInStage=(c:Company,today=Date.now())=>{const t=asDeal(c).stageChangedAt;return t?Math.max(0,Math.floor((today-Date.parse(t))/864e5)):null;};

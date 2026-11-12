@@ -11,10 +11,10 @@ export const PortalProvider=Ctx.Provider;
 export const PortalContextRef=Ctx;
 const v=(e:FormEvent<HTMLFormElement>)=>Object.fromEntries(new FormData(e.currentTarget)) as Record<string,string>;
 
-export default function OwnerPortalAdmin({company}:{company:Company}){
+export default function OwnerPortalAdmin({company,sections,onChange}:{company:Company;sections?:string[];onChange?:()=>void}){
   const ctx=useContext(Ctx),store=ctx.store;
   const [portals,setPortals]=useState<Portal[]|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
-  const load=async()=>{if(!store)return;try{setPortals(await store.listForCompany(company.id));setError('');}catch(e){setError((e as Error).message);setPortals([]);}};
+  const load=async()=>{if(!store)return;try{setPortals(await store.listForCompany(company.id));setError('');onChange?.();}catch(e){setError((e as Error).message);setPortals([]);}};
   useEffect(()=>{void load();},[store,company.id]);// eslint-disable-line react-hooks/exhaustive-deps
   if(!store)return null;
   const current=portals?.find(p=>p.status!=='Closed');
@@ -30,25 +30,25 @@ export default function OwnerPortalAdmin({company}:{company:Company}){
     :<p>Ask an analyst or administrator to create the owner portal.</p>}
     {portals.some(p=>p.status==='Closed')&&<p className="portal-muted">{portals.filter(p=>p.status==='Closed').length} closed portal(s) kept for your records.</p>}
   </section>;
-  return <Manage key={current.id} store={store} portalId={current.id} ctx={ctx} reload={load}/>;
+  return <Manage key={current.id} store={store} portalId={current.id} ctx={ctx} reload={load} sections={sections} onChange={onChange}/>;
 }
 
-function Manage({store,portalId,ctx,reload}:{store:PortalStore;portalId:string;ctx:PortalContext;reload:()=>Promise<void>}){
+function Manage({store,portalId,ctx,reload,sections,onChange}:{store:PortalStore;portalId:string;ctx:PortalContext;reload:()=>Promise<void>;sections?:string[];onChange?:()=>void}){
   const {b,error:loadError,refresh}=usePortal(store,portalId);
-  const [tab,setTab]=useState('Requests'),[link,setLink]=useState(''),[copied,setCopied]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+  const [tab,setTab]=useState(sections?.[0]||'Requests'),[link,setLink]=useState(''),[copied,setCopied]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false);
   if(!b)return <div className="portal-admin">{loadError?<p className="error-banner">{loadError}</p>:<Loader2 className="spin"/>}</div>;
   const p=b.portal,prog=portalProgress(b),toReview=b.requests.filter(r=>r.status==='Submitted').length,newMsgs=unread(b),w=ctx.canWrite;
-  async function act(fn:()=>Promise<unknown>){setBusy(true);setError('');try{await fn();await refresh();}catch(e){setError(e instanceof Error?e.message:'Could not save.');}finally{setBusy(false);}}
-  const tabs:[string,typeof FileText,number][]=[['Requests',FileText,toReview],['Buyers',Users,0],['Next steps',ListChecks,0],['Messages',Link2,newMsgs],['Settings',Settings2,0],['Owner’s view',Eye,0]];
+  async function act(fn:()=>Promise<unknown>){setBusy(true);setError('');try{await fn();await refresh();onChange?.();}catch(e){setError(e instanceof Error?e.message:'Could not save.');}finally{setBusy(false);}}
+  const tabs=([['Requests',FileText,toReview],['Buyers',Users,0],['Next steps',ListChecks,0],['Messages',Link2,newMsgs],['Settings',Settings2,0],['Owner’s view',Eye,0]] as [string,typeof FileText,number][]).filter(([t])=>!sections||sections.includes(t)),showHead=!sections||sections.some(t=>t!=='Requests');
   return <section className="panel portal-admin">
-    <header className="portal-admin-head"><div><div className="eyebrow">OWNER PORTAL</div><h2>{p.businessName}</h2><p>For {p.ownerName} · {p.ownerEmail} · <span className={'portal-status '+p.status.toLowerCase()}>{p.status==='Active'?'Owner has joined':p.status==='Invited'?'Invitation sent '+fmtDate(p.invitedAt):p.status}</span></p></div>
+    {showHead&&<><header className="portal-admin-head"><div><div className="eyebrow">OWNER PORTAL</div><h2>{p.businessName}</h2><p>For {p.ownerName} · {p.ownerEmail} · <span className={'portal-status '+p.status.toLowerCase()}>{p.status==='Active'?'Owner has joined':p.status==='Invited'?'Invitation sent '+fmtDate(p.invitedAt):p.status}</span></p></div>
       <div className="portal-admin-stats"><span><strong>{prog.done}/{prog.total}</strong>complete</span><span><strong>{toReview}</strong>to review</span><span><strong>{newMsgs}</strong>unread</span></div></header>
     {w&&p.status!=='Closed'&&<div className="portal-invite">
       {!link?<><p>{p.status==='Active'?'The owner has joined. A new link replaces the old one if they need it again.':'Create a private link and send it to '+p.ownerName+' yourself. Kalling does not email anyone. It works once, only for '+p.ownerEmail+', for 14 days.'}</p><button className="btn" disabled={busy} onClick={()=>void act(async()=>{setLink(inviteLink(await store.invite(p.id)));})}><Link2 size={15}/>{p.status==='Draft'?'Create invitation link':'Create a new link'}</button></>
       :<><label className="field"><span>Invitation link for {p.ownerEmail}</span><input readOnly value={link} onFocus={e=>e.currentTarget.select()}/></label><div className="button-row"><button className="btn primary" onClick={()=>void navigator.clipboard.writeText(link).then(()=>setCopied(true)).catch(()=>setError('Copy the link from the box above.'))}>{copied?<Check size={15}/>:<Copy size={15}/>}{copied?'Copied':'Copy link'}</button>{ctx.local&&<a className="btn" href={link} target="_blank" rel="noreferrer"><ExternalLink size={15}/>Open as the owner</a>}</div>{ctx.local&&<small>In the local demo, the owner view opens in this browser and asks for the invited email instead of a password.</small>}</>}
-    </div>}
+    </div>}</>}
     {(error||loadError)&&<p className="error-banner" role="alert">{error||loadError}</p>}
-    <nav className="portal-admin-tabs">{tabs.map(([t,Icon,n])=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}><Icon size={14}/>{t}{n?<em>{n}</em>:null}</button>)}</nav>
+    {tabs.length>1&&<nav className="portal-admin-tabs">{tabs.map(([t,Icon,n])=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}><Icon size={14}/>{t}{n?<em>{n}</em>:null}</button>)}</nav>}
     {tab==='Requests'&&<RequestsAdmin b={b} store={store} act={act} busy={busy} w={w}/>}
     {tab==='Buyers'&&<BuyersAdmin b={b} store={store} act={act} busy={busy} w={w}/>}
     {tab==='Next steps'&&<StepsAdmin steps={b.steps} save={s=>act(()=>store.saveSteps(p.id,s))} busy={busy} w={w} firm={p.firmName}/>}

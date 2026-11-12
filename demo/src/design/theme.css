@@ -21,3 +21,6 @@ button,input,select,textarea,.btn,.badge,.eyebrow,.nav-item,.field,label,th,.tag
 .error-banner{border-radius:var(--k-radius-input)}
 .k-figure{font-family:var(--k-figure);font-weight:400;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){*{transition-duration:0s!important;animation-duration:0s!important}}
+.sidebar .brand-mark{background:#fff;color:var(--k-purple)}
+.sidebar .nav-label,.sidebar-strategy .nav-label{text-transform:none;letter-spacing:0;font:450 12px var(--k-ui);color:rgba(255,255,255,.6)}
+.sidebar-strategy strong{color:#fff}

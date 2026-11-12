@@ -61,7 +61,7 @@ export function HomePage(){
       <div><h2>See where your sale stands at any time</h2><p>Every seller gets a private owner portal. It shows which buyers are interested and how far along they are, which documents are still needed and why, and what happens next. You can message your advisor there, and uploads save as you go.</p><a className="ks-btn ks-btn-light" href={href('/sell')}>What sellers see<Arrow/></a></div>
       <ul className="ks-portal-mock" aria-label="Example of the owner portal">
         <li><span>Buyer 2 · Strategic HVAC operator</span><b>Reviewing</b></li>
-        <li><span>Buyer 1 · Owner-operator, SBA lender</span><b>Under NDA</b></li>
+        <li><span>Buyer 1, owner-operator with an SBA lender</span><b>Under NDA</b></li>
         <li><span>Profit and loss, last 3 years</span><b>Complete</b></li>
         <li><span>Maintenance agreement list</span><b className="due">Due Dec 4</b></li>
       </ul>

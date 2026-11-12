@@ -8,6 +8,8 @@ export interface PortalStore{
   mode:'local'|'cloud';side:Side;
   listForCompany(companyId:string):Promise<Portal[]>;
   myPortals():Promise<Portal[]>;
+  /** Every portal this firm runs, for the workspace's Today and Deals pages. */
+  firmPortals():Promise<Portal[]>;
   create(input:CreatePortalInput):Promise<string>;
   load(id:string):Promise<PortalBundle>;
   update(id:string,patch:Partial<Pick<Portal,'ownerName'|'ownerEmail'|'help'|'welcome'|'businessName'>>&{close?:boolean}):Promise<void>;
@@ -49,6 +51,7 @@ export function localPortalStore(o:{actor:Actor;firmId:string;firmName:string;te
     mode:'local' as const,side:a.side,
     async listForCompany(companyId:string){return read().portals.filter(p=>p.companyId===companyId&&p.firmId===o.firmId).sort((x,y)=>y.createdAt.localeCompare(x.createdAt));},
     async myPortals(){return read().portals.filter(p=>p.ownerEmail===a.email.toLowerCase()&&p.status==='Active');},
+    async firmPortals(){if(a.side!=='firm')return [];return read().portals.filter(p=>p.firmId===o.firmId).sort((x,y)=>y.createdAt.localeCompare(x.createdAt));},
     async create(input:CreatePortalInput){const out=P.createPortal(read(),a,{...input,firmId:o.firmId,firmName:o.firmName});write(out.db);return out.id;},
     async load(id:string){return P.bundle(read(),a,id,o.team);},
     async update(id:string,patch:Parameters<PortalStore['update']>[1]){await apply(db=>P.updatePortal(db,a,id,patch));},
