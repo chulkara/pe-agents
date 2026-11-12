@@ -1,7 +1,7 @@
 import * as B from './brokerage.ts';
 import {sampleListings} from './brokerageSamples.ts';
 import {sha256Hex} from './portal.ts';
-import type {BrokerDb,Viewer,Listing,Lead,Buyer,AccessRequest,Offer,Question,ListingStatus,LeadStatus} from './brokerage.ts';
+import type {BrokerDb,Viewer,Listing,Lead,Buyer,BuyerCheck,FundsCheck,AccessRequest,Offer,Question,ListingStatus,LeadStatus} from './brokerage.ts';
 
 export type ViewListing=ReturnType<typeof B.listingFor>;
 export type BuyerProfileInput=Parameters<typeof B.registerBuyer>[2];
@@ -27,6 +27,8 @@ export interface BrokerStore{
   setStatus(id:string,status:ListingStatus):Promise<void>;
   buyers():Promise<Buyer[]>;
   vet(id:string,status:Buyer['status'],note:string):Promise<void>;
+  checks():Promise<BuyerCheck[]>;
+  check(buyerId:string,funds:FundsCheck,note:string):Promise<void>;
   requests():Promise<AccessRequest[]>;
   decide(id:string,status:'Approved'|'Declined',note:string):Promise<void>;
   offers():Promise<Offer[]>;
@@ -61,6 +63,8 @@ export function localBrokerStore(viewer:Viewer,kv:KV=localStorage):BrokerStore{
     async setStatus(id,status){await apply(db=>B.setListingStatus(db,viewer,id,status));},
     async buyers(){adv();return read().buyers;},
     async vet(id,status,note){await apply(db=>B.vetBuyer(db,viewer,id,status,note));},
+    async checks(){adv();return read().checks||[];},
+    async check(id,funds,note){await apply(db=>B.checkBuyer(db,viewer,id,funds,note));},
     async requests(){adv();return read().access;},
     async decide(id,status,note){await apply(db=>B.decideAccess(db,viewer,id,status,note));},
     async offers(){adv();return read().offers;},

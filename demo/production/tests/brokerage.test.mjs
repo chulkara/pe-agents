@@ -15,7 +15,7 @@ const lead={name:'Pat Russo',email:'Pat@RussoHVAC.test',region:'Central Jersey',
 
 before(async()=>{
   db=new PGlite();await db.exec(await readFile(new URL('./bootstrap.sql',import.meta.url),'utf8'));
-  for(const f of ['001_foundation.sql','20261108215809_kalling_invitation_rls.sql','003_agent_workers.sql','004_owner_portal.sql','005_brokerage.sql'])await db.exec(await readFile(new URL('../migrations/'+f,import.meta.url),'utf8'));
+  for(const f of ['001_foundation.sql','20261108215809_kalling_invitation_rls.sql','003_agent_workers.sql','004_owner_portal.sql','005_brokerage.sql','006_buyer_checks.sql'])await db.exec(await readFile(new URL('../migrations/'+f,import.meta.url),'utf8'));
   for(const [id,e] of [[owner,'o@kalling.test'],[analyst,'a@kalling.test'],[buyer,'alex@buyer.test'],[buyer2,'sam@buyer.test'],[outsider,'x@else.test']])await db.query('insert into auth.users values($1,$2,now())',[id,e]);
   house=await one(as(owner,'select public.kalling_create_firm($1,$2)',['Kalling',{firm:{name:'Kalling'},companies:[],deals:[],events:[]}]));
   const t=await one(as(owner,'select public.kalling_invite_member($1,$2,$3)',[house,'a@kalling.test','analyst']));await as(analyst,'select public.kalling_accept_invite($1)',[t]);
@@ -76,4 +76,16 @@ test('buyers sign the NDA, wait for approval, then see details, ask and offer',a
   await as(analyst,'select public.kalling_buyer_vet($1,$2,$3)',[b,'Restricted','NDA breach']);
   assert.equal((await as(buyer,'select * from public.kalling_listing_private where listing_id=$1',[l])).length,0,'restricted buyers lose access');
   await assert.rejects(as(buyer,'select public.kalling_listing_ask($1,$2)',[l,'Still there?']),/wait for approval/);
+});
+
+test('advisor buyer checks stay private to the firm and need an advisor',async()=>{
+  const b=(await as(analyst,"select id from public.kalling_buyers where email='alex@buyer.test'"))[0].id;
+  await assert.rejects(as(buyer,'select public.kalling_buyer_check($1,$2,$3)',[b,'Lender pre-qualified','']),/advisor/);
+  await assert.rejects(anon('select public.kalling_buyer_check($1,$2,$3)',[b,'Lender pre-qualified','']),/permission denied/);
+  await assert.rejects(as(analyst,'select public.kalling_buyer_check($1,$2,$3)',[b,'Rich','']),/verification status/);
+  await as(analyst,'select public.kalling_buyer_check($1,$2,$3)',[b,'Requested','Asked for a bank letter']);
+  await as(owner,'select public.kalling_buyer_check($1,$2,$3)',[b,'Lender pre-qualified','SBA pre-qualification letter from the lender, $1.2M']);
+  const rows=await as(analyst,'select * from public.kalling_buyer_checks');assert.equal(rows.length,1);assert.equal(rows[0].funds,'Lender pre-qualified');assert.equal(rows[0].checked_by_email,'o@kalling.test');
+  assert.equal((await as(buyer,'select * from public.kalling_buyer_checks')).length,0,'buyers never see advisor checks');
+  await assert.rejects(anon('select * from public.kalling_buyer_checks'),/permission denied/);
 });

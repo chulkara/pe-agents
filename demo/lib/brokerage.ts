@@ -21,7 +21,11 @@ export type Offer={id:string;listingId:string;buyerId:string;kind:'Indication of
 export type Question={id:string;listingId:string;buyerId:string;side:'buyer'|'advisor';author:string;body:string;createdAt:string};
 export type LeadStatus='New'|'Contacted'|'Qualified'|'Engaged'|'Not a fit';
 export type Lead={id:string;createdAt:string;name:string;email:string;phone:string;businessName:string;region:Region;timing:string;message:string;valuation?:Pick<Valuation,'sde'|'low'|'high'|'mid'>&{revenue:number};status:LeadStatus;notes:string;source:'valuation'|'contact'};
-export type BrokerDb={listings:Listing[];buyers:Buyer[];access:AccessRequest[];offers:Offer[];questions:Question[];leads:Lead[]};
+export const fundsChecks=['Not checked','Requested','Proof of funds received','Lender pre-qualified','Not sufficient'] as const;
+export type FundsCheck=typeof fundsChecks[number];
+/** Advisor-only record of whether a buyer showed they can pay. Buyers never see it. */
+export type BuyerCheck={buyerId:string;funds:FundsCheck;note:string;checkedAt:string;checkedBy:string};
+export type BrokerDb={listings:Listing[];buyers:Buyer[];access:AccessRequest[];offers:Offer[];questions:Question[];leads:Lead[];checks?:BuyerCheck[]};
 export type Viewer={kind:'public'}|{kind:'buyer';email:string}|{kind:'advisor';name:string;canWrite:boolean};
 
 export const ndaVersion='kalling-listing-nda-2026-11';
@@ -44,7 +48,7 @@ const clean=(s:unknown,max:number)=>String(s??'').trim().slice(0,max);
 const emailOk=(e:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)&&e.length<=254;
 function need(ok:unknown,msg:string):asserts ok{if(!ok)throw Error(msg);}
 const advisor=(v:Viewer)=>{need(v.kind==='advisor'&&v.canWrite,'Only a Kalling advisor can do this.');};
-export const emptyBrokerDb=():BrokerDb=>({listings:[],buyers:[],access:[],offers:[],questions:[],leads:[]});
+export const emptyBrokerDb=():BrokerDb=>({listings:[],buyers:[],access:[],offers:[],questions:[],leads:[],checks:[]});
 export const publicStatuses:ListingStatus[]=['Live','Under LOI','Sold'];
 
 /** What a viewer may see of a listing. Confidential fields only after an approved NDA. */
@@ -113,6 +117,7 @@ export function registerBuyer(db:BrokerDb,email:string,input:Omit<Buyer,'id'|'em
 }
 export const buyerOf=(db:BrokerDb,v:Viewer)=>v.kind==='buyer'?db.buyers.find(b=>b.email===v.email):undefined;
 export function toggleSaved(db:BrokerDb,v:Viewer,listingId:string):BrokerDb{const b=buyerOf(db,v);need(b,'Create a buyer profile to save listings.');return {...db,buyers:db.buyers.map(x=>x===b?{...b,saved:b.saved.includes(listingId)?b.saved.filter(i=>i!==listingId):[...b.saved,listingId]}:x)};}
+export function checkBuyer(db:BrokerDb,v:Viewer,buyerId:string,funds:FundsCheck,note:string):BrokerDb{advisor(v);if(!fundsChecks.includes(funds))throw Error('Choose a verification status.');if(!db.buyers.some(b=>b.id===buyerId))throw Error('Buyer not found.');const c:BuyerCheck={buyerId,funds,note:clean(note,2000),checkedAt:new Date().toISOString(),checkedBy:v.kind==='advisor'?v.name:''};return {...db,checks:[...(db.checks||[]).filter(x=>x.buyerId!==buyerId),c]};}
 export function vetBuyer(db:BrokerDb,v:Viewer,id:string,status:Buyer['status'],note:string):BrokerDb{advisor(v);return {...db,buyers:db.buyers.map(b=>b.id===id?{...b,status,advisorNote:clean(note,2000)}:b)};}
 
 export function requestAccess(db:BrokerDb,v:Viewer,listingId:string,signedName:string,agreed:boolean,message:string,textHash:string):BrokerDb{

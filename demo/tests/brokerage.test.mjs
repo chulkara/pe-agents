@@ -85,3 +85,15 @@ test('leads need consent, valid contact details and are rate limited per email',
   const [l]=await adv.leads();assert.equal(l.status,'New');await adv.updateLead(l.id,{status:'Contacted',notes:'Called Tuesday'});
   assert.equal((await adv.leads())[0].notes,'Called Tuesday');
 });
+
+test('advisors record funds checks that buyers cannot read or write',async()=>{
+  const k=kv(),adv=localBrokerStore(advisor,k),buyer=localBrokerStore({kind:'buyer',email:'alex@buyer.test'},k);
+  await buyer.saveProfile(profile);const [b]=await adv.buyers();
+  assert.deepEqual(await adv.checks(),[]);
+  await assert.rejects(()=>adv.check(b.id,'Rich',''),/verification status/);
+  await assert.rejects(()=>adv.check('nobody','Requested',''),/not found/);
+  await assert.rejects(()=>buyer.check(b.id,'Lender pre-qualified',''),/advisor/);
+  await assert.rejects(()=>buyer.checks(),/advisor/);
+  await adv.check(b.id,'Requested','Asked for a bank letter');await adv.check(b.id,'Lender pre-qualified','SBA pre-qualification seen');
+  const c=await adv.checks();assert.equal(c.length,1);assert.equal(c[0].funds,'Lender pre-qualified');assert.equal(c[0].checkedBy,advisor.name);
+});

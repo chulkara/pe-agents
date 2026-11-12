@@ -1,7 +1,7 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
 import type {BrokerStore,ViewListing} from './brokerStore.ts';
 import {ndaHash} from './brokerStore.ts';
-import type {Listing,Buyer,AccessRequest,Offer,Question,Lead,Viewer} from './brokerage.ts';
+import type {Listing,Buyer,AccessRequest,Offer,Question,Lead,Viewer,BuyerCheck} from './brokerage.ts';
 
 type LRow={id:string;number:string;status:Listing['status'];sample:boolean;headline:string;region:Listing['region'];focus:Listing['focus'];asking_price:number;revenue:number;sde:number;established:number;employees:number;technicians:number;agreements:number;recurring_pct:number;residential_pct:number;vehicles:number;real_estate:Listing['realEstate'];seller_financing:boolean;reason:string;summary:string;highlights:string[];growth:string[];created_at:string;published_at:string|null;updated_at:string};
 type PRow={listing_id:string;business_name:string;city:string;website:string;details:string;company_id:string|null};
@@ -42,6 +42,8 @@ export function cloudBrokerStore(client:SupabaseClient,viewer:Viewer):BrokerStor
     async setStatus(id,status){await call('kalling_listing_set_status',{p_listing:id,p_status:status});},
     async buyers(){return (await rows<BRow>(client.from('kalling_buyers').select('*').order('created_at',{ascending:false}))).map(buyer);},
     async vet(id,status,note){await call('kalling_buyer_vet',{p_buyer:id,p_status:status,p_note:note});},
+    async checks(){const {data,error}=await client.from('kalling_buyer_checks').select('*');if(error){if(/kalling_buyer_checks/.test(error.message))return [];throw Error(error.message);}return ((data||[]) as {buyer_id:string;funds:string;note:string;checked_at:string;checked_by_email:string}[]).map(r=>({buyerId:r.buyer_id,funds:r.funds as BuyerCheck['funds'],note:r.note,checkedAt:r.checked_at,checkedBy:r.checked_by_email}));},
+    async check(id,funds,note){await call('kalling_buyer_check',{p_buyer:id,p_funds:funds,p_note:note});},
     async requests(){return (await rows<Parameters<typeof access>[0]>(client.from('kalling_access').select('*').order('created_at',{ascending:false}))).map(access);},
     async decide(id,status,note){await call('kalling_access_decide',{p_request:id,p_status:status,p_note:note});},
     async offers(){return (await rows<Parameters<typeof offer>[0]>(client.from('kalling_offers').select('*').order('created_at',{ascending:false}))).map(offer);},
