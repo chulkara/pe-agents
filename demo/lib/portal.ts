@@ -21,16 +21,17 @@ export const fileLimits={maxBytes:10*1024*1024,maxFiles:100,maxPortalBytes:200*1
 export const fileExtensions=/\.(pdf|png|jpe?g|txt|csv|xlsx?|docx?)$/i;
 export const privacyReminder='Please remove Social Security numbers, full bank account numbers and passwords before uploading.';
 
-/** Plain-language starting points. The firm edits every field before the owner sees it. */
+/** Plain-language starting points for an HVAC sale. The firm edits every field before the owner sees it. */
 export const requestTemplates:{title:string;needed:string;why:string}[]=[
-  {title:'Profit and loss statements · last 3 years',needed:'Annual profit and loss statements for the last three full years. Statements from your accountant or exports from your bookkeeping software are both fine.',why:'Buyers use these to understand revenue and earnings over time. They are the starting point for any valuation discussion.'},
-  {title:'Business tax returns · last 3 years',needed:'The business tax returns filed for the same three years (all pages and schedules).',why:'Tax returns confirm the figures in the profit and loss statements. Lenders financing a purchase usually require them.'},
-  {title:'Year-to-date financials',needed:'A profit and loss statement for this year to date, and the same months last year if you have them.',why:'Shows how the business is performing now, not only in past years.'},
-  {title:'Customer summary',needed:'Your ten largest customers by share of revenue for the last full year. You can replace names with “Customer A”, “Customer B”.',why:'Buyers want to know whether the business depends on a few customers. Names are not needed at this stage.'},
-  {title:'Lease or property documents',needed:'Your current lease (or deed, if you own the property), including any amendments and renewal options.',why:'Confirms the business can stay at its location after a sale and on what terms.'},
-  {title:'Team overview',needed:'A list of roles, start dates and pay ranges. Please do not include Social Security numbers, home addresses or dates of birth.',why:'Helps a buyer plan to keep the team in place and understand who does what.'},
-  {title:'Licenses and insurance',needed:'Current business and trade licenses, and certificates for liability, vehicle and workers’ compensation insurance.',why:'Confirms the business operates in good standing and what would need to transfer.'},
-  {title:'Vehicles and equipment',needed:'A list of vehicles and major equipment with approximate age and whether each is owned or leased.',why:'Clarifies which assets are included in a sale and what may need replacing soon.'},
+  {title:'Profit and loss statements for the last 3 years',needed:'Annual profit and loss statements for the last three full years. Statements from your accountant or exports from QuickBooks are both fine.',why:'Buyers use these to understand revenue and earnings over time. They are the starting point for the valuation.'},
+  {title:'Business tax returns for the last 3 years',needed:'The business tax returns filed for the same three years, with all pages and schedules.',why:'Tax returns confirm the figures in the profit and loss statements. Lenders financing a purchase, including SBA lenders, require them.'},
+  {title:'Year-to-date financials',needed:'A profit and loss statement for this year to date, and the same months last year if you have them.',why:'Shows how the business is performing now. HVAC is seasonal, so the same months last year make the comparison fair.'},
+  {title:'Maintenance agreement list',needed:'A list or export of active maintenance agreements: plan type, price, renewal month and whether it renews automatically. Customer names can be replaced with numbers.',why:'Recurring maintenance revenue is one of the biggest drivers of value for an HVAC company. Buyers pay more for agreements that renew.'},
+  {title:'Licenses and insurance',needed:'Your NJ Master HVACR license or NYC and county licenses, business registrations, and certificates for liability, vehicle and workers’ compensation insurance.',why:'Buyers need to know who holds the license and how it will transfer. This shapes how long you may stay on after the sale.'},
+  {title:'Team overview',needed:'A list of roles, start dates, pay ranges and certifications such as EPA 608 or NATE. Please leave out Social Security numbers, home addresses and dates of birth.',why:'Technicians are what buyers worry about most. This helps a buyer plan to keep the team in place.'},
+  {title:'Customer and revenue mix',needed:'Revenue split by service, replacement, maintenance, commercial and new construction for the last full year, and your ten largest customers by share of revenue (names optional).',why:'Buyers value service and maintenance work more than new construction, and want to know whether the business depends on a few customers.'},
+  {title:'Vehicles and equipment',needed:'A list of vans, trucks and major equipment with approximate age and whether each is owned or leased.',why:'Clarifies which assets are included in a sale and what may need replacing soon.'},
+  {title:'Lease or property documents',needed:'Your current lease, or deed if you own the property, with any amendments and renewal options.',why:'Confirms the business can stay at its location after a sale and on what terms.'},
 ];
 
 const now=()=>new Date().toISOString();
