@@ -1,5 +1,6 @@
 // Marketplace pieces used on the Buyers, Listings and Offers pages and inside the Deal Room.
-import {useMemo,useState,type FormEvent} from 'react';
+import {useEffect,useMemo,useState,type FormEvent} from 'react';
+import {checkTeaser,blocking,applySuggestion,type Finding} from '../../lib/anonymity';
 import {regions,focuses,fundsChecks,publishProblems,regionState,type Listing,type Buyer,type Offer,type Region,type Focus,type FundsCheck,type ListingStatus} from '../../lib/brokerage';
 import {money} from '../../lib/hvacValuation';
 import {compareOffers,cashShare,recastSde,type DealCompany} from '../../lib/deals';
@@ -81,20 +82,27 @@ export function QuestionThreads({listingId}:{listingId?:string}){
       {canWrite&&<form className="adv-reply" onSubmit={(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=e.currentTarget,v=String(new FormData(f).get('a'));void act(async()=>{await store.ask(q0.listingId,v,q0.buyerId);f.reset();});}}><Field label={'Answer '+(b?.name||'the buyer')}><input name="a" required maxLength={2000}/></Field><Button disabled={busy}>Send answer</Button></form>}</article>;})}</div>;
 }
 
-type Draft=Omit<Listing,'id'|'number'|'status'|'sample'|'createdAt'|'updatedAt'>&{id?:string};
+export type Draft=Omit<Listing,'id'|'number'|'status'|'sample'|'createdAt'|'updatedAt'>&{id?:string};
 function draftFor(l:Listing|undefined,c?:Company):Draft{
   if(l)return {...l};const dc=c as DealCompany|undefined,r=dc?.recast;
-  return {headline:'',region:(dc?.region||(c?.state==='NY'?'Long Island':'Central Jersey')) as Region,focus:'Residential service & replacement',askingPrice:r?.askingPrice||0,revenue:r?.inputs.revenue||0,sde:r?Math.max(0,recastSde(r)):0,established:new Date().getFullYear()-(r?.inputs.years||10),employees:0,technicians:r?.inputs.technicians||0,agreements:r?.inputs.agreements||0,recurringPct:r?.inputs.maintenancePct||0,residentialPct:100-(r?.inputs.commercialPct||0),vehicles:0,realEstate:'Leased facility',sellerFinancing:false,reason:'Owner is retiring',summary:'',highlights:[],growth:[],confidential:{businessName:c?.name||'',city:c?.city||'',website:c?.website||'',details:''},companyId:c?.id};
+  return {headline:'',region:(dc?.region||(c?.state==='NY'?'Long Island':'Central Jersey')) as Region,focus:'Residential service & replacement',askingPrice:r?.askingPrice||0,revenue:r?.inputs.revenue||0,sde:r?Math.max(0,recastSde(r)):0,established:new Date().getFullYear()-(r?.inputs.years||10),employees:0,technicians:r?.inputs.technicians||0,agreements:r?.inputs.agreements||0,recurringPct:r?.inputs.maintenancePct||0,residentialPct:100-(r?.inputs.commercialPct||0),vehicles:0,realEstate:'Leased facility',sellerFinancing:false,reason:'Owner is retiring',summary:'',highlights:[],growth:[],confidential:{businessName:c?.name||'',city:c?.city||'',website:c?.website||'',details:'',ownerName:c?.owner||''},companyId:c?.id};
 }
 /** Listing builder with a live preview and the anonymity check inline. Publishing waits for the check. */
-export function ListingEditor({listing,company,companies,onSaved,onPublished,onCancel}:{listing?:Listing;company?:Company;companies?:Company[];onSaved?:(id:string)=>void;onPublished?:(l:Listing)=>void;onCancel?:()=>void}){
+export function ListingEditor({listing,company,companies,onSaved,onPublished,onCancel,incoming,onChange}:{listing?:Listing;company?:Company;companies?:Company[];onSaved?:(id:string)=>void;onPublished?:(l:Listing)=>void;onCancel?:()=>void;incoming?:{fields:Partial<Draft>;all:boolean;nonce:number};onChange?:(x:Draft)=>void}){
   const {act,busy,canWrite,store}=useAdvisor();
   const [x,setX]=useState<Draft>(()=>draftFor(listing,company)),[saved,setSaved]=useState('');
   const set=<K extends keyof Draft>(k:K,v:Draft[K])=>{setX(p=>({...p,[k]:v}));setSaved('');};
   const conf=(k:keyof Listing['confidential'],v:string)=>{setX(p=>({...p,confidential:{...p.confidential,[k]:v}}));setSaved('');};
   const lines=(s:string)=>s.split('\n').map(t=>t.trim()).filter(Boolean),num=(s:string)=>Number(s.replace(/[^\d.]/g,''))||0;
+  /** A reviewed draft field arrives from the teaser draft; with all, the figures are refreshed from the recast too. */
+  useEffect(()=>{if(!incoming)return;setX(p=>{const d=draftFor(undefined,company);return {...p,...incoming.fields,...(incoming.all?{askingPrice:d.askingPrice||p.askingPrice,revenue:d.revenue,sde:d.sde,technicians:d.technicians,agreements:d.agreements,recurringPct:d.recurringPct,residentialPct:d.residentialPct,established:d.established}:{})};});setSaved('');},[incoming?.nonce]);// eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(()=>{onChange?.(x);},[x]);// eslint-disable-line react-hooks/exhaustive-deps
+  const [checked,setChecked]=useState<Record<string,string>>({});
   const full=useMemo(()=>({...x,id:listing?.id||'draft',number:listing?.number||'KL-new',status:listing?.status||'Draft',sample:false,createdAt:'',updatedAt:''}) as Listing,[x,listing]);
-  const problems=publishProblems(full),live=listing?.status==='Live'||listing?.status==='Under LOI';
+  const findings=useMemo(()=>checkTeaser({headline:x.headline,summary:x.summary,reason:x.reason,highlights:x.highlights,growth:x.growth},{businessName:x.confidential.businessName,ownerName:x.confidential.ownerName||company?.owner,city:x.confidential.city,website:x.confidential.website,region:x.region,...(company?anonExtra(company):{})}),[x,company]);
+  const blocks=blocking(findings),warns=findings.filter(f=>f.severity==='warn'),unchecked=warns.filter(f=>(checked[f.kind+f.text]||'').trim().length<3);
+  const problems=[...publishProblems(full).filter(p=>!/^The public text mentions/.test(p)),...blocks.map(f=>`“${f.text}” in ${f.field}: ${f.why}`),...unchecked.map(f=>`Check “${f.text}” in ${f.field} and add a note.`)],live=listing?.status==='Live'||listing?.status==='Under LOI';
+  const fixField=(f:Finding)=>{const k=f.field as 'headline'|'summary'|'reason'|'highlights'|'growth';const v=x[k];set(k,(Array.isArray(v)?v.map(t=>applySuggestion(t,f,x.region)):applySuggestion(v as string,f,x.region)) as never);};
   async function save(){let id='';const ok=await act(async()=>{id=await store.saveListing({...x,id:listing?.id});});if(ok){setSaved('Saved as a draft.');onSaved?.(id);}return ok?id:'';}
   async function publish(){const id=listing?.id||await save();if(!id)return;const ok=await act(async()=>{if(listing)await store.saveListing({...x,id});await store.setStatus(id,'Live');});if(ok){setSaved('Published. The listing is live on the public site.');onPublished?.({...full,id,status:'Live'});}}
   const numField=(k:'askingPrice'|'revenue'|'sde'|'established'|'employees'|'technicians'|'agreements'|'recurringPct'|'residentialPct'|'vehicles',label:string)=><Field key={k} label={label}><input inputMode="numeric" value={x[k]||''} onChange={e=>set(k,num(e.target.value))}/></Field>;
@@ -111,7 +119,7 @@ export function ListingEditor({listing,company,companies,onSaved,onPublished,onC
         <div className="adv-grid2"><Field label="Highlights, one per line" hint="At least three"><textarea rows={4} value={x.highlights.join('\n')} onChange={e=>set('highlights',lines(e.target.value))}/></Field><Field label="Room to grow, one per line"><textarea rows={4} value={x.growth.join('\n')} onChange={e=>set('growth',lines(e.target.value))}/></Field></div>
       </fieldset>
       <fieldset disabled={!canWrite||busy}><legend>Confidential</legend><p className="adv-muted">Shown only to buyers you approve after they sign the NDA.</p>
-        <div className="adv-grid3"><Field label="Business name"><input value={x.confidential.businessName} onChange={e=>conf('businessName',e.target.value)}/></Field><Field label="City"><input value={x.confidential.city} onChange={e=>conf('city',e.target.value)}/></Field><Field label="Website"><input value={x.confidential.website} onChange={e=>conf('website',e.target.value)}/></Field></div>
+        <div className="adv-grid3"><Field label="Business name"><input value={x.confidential.businessName} onChange={e=>conf('businessName',e.target.value)}/></Field><Field label="Owner’s name"><input value={x.confidential.ownerName||''} onChange={e=>conf('ownerName',e.target.value)}/></Field><Field label="City"><input value={x.confidential.city} onChange={e=>conf('city',e.target.value)}/></Field><Field label="Website"><input value={x.confidential.website} onChange={e=>conf('website',e.target.value)}/></Field></div>
         <Field label="Details for approved buyers"><textarea rows={3} value={x.confidential.details} onChange={e=>conf('details',e.target.value)} maxLength={5000} placeholder="Address, owner background, data room link, what the memorandum covers"/></Field>
       </fieldset>
       {canWrite&&<div className="adv-buttons"><Button disabled={busy}>Save draft</Button>{!live&&<Button type="button" tone="primary" disabled={busy||problems.length>0} onClick={()=>void publish()} aria-describedby="anon-check">Publish listing</Button>}{live&&<StatusPill tone="green">{listing?.status}</StatusPill>}{onCancel&&<Button type="button" tone="quiet" onClick={onCancel}>Close</Button>}</div>}
@@ -119,7 +127,9 @@ export function ListingEditor({listing,company,companies,onSaved,onPublished,onC
     </form>
     <aside className="adv-listing-side">
       <section id="anon-check" className={'adv-check-panel '+(problems.length?'bad':'ok')} aria-live="polite"><h3>{problems.length?'Not ready to publish':'Ready to publish'}</h3>
-        {problems.length?<ul>{problems.map(p=><li key={p}>{p}</li>)}</ul>:<p>The teaser has the essentials and does not mention the business name, city or website.</p>}</section>
+        {problems.length?<ul>{publishProblems(full).filter(p=>!/^The public text mentions/.test(p)).map(p=><li key={p}>{p}</li>)}</ul>:<p>The teaser has the essentials and nothing in it identifies the business: no name, owner, town, address, phone, email, website or license number.</p>}
+        {blocks.length>0&&<ul className="anon-findings">{blocks.map((f,i)=><li key={i}><strong>“{f.text}”</strong> in {f.field}. {f.why} {f.suggestion}{canWrite&&['town','business','owner'].includes(f.kind)&&<> <button type="button" className="text-link" onClick={()=>fixField(f)}>Use suggestion</button></>}</li>)}</ul>}
+        {warns.length>0&&<div className="anon-warns"><p><strong>Check these</strong></p>{warns.map((f,i)=><label key={i} className="anon-warn"><span>“{f.text}” in {f.field}. {f.why} {f.suggestion}</span><input aria-label={'I checked “'+f.text+'”: note'} placeholder="I checked this: note" value={checked[f.kind+f.text]||''} onChange={e=>setChecked(c=>({...c,[f.kind+f.text]:e.target.value}))}/></label>)}</div>}</section>
       <div className="ks adv-preview" onClickCapture={e=>e.preventDefault()}><p className="adv-muted">Public card</p><PreviewCard l={full}/>
         <p className="adv-muted">Listing page</p><div className="adv-preview-page"><p className="adv-preview-meta">{full.region}, {regionState(full.region)}. {full.focus}.</p><h3>{full.headline||'Your headline'}</h3><p>{full.summary||'The summary appears here.'}</p>{full.highlights.length>0&&<ul>{full.highlights.map(h=><li key={h}>{h}</li>)}</ul>}<p className="adv-muted">The business name, city and documents stay hidden until you approve a buyer.</p></div></div>
     </aside>
@@ -141,3 +151,6 @@ export function ListingRows({onEdit,onOpenDeal,companies}:{onEdit:(l:Listing)=>v
       <td className="adv-actions">{co?<Button tone="quiet" onClick={()=>onOpenDeal(co.id)}>Deal Room</Button>:!l.sample&&<Button tone="quiet" onClick={()=>onEdit(l)}>Edit</Button>}<a className="k-btn k-btn-quiet" href={site('/listings/'+l.number)} target="_blank" rel="noreferrer">Public page</a></td></tr>;})}
   </tbody></table></div>;
 }
+
+/** Names the anonymity checker should look for: customers and employees from accepted documents. */
+export function anonExtra(c:Company){const d=c as Company&{anonymity?:{customerNames?:string[];employeeNames?:string[];licenseNumbers?:string[]}};return {customerNames:d.anonymity?.customerNames||[],employeeNames:d.anonymity?.employeeNames||[],licenseNumbers:d.anonymity?.licenseNumbers||[],websitePhrases:c.evidence.map(e=>e.excerpt).filter(Boolean)};}

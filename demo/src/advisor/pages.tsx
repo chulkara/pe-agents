@@ -3,6 +3,10 @@ import {useState} from 'react';
 import type {Company,Workspace} from '../../lib/domain';
 import {money} from '../../lib/hvacValuation';
 import {sellStages,setStage,daysInStage,recastValuation,startEngagement,type DealCompany,type SellStage} from '../../lib/deals';
+import {materialsOf} from '../../lib/materials';
+import {acceptedInputs} from '../../lib/extract';
+import {kindLabel} from './drafts';
+import {classifyDoc} from '../../lib/drafting';
 import {qualify,markNotFit,type QualificationInput,type NotFitReason} from '../../lib/engagement';
 import {QualifyPanel,emptyQualification} from './engagement';
 import type {Lead,LeadStatus,Listing} from '../../lib/brokerage';
@@ -38,6 +42,12 @@ export function TodayPage(p:AdvisorProps&{aiReview:{c:Company;label:string}[]}){
     ...unansweredThreads(d.questions).map(t=>{const q=t[t.length-1],b=d.buyers.find(z=>z.id===q.buyerId),l=d.listings.find(z=>z.id===q.listingId);return {id:'q'+q.id,date:q.createdAt,kind:'Buyer question',text:`${b?.name||'A buyer'} asked about ${l?.number}`,action:'Answer',run:toPage(q.listingId,'Buyers','Buyers')};}),
     ...d.offers.filter(o=>o.status==='Submitted').map(o=>{const b=d.buyers.find(z=>z.id===o.buyerId),l=d.listings.find(z=>z.id===o.listingId);return {id:'o'+o.id,date:o.createdAt,kind:'Offer',text:`${money(o.price)} from ${b?.name||'a buyer'} for ${l?.number}`,action:'Share with seller',run:toPage(o.listingId,'Offers','Offers')};}),
     ...Object.values(portals).flatMap(({portal,bundle})=>(bundle?.letters||[]).filter(l=>l.status==='Signed by owner').map(l=>({id:'e'+l.id,date:l.ownerSignature?.at||l.updatedAt,kind:'Engagement letter',text:`${portal.ownerName} signed the engagement letter for ${portal.businessName}`,action:'Countersign',run:()=>p.openDeal(portal.companyId,'Owner')}))),
+    ...p.w.companies.flatMap(c=>{const m=materialsOf(c),b=portals[c.id]?.bundle,acc=b?acceptedInputs(b).filter(i=>['pl','tax','ledger'].includes(classifyDoc(i.name,i.requests))).map(i=>i.fileId).sort().join():'';const out:Need[]=[];
+      for(const d of m.drafts.filter(d=>d.status==='ready')){const isExtract=(d.result as {mode?:string})?.mode==='extract';out.push({id:'dr'+d.id,date:d.requestedAt,kind:isExtract?'Comparable sales':'AI draft',text:isExtract?`Possible comparable sales are waiting for confirmation`:`${kindLabel[d.kind]} for ${c.name} is ready for review`,action:isExtract?'Confirm sales':'Review draft',run:isExtract?()=>p.go('Comparable sales'):()=>p.openDeal(c.id,d.kind==='recast'||d.kind==='comps'?'Valuation and recast':d.kind==='teaser'?'Listing':'Materials')});}
+      const rd=m.drafts.find(d=>d.kind==='recast'&&['ready','applied'].includes(d.status));const used=(rd?.result as {documents?:{fileId:string}[]}|undefined)?.documents?.map(x=>x.fileId).sort().join();
+      if(rd&&used!==undefined&&b&&acc!==used&&!rd.usedAnyway)out.push({id:'st'+rd.id,date:rd.requestedAt,kind:'Changed inputs',text:`New documents since the recast draft for ${c.name}`,action:'Draft again',run:()=>p.openDeal(c.id,'Valuation and recast')});
+      if(m.cim[0]?.status==='Changes requested')out.push({id:'cim'+c.id,date:m.cim[0].createdAt,kind:'Memorandum',text:`${c.owner||'The owner'} asked for changes to the memorandum`,action:'Review changes',run:()=>p.openDeal(c.id,'Materials')});
+      return out;}),
     ...p.aiReview.map(({c,label})=>({id:'a'+c.id,date:'',kind:'AI draft',text:`${label} for ${c.name}`,action:'Review draft',run:()=>p.openDeal(c.id,'Research and drafting')})),
   ].sort((a,b)=>b.date.localeCompare(a.date)):[];
   const counts=sellStages.map(s=>[s,p.w.companies.filter(c=>stageOf(x,c)===s).length] as const);

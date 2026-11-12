@@ -11,14 +11,23 @@ import {Button,StatusPill,Figure,Panel,KeylineList,EmptyState,Field,Tabs} from '
 import OwnerPortalAdmin,{PortalContextRef} from '../OwnerPortalAdmin';
 import {unread,currentLetter} from '../../lib/portal';
 import {CompanyQualify,EngagementPanel} from './engagement';
+import {RecastDraftPanel,TeaserDraftPanel,type TeaserFields} from './drafts';
+import MaterialsTab from './cimEditor';
+import {CompsPanel} from './comps';
+import {materialsOf,closedDealComp,saveComp,validateComp} from '../../lib/materials';
+import {canShareInDataRoom} from '../../lib/cim';
+import {acceptedInputs} from '../../lib/extract';
+import type {Draft as ListingDraft} from './market';
 
-export const dealTabs=['Overview','Valuation and recast','Listing','Buyers','Offers','Documents','Owner','Research and drafting','Activity'] as const;
+export const dealTabs=['Overview','Valuation and recast','Listing','Materials','Data room','Buyers','Offers','Documents','Owner','Research and drafting','Activity'] as const;
 export type DealTab=typeof dealTabs[number];
 type Props={c:Company;w:Workspace;commit:(next:Workspace)=>Promise<boolean>;actor:string;readOnly:boolean;tab:string;setTab:(t:string)=>void;back:()=>void;backLabel:string;edit:()=>void;research:ReactNode;computer:ReactNode;aiCount:number};
 const dt=(s?:string)=>s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'';
 
 export default function DealRoom(p:Props){
   const x=useAdvisor(),portalCtx=useContext(PortalContextRef),c=p.c as DealCompany;
+  const mat=materialsOf(c),[incoming,setIncoming]=useState<{fields:Partial<ListingDraft>;all:boolean;nonce:number}|undefined>(),[teaserNow,setTeaserNow]=useState<TeaserFields>({headline:'',summary:'',highlights:[],growth:[],reason:''});
+  const roomLive=false;
   const listing=listingOf(x.d,c),pe=x.portals[c.id],stage=stageOf(x,c),[msg,setMsg]=useState('');
   const tab=(dealTabs as readonly string[]).includes(p.tab)?p.tab as DealTab:'Overview';
   const v=c.recast?recastValuation(c.recast):null,sde=c.recast?recastSde(c.recast):0,revenue=c.recast?.inputs.revenue||listing?.revenue||0;
@@ -26,14 +35,20 @@ export default function DealRoom(p:Props){
     Buyers:(listing&&x.d?x.d.requests.filter(r=>r.listingId===listing.id&&r.status==='Pending').length+unansweredThreads(x.d.questions.filter(q=>q.listingId===listing.id)).length:0),
     Offers:listing&&x.d?x.d.offers.filter(o=>o.listingId===listing.id&&o.status==='Submitted').length:0,
     Documents:pe?.bundle?.requests.filter(r=>r.status==='Submitted').length||0,
-    Owner:(pe?.bundle?unread(pe.bundle):0)+(pe?.bundle?.letters.filter(l=>l.status==='Signed by owner').length||0),'Research and drafting':p.aiCount};
-  async function move(to:SellStage,note?:string){try{const next=setStage(p.w,c.id,to,p.actor,{listing,portal:pe?.portal});if(await p.commit(next))setMsg(note||`Moved to ${to}.`);}catch(e){setMsg((e as Error).message);}}
+    Owner:(pe?.bundle?unread(pe.bundle):0)+(pe?.bundle?.letters.filter(l=>l.status==='Signed by owner').length||0),'Research and drafting':p.aiCount,Materials:mat.drafts.filter(d=>d.status==='ready').length+(mat.cim[0]?.status==='Changes requested'?1:0)};
+  async function move(to:SellStage,note?:string){try{let next=setStage(p.w,c.id,to,p.actor,{listing,portal:pe?.portal});
+    // A closed Kalling deal becomes a comparable sale, at the accepted price.
+    const won=to==='Closed'&&listing&&x.d?x.d.offers.find(o=>o.listingId===listing.id&&o.status==='Accepted'):undefined;if(won){const comp=closedDealComp(c,won.price,p.actor);if(!validateComp(comp).length)next=saveComp(next,comp,p.actor);}
+   if(await p.commit(next))setMsg(note||`Moved to ${to}.`);}catch(e){setMsg((e as Error).message);}}
   const before=(s:SellStage)=>sellStages.indexOf(stage)<sellStages.indexOf(s)&&stage!=='Lost';
+  const accepted=pe?.bundle?acceptedInputs(pe.bundle).length:0,recastDone=mat.drafts.some(d=>d.kind==='recast'&&d.status==='applied'),teaserDone=mat.drafts.some(d=>d.kind==='teaser'&&d.status==='applied')||!!listing,cimOk=canShareInDataRoom(mat.cim[0]);
   const action=(()=>{const a=primaryAction[stage];
     const letter=currentLetter(pe?.bundle?.letters||[]);
     if(stage==='Lead')return {label:'Qualify',run:()=>{p.setTab('Overview');requestAnimationFrame(()=>document.querySelector('.eng-qualify')?.scrollIntoView({block:'start'}));}};
     if(stage==='Qualified'){if(letter?.status==='Signed by owner')return {label:'Countersign',run:()=>p.setTab('Owner')};if(letter&&['Ready to sign','Viewed by owner'].includes(letter.status))return {label:'Waiting for owner signature',run:()=>p.setTab('Owner')};return {label:'Prepare engagement letter',run:()=>p.setTab('Owner')};}
+    if(stage==='Engaged'||stage==='Preparing'){if(!accepted)return {label:'Request documents',run:()=>p.setTab('Documents')};if(!recastDone)return {label:'Draft recast',run:()=>p.setTab('Valuation and recast')};if(!teaserDone)return {label:'Draft teaser',run:()=>p.setTab('Listing')};if(!cimOk)return {label:'Draft CIM',run:()=>p.setTab('Materials')};if(!listing||listing.status==='Draft')return {label:'Publish listing',run:()=>p.setTab('Listing')};}
     if(stage==='Listed'&&counts.Offers)return {label:'Share offer with seller',run:()=>p.setTab('Offers')};
+    if(stage==='Listed'&&!roomLive)return {label:'Open data room',run:()=>p.setTab('Data room')};
     return {label:a.label,run:()=>p.setTab(a.tab)};})();
   const head=listing?.askingPrice?{value:money(listing.askingPrice),label:'Asking price'}:c.recast?.askingPrice?{value:money(c.recast.askingPrice),label:'Asking price'}:v&&v.mid>0?{value:`${money(v.low)} to ${money(v.high)}`,label:'Estimated value'}:{value:'Not valued',label:'Estimated value'};
   const portalPill=!pe?<StatusPill>No owner portal</StatusPill>:pe.portal.status==='Active'?<StatusPill tone="green">Owner has joined</StatusPill>:pe.portal.status==='Invited'?<StatusPill tone="peri">Owner invited</StatusPill>:<StatusPill>Portal draft</StatusPill>;
@@ -59,8 +74,8 @@ export default function DealRoom(p:Props){
         <Tabs label="Deal Room sections" tabs={dealTabs.map(t=>({id:t,count:counts[t]}))} current={tab} onChange={p.setTab}/>
         <div className="adv-tabpanel" role="tabpanel" aria-label={tab}>
           {tab==='Overview'&&<>{stage==='Lead'&&<CompanyQualify c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}<Overview c={c} listing={listing} stage={stage} w={p.w}/></>}
-          {tab==='Valuation and recast'&&<RecastEditor key={c.id} c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly} askingPrice={listing?.askingPrice}/>}
-          {tab==='Listing'&&<ListingEditor key={c.id} listing={listing} company={c} onSaved={()=>{if(before('Preparing'))void move('Preparing','Listing saved as a draft. The deal is now Preparing.');}} onPublished={()=>{if(before('Listed'))void move('Listed','Published. The deal is now Listed.');}}/>}
+          {tab==='Valuation and recast'&&<RecastDraftPanel c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}{tab==='Valuation and recast'&&<RecastEditor key={c.id+'-'+(c.recast?.version||0)} c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly} askingPrice={listing?.askingPrice}/>}{tab==='Valuation and recast'&&<CompsPanel c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}{tab==='Materials'&&<MaterialsTab c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}
+          {tab==='Listing'&&<TeaserDraftPanel c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly||listing?.status==='Live'} current={teaserNow} onAccept={(f,all)=>setIncoming({fields:f,all,nonce:Date.now()})}/>}{tab==='Listing'&&<ListingEditor key={c.id} listing={listing} company={c} incoming={incoming} onChange={x=>setTeaserNow({headline:x.headline,summary:x.summary,highlights:x.highlights,growth:x.growth,reason:x.reason})} onSaved={()=>{if(before('Preparing'))void move('Preparing','Listing saved as a draft. The deal is now Preparing.');}} onPublished={()=>{if(before('Listed'))void move('Listed','Published. The deal is now Listed.');}}/>}
           {tab==='Buyers'&&(listing?<><AccessRequests listingId={listing.id}/><h2 className="deal-sub">Questions from buyers</h2><QuestionThreads listingId={listing.id}/></>:<NoListing go={()=>p.setTab('Listing')}/>)}
           {tab==='Offers'&&(listing?<OfferComparison listing={listing} onAccepted={(l:Listing)=>{if(stage!=='Under LOI')void p.commit(setStage(p.w,c.id,'Under LOI',p.actor,{listing:l})).then(ok=>ok&&setMsg('The seller accepted. The deal is now Under LOI.'));}}/>:<NoListing go={()=>p.setTab('Listing')}/>)}
           {tab==='Documents'&&<OwnerPortalAdmin key={c.id+'d'} company={c} sections={['Requests']} onChange={()=>void x.reloadPortals()}/>}

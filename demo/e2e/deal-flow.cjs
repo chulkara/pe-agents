@@ -43,7 +43,7 @@ const step=(n,t)=>console.log(`${n}. ${t}`);
   await adv.getByLabel(/^Summary/).fill('A residential service and replacement company with a steady base of maintenance agreements, a trained team of technicians and an owner ready to help with the transition.');
   await adv.getByLabel('Highlights, one per line').fill('850 active maintenance agreements\nFour licensed technicians\nOwner will stay for a transition period');
   await adv.getByRole('button',{name:'Save draft'}).click();await adv.waitForTimeout(400);
-  assert.match(await adv.locator('#anon-check').innerText(),/mentions “edison”/);assert.ok(await adv.locator('.adv-listing-form').getByRole('button',{name:'Publish listing'}).isDisabled(),'publish waits for the check');
+  assert.match(await adv.locator('#anon-check').innerText(),/“Edison” in headline/);assert.ok(await adv.locator('.adv-listing-form').getByRole('button',{name:'Publish listing'}).isDisabled(),'publish waits for the check');
   assert.equal(await adv.inputValue('.deal-stage select'),'Preparing');await shot(adv,'deal-listing-blocked-1440');
   await adv.getByLabel('Headline').fill('Central Jersey residential HVAC company with 850 maintenance agreements');
   await adv.locator('.adv-listing-form').getByRole('button',{name:'Publish listing'}).click();await adv.waitForSelector('text=The deal is now Listed');

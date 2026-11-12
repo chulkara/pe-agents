@@ -5,6 +5,7 @@ import type {PortalStore} from '../lib/portalStore';
 import './portal.css';
 import {ProgressBar} from './design/ui';
 import OwnerLetter,{SignedLetterLink} from './LetterView';
+import {AboutBusiness,MemorandumReview} from './OwnerReview';
 
 // In-page links must not change the URL hash, which selects the app.
 const jump=(e:{preventDefault():void;currentTarget:HTMLAnchorElement})=>{e.preventDefault();document.getElementById(e.currentTarget.getAttribute('href')!.slice(1))?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});};
@@ -59,6 +60,8 @@ export default function SellerPortal({store,portalId,preview=false,top}:{store:P
           <div className="portal-requests">{[...b.requests].sort((x,y)=>requestOrder(x)-requestOrder(y)).map(r=><RequestCard key={r.id} r={r} b={b} store={store} readOnly={readOnly} refresh={refresh} open={openId===r.id} setOpen={o=>setOpenId(o?r.id:'')}/>)}</div>
           {!b.requests.length&&<p className="portal-empty">No documents requested yet.</p>}
         </section>}
+        {!gated&&<MemorandumReview b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
+        {!gated&&<AboutBusiness b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
         <section id="portal-buyers" className="portal-section"><h2>Interested buyers</h2>
           {b.buyers.length?<div className="portal-buyers">{b.buyers.map(x=><article key={x.id}><div className="portal-buyer-head"><h3>{x.name}</h3><span className={'k-pill '+(x.stage==='Offer made'?'k-pill-green':x.stage==='Under NDA'||x.stage==='Reviewing information'?'k-pill-peri':'')}>{x.stage}</span></div>{x.summary&&<p>{x.summary}</p>}<small>{stageHelp[x.stage]} Updated {fmtDate(x.updatedAt)}.</small></article>)}</div>:<p className="portal-empty">No buyers are listed yet. {p.firmName} adds buyers here as conversations begin.</p>}
         </section>

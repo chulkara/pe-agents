@@ -122,3 +122,10 @@
 .portal-sign{display:grid;gap:14px;margin-top:18px;max-width:560px}.portal-sign .field{display:flex;flex-direction:column;gap:8px}.portal-sign .field>span{font:500 14px var(--k-ui)}.portal-sign input:not([type=checkbox]){min-height:48px;font-size:17px;padding:10px 14px;border:1px solid rgba(0,0,0,.35);border-radius:var(--k-radius-input)}.portal-sign .btn{min-height:48px;justify-self:start}
 .portal-consent{display:flex;gap:12px;align-items:flex-start;font-size:15px;line-height:1.5;cursor:pointer}.portal-consent input{width:22px;height:22px;flex-shrink:0;margin-top:1px;accent-color:var(--k-purple)}
 @media (max-width:640px){.portal-letter{padding:16px}.portal-letter-text{padding:14px;font-size:15px;max-height:none}}
+.portal-about{display:grid;gap:18px;border-top:1px solid #000;padding-top:16px}.portal-about .field{display:grid;gap:6px}.portal-about .field>span{font:500 16px var(--k-font)}.portal-about small{font:450 13px var(--k-ui);color:var(--k-grey-1)}
+.portal-saved{font-style:normal;color:var(--k-green);margin-left:6px}
+.portal-memo-doc{border:1px solid var(--k-line);border-radius:var(--k-radius-panel);padding:24px;background:#fff;max-width:72ch}
+.portal-memo-title{font:500 24px var(--k-font);margin:0 0 12px}.portal-memo-section{border-top:1px solid var(--k-line);padding:14px 0}.portal-memo-section h4{font:500 17px var(--k-font);margin:0 0 6px}.portal-memo-section p{margin:0 0 10px;line-height:1.65;font-size:16px}
+.portal-memo-comment summary{cursor:pointer;display:inline-flex;gap:6px;align-items:center;min-height:44px;font:500 14px var(--k-ui);color:var(--k-purple)}
+.portal-memo-note{background:var(--k-peri-soft);padding:10px 12px;border-radius:12px;font-size:14px!important}
+@media (max-width:640px){.portal-memo-doc{padding:16px}}

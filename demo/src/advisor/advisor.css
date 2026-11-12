@@ -170,3 +170,26 @@
 .eng-status{display:grid;gap:14px}.eng-link,.eng-sign{display:grid;gap:10px;padding:16px;border-radius:14px;background:var(--k-peri-soft)}.eng-link .k-btn,.eng-sign .k-btn{justify-self:start}.eng-sign p,.eng-link p{margin:0}
 .eng-void summary{cursor:pointer;font:500 13px var(--k-ui);color:var(--k-error);min-height:44px;display:flex;align-items:center}.eng-void{display:grid;gap:8px}
 @media (max-width:760px){.eng-q-grid,.eng-notfit{grid-template-columns:minmax(0,1fr)}}
+/* Drafts, memorandum, comps */
+.drf-panel .drf-docs{list-style:none;margin:0 0 12px;padding:0;border-top:1px solid #000}.drf-docs li{display:grid;gap:2px;padding:8px 0;border-bottom:1px solid var(--k-line)}.drf-docs small{color:var(--k-grey-1);font-size:12px}
+.drf-status{display:grid;gap:10px;margin:12px 0}.drf-spinner{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--k-purple);border-right-color:transparent;margin-right:8px;vertical-align:-1px;animation:agent-spin 1s linear infinite}
+.drf-stale{padding:12px 16px;border-radius:var(--k-radius-input);background:var(--k-peri-soft);font-size:14px;display:grid;gap:8px}.drf-stale input{min-height:40px;padding:6px 12px;border:1px solid rgba(0,0,0,.28);border-radius:10px;min-width:240px}
+.drf-blocked{margin:8px 0;padding:12px 16px;border-radius:var(--k-radius-input);background:var(--k-error-soft);color:var(--k-error);font:14px/1.5 var(--k-ui);overflow-wrap:anywhere}
+.drf-mismatch,.drf-findings{margin:12px 0;padding:12px 16px;border-radius:var(--k-radius-input);background:var(--k-error-soft);color:var(--k-error);font-size:14px}.drf-mismatch ul,.drf-findings ul{margin:6px 0 0;padding-left:18px;display:grid;gap:4px}
+.drf-props tr.skipped td{opacity:.5}.drf-props tr.accepted td:first-child{box-shadow:inset 3px 0 0 var(--k-green)}.drf-props input{width:110px;min-height:36px;border:1px solid rgba(0,0,0,.28);border-radius:8px;padding:4px 8px}
+.drf-excerpt{display:block;color:var(--k-grey-1);font-size:12px;margin-top:3px;font-style:italic}
+.drf-compare .drf-text{white-space:pre-wrap;max-width:36ch;font-size:13px;line-height:1.5}
+.anon-findings{margin:10px 0 0;padding-left:18px;display:grid;gap:6px;font-size:13px}.anon-warns{margin-top:10px;display:grid;gap:8px;font-size:13px}.anon-warn{display:grid;gap:6px}.anon-warn input{min-height:36px;border-radius:8px;border:1px solid rgba(0,0,0,.28);padding:4px 10px;background:#fff}
+.adv-check-panel.bad .text-link{color:var(--k-error);font-weight:600}
+.mat-tab{display:grid;gap:16px}
+.cim-checks{padding:14px 16px;border-radius:var(--k-radius-panel);margin:12px 0}.cim-checks h3{margin:0 0 6px;font-size:16px}.cim-checks ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}.cim-checks p{margin:0;font-size:14px}
+.cim-checks.ok{background:var(--k-green);color:#fff;background-image:var(--k-grain)}.cim-checks.bad{background:var(--k-error-soft);color:var(--k-error)}
+.cim-sections{display:grid;gap:4px;margin-top:12px;border-top:1px solid #000}
+.cim-section{padding:14px 0;border-bottom:1px solid var(--k-line);display:grid;gap:10px}.cim-section header{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}.cim-section h3{margin:0;font-size:18px;font-weight:500}.cim-section header small{color:var(--k-grey-1);font-size:12px}.cim-section header .k-btn{margin-left:auto}
+.cim-para{display:grid;gap:6px}.cim-para.needs{padding:10px 12px;border-radius:12px;background:var(--k-peri-soft);box-shadow:inset 3px 0 0 var(--k-purple)}
+.cim-para p{margin:0;line-height:1.6;font-size:15px}.cim-para textarea{width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,.2);border-radius:10px;padding:10px 12px;font:15px/1.55 var(--k-font);resize:vertical}
+.cim-sources{font-size:12px!important;color:var(--k-grey-1);display:flex;flex-wrap:wrap;gap:4px;align-items:center}.cim-sources .k-pill{font-size:11px;padding:2px 8px}
+.cim-confirm{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto auto;gap:8px;align-items:end}
+.cim-comments{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:13px}.cim-comments li{padding:8px 10px;border-radius:10px;background:var(--k-surface)}.cim-comments li.owner{background:var(--k-peri-soft)}.cim-comments small{display:block;color:var(--k-grey-1)}
+.comps-commentary{margin:12px 0 0;padding:14px 16px;border-left:3px solid var(--k-peri);background:var(--k-peri-soft);border-radius:0 12px 12px 0}.comps-commentary p{margin:0 0 4px;line-height:1.55}
+@media (max-width:760px){.cim-confirm{grid-template-columns:minmax(0,1fr)}}
