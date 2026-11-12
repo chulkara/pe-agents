@@ -36,7 +36,7 @@ export function estimateHvacValue(i:HvacInputs):Valuation{
   if(margin>0.45)warnings.push('Earnings above 45% of revenue are unusual for HVAC. Buyers will ask to see how add-backs were calculated.');
   if(margin<0.06)warnings.push('Earnings below 6% of revenue usually mean value is driven by assets and the customer list rather than profit.');
   // Size band: small owner-operated shops trade at lower multiples than companies with management.
-  const band=sde<250000?{label:'Owner-operated (SDE under $250K)',lo:2.2,hi:3.0}:sde<750000?{label:'Established (SDE $250K–$750K)',lo:2.8,hi:3.6}:sde<2000000?{label:'Scaled (SDE $750K–$2M)',lo:3.4,hi:4.4}:{label:'Platform-ready (SDE over $2M)',lo:4.0,hi:5.2};
+  const band=sde<250000?{label:'Owner-operated (SDE under $250K)',lo:2.2,hi:3.0}:sde<750000?{label:'Established (SDE $250K to $750K)',lo:2.8,hi:3.6}:sde<2000000?{label:'Scaled (SDE $750K to $2M)',lo:3.4,hi:4.4}:{label:'Platform-ready (SDE over $2M)',lo:4.0,hi:5.2};
   const adj:Adjustment[]=[];
   const add=(label:string,effect:number,why:string)=>{if(Math.abs(effect)>=0.05)adj.push({label,effect:Math.round(effect*100)/100,why});};
   add('Recurring service revenue',clamp((i.maintenancePct-40)/100*1.6,-0.5,0.8),`${Math.round(i.maintenancePct)}% of revenue from service and maintenance. Buyers pay more for predictable, repeat revenue than for one-off installs.`);
@@ -62,6 +62,6 @@ export function estimateHvacValue(i:HvacInputs):Valuation{
   return {sde,low,mid,high,multipleLow,multipleHigh,band:band.label,adjustments:adj,readiness,warnings};
 }
 export const valuationSources=[
-  {title:'OffDeal — practical valuation guide for an HVAC business',url:'https://offdeal.io/blog/practical-valuation-guide-for-an-hvac-business'},
-  {title:'NJ Board of Examiners of HVACR Contractors — FAQ',url:'https://njconsumeraffairs.gov/hvacr/Pages/FAQ.aspx'},
+  {title:'OffDeal: practical valuation guide for an HVAC business',url:'https://offdeal.io/blog/practical-valuation-guide-for-an-hvac-business'},
+  {title:'NJ Board of Examiners of HVACR Contractors: FAQ',url:'https://njconsumeraffairs.gov/hvacr/Pages/FAQ.aspx'},
 ];

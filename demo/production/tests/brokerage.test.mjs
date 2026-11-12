@@ -10,7 +10,7 @@ const hash='a'.repeat(64);
 async function run(role,user,sql,args=[]){await db.exec(`begin;set local role ${role};`);await db.query("select set_config('request.jwt.claim.sub',$1,true)",[user||'']);try{const r=await db.query(sql,args);await db.exec('commit;');return r.rows;}catch(e){await db.exec('rollback;');throw e;}}
 const as=(u,sql,a)=>run('authenticated',u,sql,a),anon=(sql,a)=>run('anon',null,sql,a);
 const one=async(p)=>{const r=await p;return r[0]?Object.values(r[0])[0]:null;};
-const profile={name:'Alex Morgan',type:'Owner-operator',funds:'$500K–$1M',financing:['SBA 7(a) loan'],experience:'Ten years running field operations for a mechanical contractor.',regions:['Central Jersey'],maxPrice:4000000};
+const profile={name:'Alex Morgan',type:'Owner-operator',funds:'$500K to $1M',financing:['SBA 7(a) loan'],experience:'Ten years running field operations for a mechanical contractor.',regions:['Central Jersey'],maxPrice:4000000};
 const lead={name:'Pat Russo',email:'Pat@RussoHVAC.test',region:'Central Jersey',consent:true,source:'valuation',valuation:{sde:480000,low:1500000,high:1900000}};
 
 before(async()=>{

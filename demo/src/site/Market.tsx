@@ -102,7 +102,7 @@ function NdaForm({l,name,busy,submit,onCancel}:{l:ViewListing;name:string;busy:b
     <label className="ks-field"><span>Type your full name to sign: {name}</span><input value={typed} onChange={e=>setTyped(e.target.value)} autoComplete="name" required/></label>
     <label className="ks-field"><span>Note to the advisor · optional</span><textarea name="message" rows={2} maxLength={1500} placeholder="Why this company fits you"/></label>
     <div className="ks-actions"><button className="ks-btn ks-btn-primary" disabled={busy||!agreed||typed.trim().toLowerCase()!==name.toLowerCase()}>Sign and request access</button><button type="button" className="ks-link" onClick={onCancel}>Cancel</button></div>
-    <p className="ks-fine">Your typed name, the date and a fingerprint of this exact text are recorded with your request.</p>
+    <p className="ks-fine">We record your typed name, the date and a fingerprint of this exact text with your request.</p>
   </form>;
 }
 function OfferForm({l,busy,submit}:{l:ViewListing;busy:boolean;submit:(o:Parameters<ReturnType<typeof useSession>['store']['offer']>[1])=>void}){
@@ -173,7 +173,7 @@ export function AccountPage({route}:{route:Route}){
         <section><h2>Your requests</h2>{me.access.length?<ul className="ks-offers">{me.access.map(a=>{const l=all.find(x=>x.id===a.listingId);return <li key={a.id}><a href={href('/listings/'+(l?.number||a.listingId))}>{l?.headline||'Listing'}</a><b>{a.status}</b><small>NDA signed {new Date(a.nda.signedAt).toLocaleDateString()}</small></li>;})}</ul>:<p className="ks-empty">No requests yet. Open a listing and sign its NDA to see the details.</p>}</section>
         <section><h2>Saved listings</h2>{me.buyer.saved.length?<div className="ks-plates ks-plates-tight">{all.filter(l=>me.buyer.saved.includes(l.id)).map(l=><Nameplate key={l.id} l={l}/>)}</div>:<p className="ks-empty">Save listings to compare them here.</p>}</section>
         <section><h2>Matches for you</h2><div className="ks-plates ks-plates-tight">{all.filter(l=>l.status==='Live'&&(!me.buyer.regions.length||me.buyer.regions.includes(l.region))&&(!me.buyer.maxPrice||l.askingPrice<=me.buyer.maxPrice*1.1)).slice(0,4).map(l=><Nameplate key={l.id} l={l}/>)}</div></section>
-        <section><h2>Your profile</h2><p>{me.buyer.type} · {me.buyer.funds} available · {me.buyer.regions.join(', ')||'any region'}</p><p className="ks-fine">Status: {me.buyer.status==='Verified'?'Verified by an advisor':me.buyer.status==='Restricted'?'Restricted — contact Kalling':'Profile complete'}</p><a className="ks-btn" href={href('/account?next=profile')}>Edit profile</a></section>
+        <section><h2>Your profile</h2><p>{me.buyer.type} · {me.buyer.funds} available · {me.buyer.regions.join(', ')||'any region'}</p><p className="ks-fine">Status: {me.buyer.status==='Verified'?'Verified by an advisor':me.buyer.status==='Restricted'?'Restricted. Contact Kalling.':'Profile complete'}</p><a className="ks-btn" href={href('/account?next=profile')}>Edit profile</a></section>
       </div></>}
   </section>;
 }

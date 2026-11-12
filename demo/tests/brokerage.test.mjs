@@ -8,7 +8,7 @@ import {sampleListings} from '../lib/brokerageSamples.ts';
 const base={revenue:2500000,ownerPay:180000,netProfit:280000,addBacks:20000,maintenancePct:55,agreements:900,commercialPct:15,newConstructionPct:5,technicians:8,ownerRole:'key-relationships',topCustomerPct:6,years:18,trend:'growing',licenseHolder:'owner-and-employee'};
 function kv(){const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k,v)=>m.set(k,v)};}
 const advisor={kind:'advisor',name:'Karan',canWrite:true};
-const profile={name:'Alex Morgan',phone:'',type:'Owner-operator',company:'',funds:'$500K–$1M',financing:['SBA 7(a) loan'],experience:'Ten years running field operations for a regional mechanical contractor.',regions:['Central Jersey'],maxPrice:4000000};
+const profile={name:'Alex Morgan',phone:'',type:'Owner-operator',company:'',funds:'$500K to $1M',financing:['SBA 7(a) loan'],experience:'Ten years running field operations for a regional mechanical contractor.',regions:['Central Jersey'],maxPrice:4000000};
 
 test('valuation shows its work and rewards transferable, recurring businesses',()=>{
   const v=estimateHvacValue(base);

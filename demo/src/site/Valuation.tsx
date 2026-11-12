@@ -7,7 +7,7 @@ import {useSession,href,Arrow} from './BrokerSite';
 export function Gauge({v,caption}:{v:Valuation|null;caption?:string}){
   const max=v?Math.max(1e6,Math.ceil(v.high*1.3/500000)*500000):4e6,pct=(x:number)=>Math.min(100,Math.max(0,x/max*100));
   return <figure className="ks-gauge" aria-label={v?`Estimated value ${money(v.low)} to ${money(v.high)}`:'Enter your numbers to see an estimate'}>
-    <figcaption><span className="ks-gauge-label">Estimated value</span><strong>{v?`${money(v.low)}–${money(v.high)}`:'—'}</strong><span className="ks-gauge-sub">{v?(caption||`${v.multipleLow}× to ${v.multipleHigh}× earnings of ${money(v.sde)}`):'Your estimate appears here.'}</span></figcaption>
+    <figcaption><span className="ks-gauge-label">Estimated value</span><strong>{v?`${money(v.low)} to ${money(v.high)}`:'Enter your numbers'}</strong><span className="ks-gauge-sub">{v?(caption||`${v.multipleLow}× to ${v.multipleHigh}× earnings of ${money(v.sde)}`):'Your estimate appears here.'}</span></figcaption>
     <div className="ks-scale" aria-hidden="true">
       <div className="ks-scale-track">{v&&<span className="ks-scale-pill" style={{left:pct(v.low)+'%',width:Math.max(4,pct(v.high)-pct(v.low))+'%'}}/>}{v&&<span className="ks-scale-mid" style={{left:pct(v.mid)+'%'}}/>}</div>
       <div className="ks-scale-ticks"><span>$0</span><span>{money(max/2)}</span><span>{money(max)}</span></div>
@@ -43,7 +43,7 @@ export function ValuePage(){
     try{await store.submitLead({name:String(d.get('name')),email:String(d.get('email')),phone:String(d.get('phone')),businessName:String(d.get('businessName')),region:String(d.get('region')) as Region,timing:String(d.get('timing')),message:String(d.get('message')),source:'valuation',consent:d.get('consent')==='on',valuation:v?{sde:v.sde,low:v.low,mid:v.mid,high:v.high,revenue:inputs.revenue}:undefined});setSent(String(d.get('name')).split(' ')[0]);}
     catch(err){setError((err as Error).message);}finally{setBusy(false);}}
   return <div className="ks-value">
-    <section className="ks-wrap ks-page-head"><h1 className="ks-display ks-display-s">What is your HVAC company worth?</h1><p>Answer what you know. The estimate updates as you type, and every adjustment is explained. Nothing is sent to anyone unless you ask for a review.</p></section>
+    <section className="ks-wrap ks-page-head"><h1 className="ks-display ks-display-s">What is your HVAC company worth?</h1><p>Fill in what you know. The estimate updates as you type and explains each adjustment. Nobody sees your numbers unless you ask for a review.</p></section>
     <div className="ks-wrap ks-value-grid">
       <form className="ks-value-form" onSubmit={e=>e.preventDefault()}>
         <fieldset><legend>Earnings</legend>
@@ -76,20 +76,20 @@ export function ValuePage(){
           {v.warnings.map(w=><p key={w} className="ks-warn">{w}</p>)}
           <h2>What would raise it</h2>
           <ul className="ks-ready">{v.readiness.map(r=><li key={r.label}><span>{r.label}</span><span className="ks-meter" aria-label={`${r.score} of 5`}>{[1,2,3,4,5].map(n=><i key={n} className={n<=r.score?'on':''}/>)}</span>{r.score<4&&<small>{r.tip}</small>}</li>)}</ul>
-          <p className="ks-fine">An estimate from public industry ranges, not an appraisal or an offer. Sources: {valuationSources.map((s,i)=><a key={s.url} href={s.url} target="_blank" rel="noreferrer">{s.title}{i<valuationSources.length-1?'; ':''}</a>)}.</p>
+          <p className="ks-fine">This estimate uses public industry ranges. It is not an appraisal or an offer. Sources: {valuationSources.map((s,i)=><a key={s.url} href={s.url} target="_blank" rel="noreferrer">{s.title}{i<valuationSources.length-1?'; ':''}</a>)}.</p>
         </>}
       </aside>
     </div>
     <section className="ks-wrap ks-review" id="review">
       {sent?<div className="ks-thanks" role="status"><h2>Thank you, {sent}.</h2><p>An advisor will call or email within one business day to talk through your numbers. The conversation is confidential, and there’s no obligation.</p></div>
-      :<form onSubmit={submit} className="ks-review-form"><div><h2>Get a confidential review</h2><p>An advisor checks your numbers against recent HVAC sales, tells you what buyers will ask about, and whether now is the right time. No fee and no obligation. Your employees, customers and competitors won’t hear about it.</p></div>
+      :<form onSubmit={submit} className="ks-review-form"><div><h2>Get a confidential review</h2><p>An advisor checks your numbers against recent HVAC sales and tells you what buyers will ask about and whether now is a good time to sell. There’s no fee or obligation, and your employees, customers and competitors won’t hear about it.</p></div>
         <div className="ks-review-fields">
           <label className="ks-field"><span>Your name</span><input name="name" required autoComplete="name"/></label>
           <label className="ks-field"><span>Email</span><input name="email" type="email" required autoComplete="email"/></label>
           <label className="ks-field"><span>Phone · optional</span><input name="phone" type="tel" autoComplete="tel"/></label>
           <label className="ks-field"><span>Company name · optional</span><input name="businessName"/></label>
           <label className="ks-field"><span>Where you operate</span><select name="region" required defaultValue="">{<option value="" disabled>Choose a region</option>}{regions.map(r=><option key={r}>{r}</option>)}</select></label>
-          <label className="ks-field"><span>When might you sell?</span><select name="timing"><option>Just exploring</option><option>Within a year</option><option>In 1–3 years</option><option>As soon as possible</option></select></label>
+          <label className="ks-field"><span>When might you sell?</span><select name="timing"><option>Just exploring</option><option>Within a year</option><option>In 1 to 3 years</option><option>As soon as possible</option></select></label>
           <label className="ks-field ks-wide"><span>Anything we should know · optional</span><textarea name="message" rows={3} maxLength={2000}/></label>
           <label className="ks-check ks-wide"><input type="checkbox" name="consent" required/>Contact me about selling my company. My estimate is shared with the advisor.</label>
           {error&&<p className="ks-error ks-wide">{error}</p>}

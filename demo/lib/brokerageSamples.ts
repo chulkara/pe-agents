@@ -1,7 +1,7 @@
 import type {Listing} from './brokerage.ts';
 // Fictional, clearly labeled sample listings for demonstrating the marketplace. No real business.
 const t='2026-11-01T14:00:00.000Z';
-const conf={businessName:'Sample listing — no real business',city:'Illustrative only',website:'',details:'This is a sample listing used to demonstrate how Kalling shares confidential details after an approved NDA. In a real listing this section holds the business name, address, three years of financial statements, the confidential information memorandum and the data room.'};
+const conf={businessName:'Sample listing, no real business',city:'Illustrative only',website:'',details:'This is a sample listing used to demonstrate how Kalling shares confidential details after an approved NDA. In a real listing this section holds the business name, address, three years of financial statements, the confidential information memorandum and the data room.'};
 const base={status:'Live' as const,sample:true,confidential:conf,createdAt:t,updatedAt:t,publishedAt:t,vehicles:0,sellerFinancing:true,growth:[] as string[]};
 export const sampleListings:Listing[]=[
   {...base,id:'sample-1047',number:'KL-1047',headline:'Residential HVAC service company with 1,900 maintenance agreements',region:'Central Jersey',focus:'Residential service & replacement',askingPrice:3400000,revenue:4600000,sde:860000,established:1998,employees:24,technicians:13,agreements:1900,recurringPct:58,residentialPct:92,vehicles:16,realEstate:'Leased facility',reason:'Owner retiring after 27 years',publishedAt:'2026-11-08T14:00:00.000Z',

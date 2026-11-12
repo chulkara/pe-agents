@@ -10,7 +10,7 @@ export const fmtDate=(d?:string)=>d?new Date(d.length===10?d+'T12:00:00':d).toLo
 export const fmtSize=(n:number)=>n<1024*1024?Math.max(1,Math.round(n/1024))+' KB':(n/1024/1024).toFixed(1)+' MB';
 const stageHelp:Record<Buyer['stage'],string>={'Introduced':'You have been introduced. No commitment on either side.','Interested':'They have said they would like to learn more.','Under NDA':'They signed a confidentiality agreement before seeing details.','Reviewing information':'They are reviewing the information you shared.','Offer made':'They have made an offer. Your contact will walk you through it.','Not proceeding':'They decided not to continue. Nothing further is shared with them.'};
 const statusTone:Record<DocRequest['status'],string>={'Open':'neutral','In progress':'progress','Submitted':'sent','Accepted':'done','Needs changes':'attention','Not applicable':'muted'};
-const ownerLabel:Record<DocRequest['status'],string>={'Open':'To do','In progress':'Saved — not sent yet','Submitted':'Sent for review','Accepted':'Complete','Needs changes':'Needs a change','Not applicable':'Not needed'};
+const ownerLabel:Record<DocRequest['status'],string>={'Open':'To do','In progress':'Saved, not sent yet','Submitted':'Sent for review','Accepted':'Complete','Needs changes':'Needs a change','Not applicable':'Not needed'};
 
 export function usePortal(store:PortalStore,portalId:string){
   const [b,setB]=useState<PortalBundle|null>(null),[error,setError]=useState('');
@@ -88,7 +88,7 @@ function RequestCard({r,b,store,readOnly,refresh}:{r:DocRequest;b:PortalBundle;s
     setError('');const arr=[...list];setUploads(arr.map(f=>({name:f.name,fraction:0,stage:'Waiting'})));
     for(const [i,f] of arr.entries()){
       try{const out=await store.upload(r.id,f,(fraction,stage)=>setUploads(u=>u.map((x,j)=>j===i?{...x,fraction,stage}:x)));
-        setUploads(u=>u.map((x,j)=>j===i?{...x,fraction:1,stage:out.duplicate?'You already provided this file on '+fmtDate(out.file.createdAt)+' — it is now linked here too.':'Saved',duplicate:out.duplicate}:x));}
+        setUploads(u=>u.map((x,j)=>j===i?{...x,fraction:1,stage:out.duplicate?'You already provided this file on '+fmtDate(out.file.createdAt)+'. It is now linked here too.':'Saved',duplicate:out.duplicate}:x));}
       catch(e){setUploads(u=>u.map((x,j)=>j===i?{...x,error:e instanceof Error?e.message:'Upload failed.'}:x));}
       await refresh();
     }
@@ -112,7 +112,7 @@ function RequestCard({r,b,store,readOnly,refresh}:{r:DocRequest;b:PortalBundle;s
       {files.length>0&&<ul className="portal-attached">{files.map(f=><li key={f.id}><FileRow f={f} store={store}/>{!locked&&<button className="icon-btn" aria-label={'Remove '+f.name+' from this request'} disabled={busy} onClick={()=>void act(()=>store.unlink(r.id,f.id))}><X size={14}/></button>}</li>)}</ul>}
       {!locked&&<>
         <div className={'portal-drop'+(drag?' drag':'')} onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={e=>{e.preventDefault();setDrag(false);if(e.dataTransfer.files.length)void add(e.dataTransfer.files);}}>
-          <Upload size={20}/><p><strong>Add documents</strong> — drag files here or <button className="text-link" onClick={()=>input.current?.click()}>choose files</button>. Each file saves as soon as it uploads.</p><small>PDF, images, Word, Excel, CSV or text · up to 10 MB each. {privacyReminder}</small>
+          <Upload size={20}/><p><strong>Add documents.</strong> Drag files here or <button className="text-link" onClick={()=>input.current?.click()}>choose files</button>. Each file saves as soon as it uploads.</p><small>PDF, images, Word, Excel, CSV or text · up to 10 MB each. {privacyReminder}</small>
           <input ref={input} type="file" multiple hidden aria-label={'Add documents for '+r.title} accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.xls,.xlsx,.doc,.docx" onChange={e=>{const l=e.target.files;if(l?.length)void add([...l]);e.target.value='';}}/>
         </div>
         {uploads.length>0&&<ul className="portal-uploads" aria-live="polite">{uploads.map((u,i)=><li key={i} className={u.error?'failed':u.fraction>=1?'ok':''}><span>{u.name}</span><small>{u.error||u.stage}</small>{!u.error&&u.fraction<1&&<span className="portal-upload-bar"><span style={{width:Math.round(u.fraction*100)+'%'}}/></span>}</li>)}</ul>}
@@ -130,7 +130,7 @@ export function Messages({b,store,readOnly,refresh}:{b:PortalBundle;store:Portal
   const [text,setText]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');const end=useRef<HTMLDivElement>(null);
   const me=b.side;useEffect(()=>{end.current?.scrollIntoView({block:'nearest'});},[b.messages.length]);
   return <section id="portal-messages" className="portal-section portal-messages"><h2>Messages</h2>
-    <div className="portal-thread">{b.messages.map(m=><div key={m.id} className={'portal-msg '+(m.side===me?'mine':'theirs')}><p>{m.body}</p><small>{m.side===me?'You':m.author} · {new Date(m.createdAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</small></div>)}{!b.messages.length&&<p className="portal-empty">No messages yet. Ask anything — {b.portal.help.name.split(' ')[0]} will reply here.</p>}<div ref={end}/></div>
+    <div className="portal-thread">{b.messages.map(m=><div key={m.id} className={'portal-msg '+(m.side===me?'mine':'theirs')}><p>{m.body}</p><small>{m.side===me?'You':m.author} · {new Date(m.createdAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</small></div>)}{!b.messages.length&&<p className="portal-empty">No messages yet. Ask anything and {b.portal.help.name.split(' ')[0]} will reply here.</p>}<div ref={end}/></div>
     {!readOnly&&<form onSubmit={e=>{e.preventDefault();if(!text.trim())return;setBusy(true);setError('');void store.message(b.portal.id,text).then(async()=>{setText('');await store.seen(b.portal.id).catch(()=>{});await refresh();}).catch(err=>setError(err.message)).finally(()=>setBusy(false));}}>
       <label className="sr-only" htmlFor={'msg-'+b.portal.id}>Message</label><textarea id={'msg-'+b.portal.id} rows={2} maxLength={4000} value={text} onChange={e=>setText(e.target.value)} placeholder={me==='seller'?'Write to '+b.portal.firmName+'…':'Write to '+b.portal.ownerName+'…'}/><button className="btn primary" disabled={busy||!text.trim()}><Send size={14}/>Send</button></form>}
     {error&&<p className="error-banner" role="alert">{error}</p>}

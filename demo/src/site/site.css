@@ -1,8 +1,8 @@
-/* Kalling public site — editorial Swiss: one grotesk (Inter Tight), keylines, black and white,
-   deep green as the one brand colour, lime only as a signal. Big type does the work. */
+/* Kalling public site. Editorial Swiss layout with keylines, black and white, deep green as the brand colour
+   and lime as a signal. Type: Helvetica Neue (primary), Zalando Sans (interface), Forum (figures and wordmark). */
 .ks{--paper:#fff;--mist:#ededeb;--ink:#000;--ink2:#474747;--ink3:#777;--line:rgba(0,0,0,.14);--green:#0f5a3c;--green2:#0b4a31;--lime:#d4f06a;--down:#e2492b;--r:18px;
   --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  font-family:'Inter Tight Variable','Inter Tight',system-ui,sans-serif;font-size:17px;line-height:1.55;color:var(--ink);background:var(--paper);min-height:100vh;-webkit-font-smoothing:antialiased;font-feature-settings:'ss01','cv11'}
+  --f1:'Helvetica Neue',Helvetica,Arial,sans-serif;--f2:'Zalando Sans Variable','Zalando Sans',var(--f1);--f3:'Forum',Georgia,'Times New Roman',serif;font-family:var(--f1);font-size:17px;line-height:1.55;color:var(--ink);background:var(--paper);min-height:100vh;-webkit-font-smoothing:antialiased;}
 .ks *{box-sizing:border-box}
 .ks :where(a){color:inherit}
 .ks :focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:6px}
@@ -247,3 +247,11 @@ a:hover>.ks-arrow,a:hover .ks-arrow{transform:translate(2px,-2px)}
   .ks-footer-grid{grid-template-columns:1fr}.ks-legal{flex-direction:column}.ks-btn{width:100%}.ks-actions .ks-link{width:auto}.ks-final{padding:96px 0 80px}.ks-sheet{padding:24px 16px}}
 .ks-display-hero{max-width:none}
 .ks-door-title{max-width:11ch}
+
+/* Secondary face: interface text */
+.ks-nav a,.ks-pill,.ks-btn,.ks-menu,.ks-link,.ks-field,.ks input,.ks select,.ks textarea,.ks-check,.ks-seg,.ks-chips,.ks-door-who,.ks-door-foot,.ks-plate-top,.ks-tag,.ks-plate-data,.ks-plate-foot,.ks-gauge-label,.ks-gauge-sub,.ks-scale-ticks,.ks-quick label,.ks-count,.ks-acc-time,.ks-hero-meta ul,.ks-footer h2,.ks-legal,.ks-demo-bar,.ks-fine,.ks-back,.ks-listing-title>p:first-child,.ks-listing-numbers dt,.ks-specs,.ks-portal-mock b,.ks-offers,.ks-adjust,.ks-ready,.ks-value-band,.ks-compare-row p span,.ks-plate-price span{font-family:var(--f2)}
+/* Tertiary face: large figures and the wordmark */
+.ks-big,.ks-plate-price,.ks-gauge strong,.ks-listing-numbers dd,.ks-acc-n,.ks-wordmark{font-family:var(--f3);font-weight:400}
+.ks-big,.ks-plate-price,.ks-gauge strong,.ks-listing-numbers dd{letter-spacing:-.02em}
+.ks-wordmark{letter-spacing:-.03em;line-height:.82}
+.ks-acc-n{font-size:20px}

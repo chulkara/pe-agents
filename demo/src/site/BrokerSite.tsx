@@ -1,5 +1,6 @@
 import {createContext,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
-import '@fontsource-variable/inter-tight/wght.css';
+import '@fontsource-variable/zalando-sans/wght.css';
+import '@fontsource/forum/400.css';
 import './site.css';
 import {localBrokerStore,type BrokerStore} from '../../lib/brokerStore';
 import {cloudBrokerStore,brokerageReady} from '../../lib/brokerCloud';
@@ -38,7 +39,7 @@ export default function BrokerSite(){
   else if(a==='buy')page=<BuyPage/>;
   else if(a==='account')page=<AccountPage route={route}/>;
   else page=<section className="ks-wrap ks-notfound"><h1>That page isn’t here.</h1><p><a href={href('/')}>Go to the home page</a> or <a href={href('/listings')}>browse listings</a>.</p></section>;
-  useEffect(()=>{document.title=({'':'Kalling — Sell or buy an HVAC company in New Jersey and New York',sell:'Sell your HVAC company — Kalling',value:'What is my HVAC company worth? — Kalling',listings:'HVAC companies for sale in NJ & NY — Kalling',buy:'Buy an HVAC company — Kalling',account:'Your buyer account — Kalling'} as Record<string,string>)[a||'']||'Kalling';},[a]);
+  useEffect(()=>{document.title=({'':'Kalling: sell or buy an HVAC company in New Jersey and New York',sell:'Sell your HVAC company | Kalling',value:'What is my HVAC company worth? | Kalling',listings:'HVAC companies for sale in NJ and NY | Kalling',buy:'Buy an HVAC company | Kalling',account:'Your buyer account | Kalling'} as Record<string,string>)[a||'']||'Kalling';},[a]);
   return <Ctx.Provider value={session}><div className="ks">
     <a className="ks-skip" href="#ks-main" onClick={e=>{e.preventDefault();document.getElementById('ks-main')?.focus();}}>Skip to content</a>
     {checked&&!client&&<p className="ks-demo-bar">Demo marketplace: listings are samples and anything you enter stays in this browser.</p>}

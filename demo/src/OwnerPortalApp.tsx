@@ -46,7 +46,7 @@ function CloudOwner({token}:{token:string}){
   const store=useMemo(()=>client&&user?cloudPortalStore(client,{side:'seller'}):null,[client,user]);
   useEffect(()=>{if(!store||!client)return;void (async()=>{try{const t=ss.get(TOKEN_KEY);if(t){const id=await acceptPortalInvite(client,t);ss.set(TOKEN_KEY,'');setPortalId(id);}const list=await store.myPortals();setPortals(list);if(list.length===1)setPortalId(list[0].id);}catch(e){setError((e as Error).message);setPortals([]);}})();},[store]);// eslint-disable-line react-hooks/exhaustive-deps
   async function auth(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!client)return;const d=new FormData(e.currentTarget),email=String(d.get('email')),password=String(d.get('password'));setBusy(true);setError('');setNotice('');
-    try{if(mode==='up'){const {error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname+'#owner'}});if(error)throw error;setNotice('Check your email and click the confirmation link. Then come back here and sign in — your invitation is remembered on this device.');}
+    try{if(mode==='up'){const {error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname+'#owner'}});if(error)throw error;setNotice('Check your email and click the confirmation link. Then come back here and sign in. This device remembers your invitation.');}
       else{const {error}=await client.auth.signInWithPassword({email,password});if(error)throw error;}}
     catch(err){setError((err as Error).message);}finally{setBusy(false);}}
   const signOut=()=>{void client?.auth.signOut();setPortals(null);setPortalId('');};

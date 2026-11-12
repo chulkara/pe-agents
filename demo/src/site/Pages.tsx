@@ -4,14 +4,14 @@ import {Nameplate} from './Market';
 
 const steps=[
   {t:'Find out what it’s worth',time:'Week 1',you:'Answer a few questions and talk it through with an advisor.',we:'Compare your numbers with HVAC sales in the region and tell you what buyers will push on.'},
-  {t:'Get ready to sell',time:'Weeks 2–5',you:'Upload statements, agreements and licenses to your private owner portal, at your own pace.',we:'Recast earnings, write the anonymous listing and the confidential memorandum, and agree a price with you.'},
-  {t:'Meet vetted buyers',time:'Months 2–4',you:'Review buyer summaries and take the calls you want.',we:'Market the listing without your name, collect signed NDAs, and check each buyer’s funds and experience before sharing anything.'},
-  {t:'Choose an offer',time:'Months 3–5',you:'Compare offers side by side and decide.',we:'Negotiate price, terms, seller financing and your transition role, then manage the letter of intent.'},
-  {t:'Close and hand over',time:'Months 5–9',you:'Work with your attorney and accountant on the purchase agreement.',we:'Run diligence requests, coordinate the lender and license transition, and keep the closing on schedule.'},
+  {t:'Get ready to sell',time:'Weeks 2 to 5',you:'Upload statements, agreements and licenses to your private owner portal, at your own pace.',we:'Recast earnings, write the anonymous listing and the confidential memorandum, and agree a price with you.'},
+  {t:'Meet vetted buyers',time:'Months 2 to 4',you:'Review buyer summaries and take the calls you want.',we:'Market the listing without your name, collect signed NDAs, and check each buyer’s funds and experience before sharing anything.'},
+  {t:'Choose an offer',time:'Months 3 to 5',you:'Compare offers side by side and decide.',we:'Negotiate price, terms, seller financing and your transition role, then manage the letter of intent.'},
+  {t:'Close and hand over',time:'Months 5 to 9',you:'Work with your attorney and accountant on the purchase agreement.',we:'Run diligence requests, coordinate the lender and license transition, and keep the closing on schedule.'},
 ];
 const faqs:[string,string][]=[
   ['What does it cost?','You pay only if your company sells. Your advisor explains the success fee in writing before you sign anything, and the valuation and first review are free.'],
-  ['Will my employees or customers find out?','Not from us. Listings never show your name, town or website. A buyer sees those details only after signing a confidentiality agreement and being approved, and every approval is recorded.'],
+  ['Will my employees or customers find out?','We don’t tell them, and listings never show your name, town or website. A buyer sees those details only after signing a confidentiality agreement and being approved, and every approval is recorded.'],
   ['I hold the master HVACR license. Can I still sell?','Yes. In New Jersey the business needs a licensed bona fide representative, so the plan is agreed early: a licensed employee, a licensed buyer, or you staying on for a transition. New York licensing depends on the municipality, and we plan for that too.'],
   ['How long does a sale take?','Most sales take six to nine months from the first conversation to closing. Lender-financed deals take longer than cash deals.'],
   ['What if I’m not ready yet?','Many owners start two or three years early. The valuation shows what would raise the price, such as more maintenance agreements or less dependence on you, and you can come back when it makes sense.'],
@@ -37,18 +37,18 @@ export function HomePage(){
     <section className="ks-hero"><div className="ks-wrap">
       <h1 className="ks-display ks-display-hero">Sell your HVAC company.<br/>Or buy one.</h1>
       <div className="ks-hero-meta">
-        <p>Kalling is a brokerage for heating, cooling and refrigeration companies in New Jersey and New York. Owners sell confidentially. Buyers are vetted before they learn a company’s name.</p>
+        <p>Kalling is a brokerage for heating, cooling and refrigeration companies in New Jersey and New York. Owners sell confidentially, and we check every buyer before they learn a company’s name.</p>
         <ul><li>HVAC and refrigeration only</li><li>New Jersey and New York</li><li>Pay only if it sells</li></ul>
       </div>
       <div className="ks-doors">
-        <a className="ks-door ks-door-dark" href={href('/value')}><span className="ks-door-who">For owners</span><span className="ks-door-title">See what your company is worth</span><span className="ks-door-foot">Free, two minutes, confidential<Arrow/></span></a>
+        <a className="ks-door ks-door-dark" href={href('/value')}><span className="ks-door-who">For owners</span><span className="ks-door-title">See what your company is worth</span><span className="ks-door-foot">Free and confidential, about two minutes<Arrow/></span></a>
         <a className="ks-door ks-door-green" href={href('/listings')}><span className="ks-door-who">For buyers</span><span className="ks-door-title">Browse HVAC companies for sale</span><span className="ks-door-foot">{recent.data?`${live.length} open listings`:'Open listings'}<Arrow/></span></a>
         <div className="ks-door ks-door-mist"><QuickEstimate/></div>
       </div>
     </div></section>
 
     <section className="ks-wrap ks-sec">
-      <div className="ks-sec-head"><h2>What buyers pay for</h2><p>How each factor moves the earnings multiple in our HVAC valuation. A general broker values your company like any other small business. We don’t.</p></div>
+      <div className="ks-sec-head"><h2>What buyers pay for</h2><p>How each factor changes the earnings multiple in our HVAC valuation model. HVAC buyers ask about these first.</p></div>
       <div className="ks-drivers">{drivers.map(([t,n,dir,w])=><article key={t}><p className={'ks-big '+dir}><span aria-hidden="true">{dir==='up'?'↑':'↓'}</span>{n}</p><h3>{t}</h3><p>{w}</p></article>)}</div>
     </section>
 
@@ -58,7 +58,7 @@ export function HomePage(){
     </section>
 
     <section className="ks-field-green"><div className="ks-wrap ks-split ks-portal">
-      <div><h2>Know where your sale stands. Without chasing anyone.</h2><p>Every seller gets a private owner portal: which buyers are interested and how far along they are, the documents still needed and why, messages with your advisor, and what happens next. Uploads save as you go.</p><a className="ks-btn ks-btn-light" href={href('/sell')}>What sellers see<Arrow/></a></div>
+      <div><h2>See where your sale stands at any time</h2><p>Every seller gets a private owner portal. It shows which buyers are interested and how far along they are, which documents are still needed and why, and what happens next. You can message your advisor there, and uploads save as you go.</p><a className="ks-btn ks-btn-light" href={href('/sell')}>What sellers see<Arrow/></a></div>
       <ul className="ks-portal-mock" aria-label="Example of the owner portal">
         <li><span>Buyer 2 · Strategic HVAC operator</span><b>Reviewing</b></li>
         <li><span>Buyer 1 · Owner-operator, SBA lender</span><b>Under NDA</b></li>
@@ -92,7 +92,7 @@ export function HomePage(){
 
 export function SellPage(){
   return <>
-    <section className="ks-wrap ks-page-head"><h1 className="ks-display ks-display-s">Selling your HVAC company</h1><p>How a sale works, what to prepare, and how your identity stays protected until you choose a buyer.</p><a className="ks-btn ks-btn-dark" href={href('/value')}>Start with a valuation<Arrow/></a></section>
+    <section className="ks-wrap ks-page-head"><h1 className="ks-display ks-display-s">Selling your HVAC company</h1><p>What happens at each step, what to prepare, and how we keep your name private until you choose a buyer.</p><a className="ks-btn ks-btn-dark" href={href('/value')}>Start with a valuation<Arrow/></a></section>
     <section className="ks-wrap ks-sec ks-split"><div><h2>Five steps</h2><p className="ks-muted">Usually six to nine months. You decide at every step.</p></div><Steps long/></section>
     <section className="ks-wrap ks-sec ks-split">
       <div><h2>What to gather</h2><p className="ks-muted">You don’t need all of it on day one. Your owner portal asks for each item, explains why, and saves as you go.</p></div>

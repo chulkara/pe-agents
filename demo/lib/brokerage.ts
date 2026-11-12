@@ -13,8 +13,8 @@ export type Listing={id:string;number:string;status:ListingStatus;sample:boolean
   confidential:{businessName:string;city:string;website:string;details:string};companyId?:string;portalId?:string;createdAt:string;publishedAt?:string;updatedAt:string};
 export type BuyerType='Owner-operator'|'Search fund'|'Strategic HVAC operator'|'Private equity / family office';
 export const buyerTypes:BuyerType[]=['Owner-operator','Search fund','Strategic HVAC operator','Private equity / family office'];
-export type Funds='Under $250K'|'$250K–$500K'|'$500K–$1M'|'$1M–$5M'|'Over $5M';
-export const fundBands:Funds[]=['Under $250K','$250K–$500K','$500K–$1M','$1M–$5M','Over $5M'];
+export type Funds='Under $250K'|'$250K to $500K'|'$500K to $1M'|'$1M to $5M'|'Over $5M';
+export const fundBands:Funds[]=['Under $250K','$250K to $500K','$500K to $1M','$1M to $5M','Over $5M'];
 export type Buyer={id:string;email:string;name:string;phone:string;type:BuyerType;company:string;funds:Funds;financing:string[];experience:string;regions:Region[];maxPrice:number;status:'Registered'|'Verified'|'Restricted';advisorNote:string;saved:string[];alerts:boolean;createdAt:string};
 export type AccessRequest={id:string;listingId:string;buyerId:string;status:'Pending'|'Approved'|'Declined'|'Withdrawn';nda:{version:string;textHash:string;signedName:string;signedAt:string};message:string;decisionNote:string;decidedAt?:string;createdAt:string};
 export type Offer={id:string;listingId:string;buyerId:string;kind:'Indication of interest'|'Letter of intent';price:number;cashAtClose:number;sellerNote:number;earnout:number;financing:string;closeDays:number;conditions:string;status:'Submitted'|'Shared with seller'|'Countered'|'Accepted'|'Declined'|'Withdrawn';advisorNote:string;createdAt:string;updatedAt:string};
@@ -25,7 +25,7 @@ export type BrokerDb={listings:Listing[];buyers:Buyer[];access:AccessRequest[];o
 export type Viewer={kind:'public'}|{kind:'buyer';email:string}|{kind:'advisor';name:string;canWrite:boolean};
 
 export const ndaVersion='kalling-listing-nda-2026-11';
-export const ndaText=(l:Pick<Listing,'number'|'headline'>)=>`CONFIDENTIALITY AGREEMENT — LISTING ${l.number}
+export const ndaText=(l:Pick<Listing,'number'|'headline'>)=>`CONFIDENTIALITY AGREEMENT: LISTING ${l.number}
 
 In exchange for receiving confidential information about the business offered as listing ${l.number} (“${l.headline}”), I agree that:
 
@@ -147,5 +147,5 @@ export function updateOffer(db:BrokerDb,v:Viewer,id:string,status:Offer['status'
 /** Buyers see only their own activity; advisors see everything. */
 export function buyerActivity(db:BrokerDb,v:Viewer){const b=buyerOf(db,v);if(!b)return null;return {buyer:b,access:db.access.filter(a=>a.buyerId===b.id),offers:db.offers.filter(o=>o.buyerId===b.id),questions:db.questions.filter(q=>q.buyerId===b.id)};}
 /** Anonymous label used when an approved buyer appears in the owner's portal. */
-export const anonymousBuyerLabel=(db:BrokerDb,b:Buyer,listingId:string)=>{const n=db.access.filter(a=>a.listingId===listingId&&a.status==='Approved').findIndex(a=>a.buyerId===b.id)+1;return `Buyer ${n||'—'} · ${b.type}`;};
+export const anonymousBuyerLabel=(db:BrokerDb,b:Buyer,listingId:string)=>{const n=db.access.filter(a=>a.listingId===listingId&&a.status==='Approved').findIndex(a=>a.buyerId===b.id)+1;return `Buyer ${n||'?'} · ${b.type}`;};
 export function matchesBuyBox(b:Buyer,l:Listing){return (!b.regions.length||b.regions.includes(l.region))&&(!b.maxPrice||l.askingPrice<=b.maxPrice*1.1);}
