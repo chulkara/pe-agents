@@ -2,22 +2,20 @@ import {useEffect,useState,type FormEvent} from 'react';
 import {money} from '../../lib/hvacValuation';
 import {ndaText,regions,focuses,buyerTypes,fundBands,filterListings,regionState,type ListingFilter,type Region,type Focus,type BuyerType,type Funds} from '../../lib/brokerage';
 import type {ViewListing} from '../../lib/brokerStore';
-import {href,go,useAsync,useSession,type Route} from './BrokerSite';
+import {href,go,useAsync,useSession,Arrow,type Route} from './BrokerSite';
 
-/** Listing card styled as an equipment data plate. */
+/** Listing card: where and what, then the asking price as the headline number. */
 export function Nameplate({l}:{l:ViewListing}){
   return <a className={'ks-plate'+(l.status==='Sold'?' sold':'')} href={href('/listings/'+l.number)}>
-    <div className="ks-plate-top"><span className="ks-rivet"/><span>Listing {l.number}</span>{l.sample&&<span className="ks-sample">Sample</span>}{l.status!=='Live'&&<span className="ks-plate-status">{l.status}</span>}<span className="ks-rivet"/></div>
+    <div className="ks-plate-top"><span>{l.region}, {regionState(l.region)}</span>{l.sample&&<span className="ks-tag">Sample</span>}{l.status!=='Live'&&<span className="ks-tag ks-tag-dark">{l.status}</span>}</div>
     <h3>{l.headline}</h3>
-    <p className="ks-plate-where">{l.region}, {regionState(l.region)} · {l.focus}</p>
+    <p className="ks-plate-price">{money(l.askingPrice)}<span>asking</span></p>
     <dl className="ks-plate-data">
-      <div><dt>Asking</dt><dd>{money(l.askingPrice)}</dd></div>
       <div><dt>Revenue</dt><dd>{money(l.revenue)}</dd></div>
-      <div><dt>Earnings (SDE)</dt><dd>{money(l.sde)}</dd></div>
+      <div><dt>Earnings</dt><dd>{money(l.sde)}</dd></div>
       <div><dt>Agreements</dt><dd>{l.agreements.toLocaleString()}</dd></div>
-      <div><dt>Technicians</dt><dd>{l.technicians}</dd></div>
-      <div><dt>Since</dt><dd>{l.established}</dd></div>
     </dl>
+    <p className="ks-plate-foot"><span>{l.number} · {l.focus}</span><Arrow/></p>
   </a>;
 }
 
@@ -27,7 +25,7 @@ export function ListingsPage({route}:{route:Route}){
   useEffect(()=>{const p=new URLSearchParams();if(f.q)p.set('q',f.q);if(f.state)p.set('state',f.state);if(f.region)p.set('region',f.region);if(f.focus)p.set('focus',f.focus);if(f.maxPrice)p.set('max',String(f.maxPrice));if(f.recurringOnly)p.set('recurring','1');if(f.sort&&f.sort!=='newest')p.set('sort',f.sort);history.replaceState(null,'','#/listings'+(p.size?'?'+p:''));},[f]);
   const list=filterListings(res.data||[],f),open=list.filter(l=>l.status!=='Sold'),sold=list.filter(l=>l.status==='Sold');
   return <>
-    <section className="ks-wrap ks-page-head"><h1>HVAC companies for sale in New Jersey and New York</h1><p>Every listing is anonymous. Create a buyer profile and sign a listing’s NDA to request the company name, financials and documents.</p></section>
+    <section className="ks-wrap ks-page-head"><h1 className="ks-display ks-display-s">HVAC companies for sale</h1><p>Every listing is anonymous. Create a buyer profile and sign a listing’s NDA to request the company name, financials and documents.</p></section>
     <div className="ks-wrap ks-market">
       <form className="ks-filters" onSubmit={e=>e.preventDefault()} aria-label="Filter listings">
         <label className="ks-field"><span>Search</span><input type="search" value={f.q} onChange={e=>setF({...f,q:e.target.value})} placeholder="Refrigeration, Long Island…"/></label>
@@ -127,7 +125,7 @@ function OfferForm({l,busy,submit}:{l:ViewListing;busy:boolean;submit:(o:Paramet
 
 export function BuyPage(){
   return <>
-    <section className="ks-wrap ks-page-head"><h1>Buying an HVAC company</h1><p>Kalling lists heating, cooling and refrigeration companies in New Jersey and New York. Profiles are free. You never pay Kalling a fee to buy.</p><div className="ks-actions"><a className="ks-btn ks-btn-primary" href={href('/account?next=profile')}>Create a buyer profile</a><a className="ks-btn" href={href('/listings')}>Browse listings</a></div></section>
+    <section className="ks-wrap ks-page-head"><h1 className="ks-display ks-display-s">Buying an HVAC company</h1><p>Kalling lists heating, cooling and refrigeration companies in New Jersey and New York. Profiles are free. You never pay Kalling a fee to buy.</p><div className="ks-actions"><a className="ks-btn ks-btn-primary" href={href('/account?next=profile')}>Create a buyer profile</a><a className="ks-btn" href={href('/listings')}>Browse listings</a></div></section>
     <section className="ks-wrap"><ol className="ks-steps ks-steps-long">
       <li><div className="ks-step-head"><h3>Create a profile</h3></div><p>Tell us who you are, the regions you want and how you plan to pay. Sellers want to know their company is going to someone capable.</p></li>
       <li><div className="ks-step-head"><h3>Sign the listing NDA</h3></div><p>Each listing has its own confidentiality agreement. Read it and sign it online in a minute.</p></li>

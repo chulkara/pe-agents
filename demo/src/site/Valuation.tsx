@@ -1,25 +1,17 @@
 import {useMemo,useState,type FormEvent} from 'react';
 import {estimateHvacValue,money,valuationSources,type HvacInputs,type Valuation} from '../../lib/hvacValuation';
 import {regions,type Region} from '../../lib/brokerage';
-import {useSession,href} from './BrokerSite';
+import {useSession,href,Arrow} from './BrokerSite';
 
-/** A service-gauge dial: the shaded arc is the estimated range, the needle the midpoint. */
+/** The estimate as a figure: large numbers over a scale, the range drawn as a pill. */
 export function Gauge({v,caption}:{v:Valuation|null;caption?:string}){
-  const max=v?Math.max(1e6,Math.ceil(v.high*1.35/250000)*250000):4e6;
-  const angle=(x:number)=>180-Math.min(1,Math.max(0,x/max))*180;
-  const pt=(deg:number,r:number)=>[150+r*Math.cos(deg*Math.PI/180),150-r*Math.sin(deg*Math.PI/180)];
-  const arc=(a1:number,a2:number,r:number)=>{const [x1,y1]=pt(a1,r),[x2,y2]=pt(a2,r);return `M${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2}`;};
-  const ticks=Array.from({length:11},(_,i)=>i);
+  const max=v?Math.max(1e6,Math.ceil(v.high*1.3/500000)*500000):4e6,pct=(x:number)=>Math.min(100,Math.max(0,x/max*100));
   return <figure className="ks-gauge" aria-label={v?`Estimated value ${money(v.low)} to ${money(v.high)}`:'Enter your numbers to see an estimate'}>
-    <svg viewBox="0 0 300 178" role="img" aria-hidden="true">
-      <circle cx="150" cy="150" r="146" className="ks-gauge-bezel"/>
-      <path d={arc(180,0,118)} className="ks-gauge-track"/>
-      {v&&<path d={arc(angle(v.low),angle(v.high),118)} className="ks-gauge-range"/>}
-      {ticks.map(i=>{const d=180-i*18,[x1,y1]=pt(d,132),[x2,y2]=pt(d,i%5===0?118:124);return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} className="ks-gauge-tick"/>;})}
-      {[0,5,10].map(i=>{const [x,y]=pt(180-i*18,92);return <text key={i} x={x} y={y+4} textAnchor="middle" className="ks-gauge-scale">{money(max*i/10).replace('$0K','0')}</text>;})}
-      <g className="ks-gauge-needle" style={{transform:`rotate(${v?90-angle(v.mid):-90}deg)`}}><line x1="150" y1="150" x2="150" y2="44"/><circle cx="150" cy="150" r="9"/></g>
-    </svg>
-    <figcaption>{v?<><strong>{money(v.low)} – {money(v.high)}</strong><span>{caption||`${v.multipleLow}× to ${v.multipleHigh}× earnings of ${money(v.sde)}`}</span></>:<span>Your estimate appears here.</span>}</figcaption>
+    <figcaption><span className="ks-gauge-label">Estimated value</span><strong>{v?`${money(v.low)}–${money(v.high)}`:'—'}</strong><span className="ks-gauge-sub">{v?(caption||`${v.multipleLow}× to ${v.multipleHigh}× earnings of ${money(v.sde)}`):'Your estimate appears here.'}</span></figcaption>
+    <div className="ks-scale" aria-hidden="true">
+      <div className="ks-scale-track">{v&&<span className="ks-scale-pill" style={{left:pct(v.low)+'%',width:Math.max(4,pct(v.high)-pct(v.low))+'%'}}/>}{v&&<span className="ks-scale-mid" style={{left:pct(v.mid)+'%'}}/>}</div>
+      <div className="ks-scale-ticks"><span>$0</span><span>{money(max/2)}</span><span>{money(max)}</span></div>
+    </div>
   </figure>;
 }
 
@@ -34,7 +26,7 @@ export function QuickEstimate(){
     <label><span>Revenue last year <output>{money(i.revenue)}</output></span><input type="range" min={300000} max={12000000} step={50000} value={i.revenue} onChange={e=>setI({...i,revenue:+e.target.value,netProfit:Math.round(+e.target.value*0.11),ownerPay:Math.min(250000,Math.round(+e.target.value*0.075))})}/></label>
     <label><span>Owner pay plus profit <output>{money(i.ownerPay+i.netProfit)}</output></span><input type="range" min={50000} max={3000000} step={10000} value={i.ownerPay+i.netProfit} onChange={e=>setI({...i,netProfit:Math.max(0,+e.target.value-i.ownerPay)})}/></label>
     <label><span>Revenue from service and maintenance <output>{i.maintenancePct}%</output></span><input type="range" min={0} max={100} step={5} value={i.maintenancePct} onChange={e=>setI({...i,maintenancePct:+e.target.value})}/></label>
-    <a className="ks-btn ks-btn-primary" href={href('/value?'+params)}>Refine this estimate</a>
+    <a className="ks-btn ks-btn-dark" href={href('/value?'+params)}>Refine this estimate<Arrow/></a>
   </div>;
 }
 
@@ -51,7 +43,7 @@ export function ValuePage(){
     try{await store.submitLead({name:String(d.get('name')),email:String(d.get('email')),phone:String(d.get('phone')),businessName:String(d.get('businessName')),region:String(d.get('region')) as Region,timing:String(d.get('timing')),message:String(d.get('message')),source:'valuation',consent:d.get('consent')==='on',valuation:v?{sde:v.sde,low:v.low,mid:v.mid,high:v.high,revenue:inputs.revenue}:undefined});setSent(String(d.get('name')).split(' ')[0]);}
     catch(err){setError((err as Error).message);}finally{setBusy(false);}}
   return <div className="ks-value">
-    <section className="ks-wrap ks-page-head"><h1>What is your HVAC company worth?</h1><p>Answer what you know. The estimate updates as you type, and every adjustment is explained. Nothing is sent to anyone unless you ask for a review.</p></section>
+    <section className="ks-wrap ks-page-head"><h1 className="ks-display ks-display-s">What is your HVAC company worth?</h1><p>Answer what you know. The estimate updates as you type, and every adjustment is explained. Nothing is sent to anyone unless you ask for a review.</p></section>
     <div className="ks-wrap ks-value-grid">
       <form className="ks-value-form" onSubmit={e=>e.preventDefault()}>
         <fieldset><legend>Earnings</legend>

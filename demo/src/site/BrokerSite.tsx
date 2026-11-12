@@ -1,5 +1,5 @@
 import {createContext,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
-import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource-variable/inter-tight/wght.css';
 import './site.css';
 import {localBrokerStore,type BrokerStore} from '../../lib/brokerStore';
 import {cloudBrokerStore,brokerageReady} from '../../lib/brokerCloud';
@@ -51,23 +51,34 @@ export default function BrokerSite(){
 function Header({active}:{active:string}){
   const s=useSession(),[open,setOpen]=useState(false);
   useEffect(()=>setOpen(false),[active]);
-  const links:[string,string][]=[['sell','Sell'],['value','Valuation'],['listings','Listings'],['buy','Buy']];
-  return <header className="ks-header"><div className="ks-wrap ks-header-row">
-    <a className="ks-logo" href={href('/')} aria-label="Kalling home">Kalling<span>HVAC business brokerage · NJ & NY</span></a>
-    <button className="ks-menu" aria-expanded={open} aria-controls="ks-nav" onClick={()=>setOpen(!open)}>{open?'Close':'Menu'}</button>
-    <nav id="ks-nav" className={open?'open':''} aria-label="Main">
-      {links.map(([p,l])=><a key={p} href={href('/'+p)} aria-current={active===p?'page':undefined}>{l}</a>)}
-      <a className="ks-nav-account" href={href('/account')} aria-current={active==='account'?'page':undefined}>{s.buyerEmail?'Your account':'Buyer sign in'}</a>
-      <a className="ks-btn ks-btn-primary ks-nav-cta" href={href('/value')}>Value my company</a>
-    </nav></div></header>;
+  useEffect(()=>{document.body.style.overflow=open?'hidden':'';return()=>{document.body.style.overflow='';};},[open]);
+  const links:[string,string][]=[['sell','Sell'],['buy','Buy'],['listings','Listings'],['value','Valuation']];
+  return <header className={'ks-header'+(open?' open':'')}><div className="ks-wrap ks-header-row">
+    <a className="ks-logo" href={href('/')} aria-label="Kalling home">Kalling</a>
+    <nav className="ks-nav" aria-label="Main">{links.map(([p,l])=><a key={p} href={href('/'+p)} aria-current={active===p?'page':undefined}>{l}</a>)}</nav>
+    <div className="ks-header-actions">
+      <a className="ks-pill ks-pill-line" href={href('/account')} aria-current={active==='account'?'page':undefined}>{s.buyerEmail?'Your account':'Sign in'}</a>
+      <a className="ks-pill ks-pill-dark" href={href('/value')}>Value my company<Arrow/></a>
+    </div>
+    <button className="ks-menu" aria-expanded={open} aria-controls="ks-sheet" onClick={()=>setOpen(!open)}>{open?'Close':'Menu'}<span aria-hidden="true">{open?'×':'+'}</span></button>
+  </div>
+  <div id="ks-sheet" className="ks-sheet" hidden={!open}>
+    <nav aria-label="Main">{[...links,['account',s.buyerEmail?'Your account':'Sign in'] as [string,string]].map(([p,l])=><a key={p} href={href('/'+p)}>{l}</a>)}</nav>
+    <a className="ks-pill ks-pill-light" href={href('/value')}>Value my company<Arrow/></a>
+  </div></header>;
 }
+export const Arrow=()=><svg className="ks-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5.5 4H12v6.5" fill="none" stroke="currentColor" strokeWidth="1.6"/></svg>;
 function Footer(){
-  return <footer className="ks-footer"><div className="ks-wrap ks-footer-grid">
-    <div><p className="ks-logo">Kalling</p><p>A brokerage for heating, cooling and refrigeration companies in New Jersey and New York. Owners sell confidentially. Buyers are vetted before they learn a company’s name.</p></div>
-    <div><h2>Owners</h2><a href={href('/sell')}>How selling works</a><a href={href('/value')}>Valuation</a><a href="#owner">Owner portal sign in</a></div>
-    <div><h2>Buyers</h2><a href={href('/listings')}>Listings</a><a href={href('/buy')}>How buying works</a><a href={href('/account')}>Buyer account</a></div>
-    <div><h2>Team</h2><a href="#advisor">Advisor workspace</a></div>
-  </div><div className="ks-wrap ks-legal"><p>Listings marked “Sample” are fictional and shown to demonstrate the marketplace. Valuation estimates are not appraisals. Kalling does not provide legal, tax or lending advice. Nothing on this site is an offer to sell securities.</p><p>© {new Date().getFullYear()} Kalling</p></div></footer>;
+  return <footer className="ks-footer"><div className="ks-wrap">
+    <div className="ks-footer-grid">
+      <p className="ks-footer-lede">A brokerage for heating, cooling and refrigeration companies in New Jersey and New York.</p>
+      <div><h2>Owners</h2><a href={href('/sell')}>How selling works</a><a href={href('/value')}>Valuation</a><a href="#owner">Owner portal</a></div>
+      <div><h2>Buyers</h2><a href={href('/listings')}>Listings</a><a href={href('/buy')}>How buying works</a><a href={href('/account')}>Buyer account</a></div>
+      <div><h2>Kalling</h2><a href="#advisor">Advisor workspace</a></div>
+    </div>
+    <p className="ks-wordmark" aria-hidden="true">Kalling</p>
+    <div className="ks-legal"><p>Listings marked “Sample” are fictional and shown to demonstrate the marketplace. Valuation estimates are not appraisals. Kalling does not provide legal, tax or lending advice.</p><p>© {new Date().getFullYear()} Kalling</p></div>
+  </div></footer>;
 }
 export function useAsync<T>(fn:()=>Promise<T>,deps:unknown[]){
   const [state,setState]=useState<{data?:T;error?:string;loading:boolean}>({loading:true});
