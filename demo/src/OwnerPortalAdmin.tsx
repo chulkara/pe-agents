@@ -2,6 +2,7 @@ import {createContext,useContext,useEffect,useState,type FormEvent} from 'react'
 import {Copy,ExternalLink,Eye,Plus,Check,X,Pencil,Users,FileText,ListChecks,Settings2,Link2,Loader2} from 'lucide-react';
 import type {Company} from '../lib/domain';
 import {hvacRequestTemplates,dataRoomSharing} from '../lib/engagement';
+import {extractText,type Extract} from '../lib/extract';
 import {possessive,buyerStages,portalProgress,unread,type Contact,type DocRequest,type Portal,type BuyerStage,type NextStep} from '../lib/portal';
 import {inviteLink,type PortalStore,type RequestInput} from '../lib/portalStore';
 import SellerPortal,{usePortal,FileRow,Messages,fmtDate} from './SellerPortal';
@@ -69,8 +70,14 @@ type Bundle=NonNullable<ReturnType<typeof usePortal>['b']>;
 function RequestsAdmin({b,store,act,busy,w}:{b:Bundle;store:PortalStore;act:ActFn;busy:boolean;w:boolean}){
   const [editing,setEditing]=useState<DocRequest|'new'|null>(null),[template,setTemplate]=useState(-1),[notes,setNotes]=useState<Record<string,string>>({});
   const p=b.portal,sharing=dataRoomSharing;
+  const [ex,setEx]=useState<Record<string,Extract>>({}),[reading,setReading]=useState('');
+  const loadEx=async()=>{try{setEx(Object.fromEntries((await store.extracts(p.id)).map(e=>[e.fileId,e])));}catch{/* not available */}};
+  useEffect(()=>{void loadEx();},[p.id,b.requests.length,b.files.length]);// eslint-disable-line react-hooks/exhaustive-deps
+  /** Accepted files are read in this browser so drafts can cite their pages. */
+  async function readFiles(ids:string[]){for(const id of ids){const f=b.files.find(x=>x.id===id);if(!f)continue;setReading(f.name);try{const blob=await store.download(f);await store.saveExtract(p.id,await extractText(f.id,new Uint8Array(await blob.arrayBuffer()),f.name,f.mime));}catch(e){await store.saveExtract(p.id,{fileId:f.id,status:'failed',pages:[],textHash:'0'.repeat(64),extractor:'kalling-extract-1',chars:0,note:'Could not read this file: '+(e as Error).message,extractedAt:new Date().toISOString()});}}setReading('');await loadEx();}
   const templates=hvacRequestTemplates({today:new Date()}),t=template>=0?{...templates[template],needed:templates[template].guidance?templates[template].needed+' '+templates[template].guidance:templates[template].needed}:undefined,base=editing&&editing!=='new'?editing:undefined;
   return <div className="portal-admin-body">
+    {reading&&<p className="adv-note" role="status" aria-live="polite">Reading {reading} in this browser…</p>}
     {w&&!editing&&<div className="button-row"><button className="btn primary" onClick={()=>{setTemplate(-1);setEditing('new');}}><Plus size={15}/>Request a document</button></div>}
     {editing&&<form key={(base?.id||'new')+template} className="portal-form portal-request-form" onSubmit={e=>{e.preventDefault();const d=v(e);const input:RequestInput={id:base?.id,title:d.title,needed:d.needed,why:d.why,sharing:d.sharing,contact:{name:d.contactName,email:d.contactEmail,phone:d.contactPhone},due:d.due};void act(async()=>{await store.saveRequest(p.id,input);setEditing(null);});}}>
       {!base&&<label className="field"><span>Start from a common request</span><select value={template} onChange={e=>setTemplate(Number(e.target.value))}><option value={-1}>Write my own</option>{(['First round','Second round'] as const).map(g=><optgroup key={g} label={g}>{templates.map((x,i)=>x.round===g?<option key={x.key} value={i}>{x.title}</option>:null)}</optgroup>)}</select></label>}
@@ -83,11 +90,11 @@ function RequestsAdmin({b,store,act,busy,w}:{b:Bundle;store:PortalStore;act:ActF
     {!b.requests.length&&!editing&&<p className="portal-empty">No requests yet. Start with the documents a buyer needs first.</p>}
     <div className="portal-admin-requests">{[...b.requests].sort((x,y)=>(x.status==='Submitted'?-1:0)-(y.status==='Submitted'?-1:0)).map(r=><article key={r.id} className={'portal-admin-request '+r.status.toLowerCase().replace(/ /g,'-')}>
       <header><div><strong>{r.title}</strong><small>{r.status}{r.due?', by '+fmtDate(r.due):''}, updated {fmtDate(r.updatedAt)}</small></div>{w&&<button className="icon-btn" aria-label={'Edit '+r.title} onClick={()=>{setTemplate(-1);setEditing(r);}}><Pencil size={14}/></button>}</header>
-      {r.fileIds.length>0&&<ul className="portal-attached">{r.fileIds.map(id=>b.files.find(f=>f.id===id)).filter(Boolean).map(f=><li key={f!.id}><FileRow f={f!} store={store}/><small>{f!.side==='seller'?'from owner':'from your team'}</small></li>)}</ul>}
+      {r.fileIds.length>0&&<ul className="portal-attached">{r.fileIds.map(id=>b.files.find(f=>f.id===id)).filter(Boolean).map(f=>{const e=ex[f!.id];return <li key={f!.id}><FileRow f={f!} store={store}/><small>{f!.side==='seller'?'from owner':'from your team'}{r.status==='Accepted'?e?e.status==='ok'?`. Text read, ${e.pages.length} page${e.pages.length===1?'':'s'}`:`. ${e.note}`:'. Text not read yet':''}</small>{w&&r.status==='Accepted'&&<button className="text-link" disabled={!!reading} onClick={()=>void readFiles([f!.id])}>{e?'Read again':'Read text'}</button>}</li>;})}</ul>}
       {r.sellerNote&&<p className="portal-owner-note">Owner’s note: “{r.sellerNote}”</p>}
       {w&&['Submitted','In progress','Needs changes','Open'].includes(r.status)&&<div className="portal-review">
         <input aria-label={'Review note for '+r.title} placeholder={r.status==='Submitted'?'Optional thank-you, or what needs to change':'Note to the owner'} value={notes[r.id]||''} onChange={e=>setNotes(n=>({...n,[r.id]:e.target.value}))}/>
-        <button className="btn primary" disabled={busy||r.status!=='Submitted'} onClick={()=>void act(()=>store.review(r.id,'Accepted',notes[r.id]||''))}><Check size={14}/>Accept</button>
+        <button className="btn primary" disabled={busy||r.status!=='Submitted'} onClick={()=>void act(async()=>{await store.review(r.id,'Accepted',notes[r.id]||'');await readFiles(r.fileIds);})}><Check size={14}/>Accept</button>
         <button className="btn" disabled={busy||(notes[r.id]||'').trim().length<5} onClick={()=>void act(()=>store.review(r.id,'Needs changes',notes[r.id]||''))}>Ask for a change</button>
         <button className="text-link" disabled={busy} onClick={()=>void act(()=>store.review(r.id,'Not applicable',notes[r.id]||''))}>Not needed</button></div>}
       {w&&['Accepted','Not applicable'].includes(r.status)&&<button className="text-link" disabled={busy} onClick={()=>void act(()=>store.review(r.id,'Open',''))}>Reopen</button>}

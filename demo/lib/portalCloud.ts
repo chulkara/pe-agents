@@ -2,6 +2,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {sha256Hex,checkUpload,emptyPortalDb,type Portal,type PortalBundle,type PortalFile,type Side,type DocRequest,type Buyer,type NextStep,type Message} from './portal.ts';
 import type {PortalStore,RequestInput,UploadResult,CreatePortalInput} from './portalStore.ts';
 import type {Letter} from './portal.ts';
+import type {Extract} from './extract.ts';
 type LetterRow={id:string;portal_id:string;version:number;template_version:string;input:Letter['input'];body:string;text_hash:string;status:Letter['status'];events:Letter['events'];owner_signature:Letter['ownerSignature']|null;firm_signature:Letter['firmSignature']|null;void_reason:string|null;created_at:string;updated_at:string};
 const letter=(r:LetterRow):Letter=>({id:r.id,portalId:r.portal_id,version:r.version,templateVersion:r.template_version,input:r.input,text:r.body,textHash:r.text_hash,status:r.status,events:r.events||[],ownerSignature:r.owner_signature||undefined,firmSignature:r.firm_signature||undefined,voidReason:r.void_reason||undefined,createdAt:r.created_at,updatedAt:r.updated_at});
 
@@ -69,6 +70,8 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
     async signLetter(id,n,ok){await call('kalling_letter_sign',{p_letter:id,p_name:n,p_agree:ok});},
     async countersignLetter(id,n,ok){await call('kalling_letter_countersign',{p_letter:id,p_name:n,p_agree:ok});},
     async voidLetter(id,reason){await call('kalling_letter_void',{p_letter:id,p_reason:reason});},
+    async saveExtract(_portalId,ex){await call('kalling_portal_save_text',{p_file:ex.fileId,p_extract:ex});},
+    async extracts(portalId){const {data,error}=await client.from('kalling_portal_file_text').select('*').eq('portal_id',portalId);if(error)return [];return (data as {file_id:string;status:Extract['status'];pages:Extract['pages'];text_hash:string;extractor:string;note:string;extracted_at:string}[]).map(r=>({fileId:r.file_id,status:r.status,pages:r.pages,textHash:r.text_hash,extractor:r.extractor,note:r.note,extractedAt:r.extracted_at,chars:r.pages.reduce((n,p)=>n+p.text.length,0)}));},
   };
   return store;
 }

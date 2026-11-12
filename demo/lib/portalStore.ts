@@ -1,4 +1,5 @@
 import * as P from './portal.ts';
+import type {Extract} from './extract.ts';
 import type {Actor,Contact,Portal,PortalBundle,PortalDb,PortalFile,BuyerStage,Side,Letter} from './portal.ts';
 
 export type CreatePortalInput={companyId:string;businessName:string;ownerName:string;ownerEmail:string;help:Contact;welcome?:string};
@@ -35,6 +36,9 @@ export interface PortalStore{
   signLetter(id:string,typedName:string,agreed:boolean):Promise<void>;
   countersignLetter(id:string,typedName:string,agreed:boolean):Promise<void>;
   voidLetter(id:string,reason:string):Promise<void>;
+  // text read from documents (firm only)
+  saveExtract(portalId:string,ex:Extract):Promise<void>;
+  extracts(portalId:string):Promise<Extract[]>;
 }
 export type LetterSave={id?:string;templateVersion:string;input:Letter['input'];text:string};
 export function inviteLink(token:string,base=typeof location!=='undefined'?location.origin+location.pathname:''){return base+'#portal='+token;}
@@ -42,6 +46,7 @@ export function inviteTokenFromHash(hash:string){const m=hash.match(/(?:^#|&)por
 
 // ── Local demo store: records in localStorage, file bytes in IndexedDB, all in this browser ──
 export const LOCAL_PORTAL_KEY='kalling-portal-demo-v1';
+export const LOCAL_EXTRACT_KEY='kalling-extract-demo-v1';
 export type ByteStore={put(id:string,data:Blob):Promise<void>;get(id:string):Promise<Blob|undefined>};
 export function memoryBytes():ByteStore{const m=new Map<string,Blob>();return {put:async(id,d)=>{m.set(id,d);},get:async id=>m.get(id)};}
 export function indexedBytes(name='kalling-portal-files'):ByteStore{
@@ -54,6 +59,7 @@ export function localPortalStore(o:{actor:Actor;firmId:string;firmName:string;te
   const kv=o.kv||localStorage,bytes=o.bytes||indexedBytes();
   const read=():PortalDb=>{try{const v=JSON.parse(kv.getItem(LOCAL_PORTAL_KEY)||'null');return v&&Array.isArray(v.portals)?{...P.emptyPortalDb(),...v}:P.emptyPortalDb();}catch{return P.emptyPortalDb();}};
   const write=(db:PortalDb)=>kv.setItem(LOCAL_PORTAL_KEY,JSON.stringify(db));
+  const readExtracts=():Record<string,Record<string,Extract>>=>{try{return JSON.parse(kv.getItem(LOCAL_EXTRACT_KEY)||'{}')||{};}catch{return {};}};
   const apply=async(fn:(db:PortalDb)=>PortalDb)=>{write(fn(read()));};
   const a=o.actor;
   const store={
@@ -92,6 +98,8 @@ export function localPortalStore(o:{actor:Actor;firmId:string;firmName:string;te
     async signLetter(id:string,n:string,ok:boolean){await apply(db=>P.signLetter(db,a,id,n,ok));},
     async countersignLetter(id:string,n:string,ok:boolean){await apply(db=>P.countersignLetter(db,a,id,n,ok));},
     async voidLetter(id:string,reason:string){await apply(db=>P.voidLetter(db,a,id,reason));},
+    async saveExtract(portalId:string,ex:Extract){if(a.side!=='firm'||a.canWrite===false)throw Error('Only the firm’s team can change this.');const all=readExtracts();all[portalId]={...(all[portalId]||{}),[ex.fileId]:ex};kv.setItem(LOCAL_EXTRACT_KEY,JSON.stringify(all));},
+    async extracts(portalId:string){if(a.side!=='firm')return [];return Object.values(readExtracts()[portalId]||{});},
     async acceptInvite(email:string,token:string){const out=P.acceptInvite(read(),email,token);write(out.db);return out.id;},
   };
   return store;
