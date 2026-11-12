@@ -8,6 +8,7 @@ import SellerPortal,{usePortal,FileRow,Messages,fmtDate} from './SellerPortal';
 export type PortalContext={store:PortalStore|null;helpDefault:Contact;canWrite:boolean;local:boolean};
 const Ctx=createContext<PortalContext>({store:null,helpDefault:{name:'',email:''},canWrite:false,local:true});
 export const PortalProvider=Ctx.Provider;
+export const PortalContextRef=Ctx;
 const v=(e:FormEvent<HTMLFormElement>)=>Object.fromEntries(new FormData(e.currentTarget)) as Record<string,string>;
 
 export default function OwnerPortalAdmin({company}:{company:Company}){

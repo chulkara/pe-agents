@@ -4,6 +4,8 @@ import {possessive,portalProgress,privacyReminder,requestOrder,unread,type DocRe
 import type {PortalStore} from '../lib/portalStore';
 import './portal.css';
 
+// In-page links must not change the URL hash, which selects the app.
+const jump=(e:{preventDefault():void;currentTarget:HTMLAnchorElement})=>{e.preventDefault();document.getElementById(e.currentTarget.getAttribute('href')!.slice(1))?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});};
 export const fmtDate=(d?:string)=>d?new Date(d.length===10?d+'T12:00:00':d).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'';
 export const fmtSize=(n:number)=>n<1024*1024?Math.max(1,Math.round(n/1024))+' KB':(n/1024/1024).toFixed(1)+' MB';
 const stageHelp:Record<Buyer['stage'],string>={'Introduced':'You have been introduced. No commitment on either side.','Interested':'They have said they would like to learn more.','Under NDA':'They signed a confidentiality agreement before seeing details.','Reviewing information':'They are reviewing the information you shared.','Offer made':'They have made an offer. Your contact will walk you through it.','Not proceeding':'They decided not to continue. Nothing further is shared with them.'};
@@ -30,7 +32,7 @@ export default function SellerPortal({store,portalId,preview=false,top}:{store:P
     <header className="portal-hero">
       <div className="portal-hero-text"><span className="portal-kicker">Private owner portal · {p.firmName}</span><h1>{p.businessName}</h1><p>Prepared for {p.ownerName}. Everything here is visible only to you and {possessive(p.firmName)} team.</p>
         {p.welcome&&<blockquote className="portal-welcome">{p.welcome}</blockquote>}</div>
-      <aside className="portal-help"><CircleHelp size={18}/><div><strong>Questions? Ask {p.help.name.split(' ')[0]}.</strong><a href={'mailto:'+p.help.email}><Mail size={13}/>{p.help.email}</a>{p.help.phone&&<a href={'tel:'+p.help.phone.replace(/[^\d+]/g,'')}><Phone size={13}/>{p.help.phone}</a>}<a href="#portal-messages"><MessageSquare size={13}/>Send a message here</a></div></aside>
+      <aside className="portal-help"><CircleHelp size={18}/><div><strong>Questions? Ask {p.help.name.split(' ')[0]}.</strong><a href={'mailto:'+p.help.email}><Mail size={13}/>{p.help.email}</a>{p.help.phone&&<a href={'tel:'+p.help.phone.replace(/[^\d+]/g,'')}><Phone size={13}/>{p.help.phone}</a>}<a href={"#portal-messages"} onClick={jump}><MessageSquare size={13}/>Send a message here</a></div></aside>
     </header>
     {error&&<p role="alert" className="error-banner">{error}</p>}
     <section className="portal-summary" aria-label="Your progress">
@@ -40,7 +42,7 @@ export default function SellerPortal({store,portalId,preview=false,top}:{store:P
       <div><strong>{newMessages}</strong><span>new {newMessages===1?'message':'messages'}</span></div>
       <div className="portal-bar" aria-hidden="true"><span style={{width:(prog.total?Math.round(prog.done/prog.total*100):0)+'%'}}/><span className="sent" style={{width:(prog.total?Math.round(prog.sent/prog.total*100):0)+'%'}}/></div>
     </section>
-    <nav className="portal-nav" aria-label="Portal sections"><a href="#portal-steps"><ListChecks size={15}/>Next steps</a><a href="#portal-requests"><FileText size={15}/>Requests{waiting.length?<em>{waiting.length}</em>:null}</a><a href="#portal-buyers"><Users size={15}/>Buyers</a><a href="#portal-messages"><MessageSquare size={15}/>Messages{newMessages?<em>{newMessages}</em>:null}</a><a href="#portal-documents"><FolderOpen size={15}/>Your documents</a></nav>
+    <nav className="portal-nav" aria-label="Portal sections"><a href={"#portal-steps"} onClick={jump}><ListChecks size={15}/>Next steps</a><a href={"#portal-requests"} onClick={jump}><FileText size={15}/>Requests{waiting.length?<em>{waiting.length}</em>:null}</a><a href={"#portal-buyers"} onClick={jump}><Users size={15}/>Buyers</a><a href={"#portal-messages"} onClick={jump}><MessageSquare size={15}/>Messages{newMessages?<em>{newMessages}</em>:null}</a><a href={"#portal-documents"} onClick={jump}><FolderOpen size={15}/>Your documents</a></nav>
     <div className="portal-grid">
       <main className="portal-main">
         <section id="portal-steps" className="portal-section"><h2>Next steps</h2>
