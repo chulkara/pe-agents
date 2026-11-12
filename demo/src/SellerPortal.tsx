@@ -4,6 +4,7 @@ import {possessive,portalProgress,privacyReminder,requestOrder,unread,type DocRe
 import type {PortalStore} from '../lib/portalStore';
 import './portal.css';
 import {ProgressBar} from './design/ui';
+import OwnerLetter,{SignedLetterLink} from './LetterView';
 
 // In-page links must not change the URL hash, which selects the app.
 const jump=(e:{preventDefault():void;currentTarget:HTMLAnchorElement})=>{e.preventDefault();document.getElementById(e.currentTarget.getAttribute('href')!.slice(1))?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});};
@@ -26,7 +27,7 @@ export default function SellerPortal({store,portalId,preview=false,top}:{store:P
   useEffect(()=>{if(b&&!preview&&!seenOnce.current){seenOnce.current=true;void store.seen(portalId).catch(()=>{});}},[b,preview,store,portalId]);
   if(!b)return <div className="portal-shell"><div className="portal-loading">{error?<p role="alert" className="error-banner">{error}</p>:<><Loader2 className="spin"/>Opening your portal…</>}</div></div>;
   const p=b.portal,prog=portalProgress(b),waiting=b.requests.filter(r=>['Open','In progress','Needs changes'].includes(r.status)),newMessages=unread(b);
-  const readOnly=preview||!b.canEdit;
+  const readOnly=preview||!b.canEdit,gated=!!p.requestsHidden&&b.side==='seller';
   const firstOpen=[...b.requests].filter(r=>!['Accepted','Not applicable','Submitted'].includes(r.status)).sort((x,y)=>requestOrder(x)-requestOrder(y))[0]?.id||'';
   const openId=openState??firstOpen;
   const upload=()=>{const id=firstOpen||b.requests[0]?.id;if(!id)return;setOpenState(id);requestAnimationFrame(()=>document.getElementById('req-'+id)?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));};
@@ -39,24 +40,25 @@ export default function SellerPortal({store,portalId,preview=false,top}:{store:P
       <aside className="portal-help" aria-label="Help"><CircleHelp size={20}/><div><strong>Questions? Ask {p.help.name.split(' ')[0]}.</strong><span>{p.help.name} is your contact at {p.firmName}.</span><a href={'mailto:'+p.help.email}><Mail size={13}/>{p.help.email}</a>{p.help.phone&&<a href={'tel:'+p.help.phone.replace(/[^\d+]/g,'')}><Phone size={13}/>{p.help.phone}</a>}<a href={"#portal-messages"} onClick={jump}><MessageSquare size={13}/>Send a message here</a></div></aside>
     </header>
     {error&&<p role="alert" className="error-banner">{error}</p>}
-    <section className="portal-summary" aria-label="Your progress">
+    <OwnerLetter b={b} store={store} readOnly={readOnly} refresh={refresh}/>
+    {!gated&&<section className="portal-summary" aria-label="Your progress">
       <div><strong className="k-figure">{prog.done}<small> of {prog.total}</small></strong><span>complete</span></div>
       <div><strong className="k-figure">{waiting.length}</strong><span>waiting for you</span></div>
       <div><strong className="k-figure">{prog.sent}</strong><span>with {p.firmName.split(' ')[0]} for review</span></div>
       <div><strong className="k-figure">{newMessages}</strong><span>new {newMessages===1?'message':'messages'}</span></div>
       <div className="portal-progress"><ProgressBar done={prog.done} sent={prog.sent} total={prog.total} label="Document requests"/><p><i className="done"/>Complete <i className="sent"/>Sent for review <i/>Still to do</p></div>
-    </section>
-    <nav className="portal-nav" aria-label="Portal sections"><a href={"#portal-steps"} onClick={jump}><ListChecks size={15}/>Next steps</a><a href={"#portal-requests"} onClick={jump}><FileText size={15}/>Requests{waiting.length?<em>{waiting.length}</em>:null}</a><a href={"#portal-buyers"} onClick={jump}><Users size={15}/>Buyers</a><a href={"#portal-messages"} onClick={jump}><MessageSquare size={15}/>Messages{newMessages?<em>{newMessages}</em>:null}</a><a href={"#portal-documents"} onClick={jump}><FolderOpen size={15}/>Your documents</a></nav>
+    </section>}
+    <nav className="portal-nav" aria-label="Portal sections"><a href={"#portal-steps"} onClick={jump}><ListChecks size={15}/>Next steps</a>{!gated&&<a href={"#portal-requests"} onClick={jump}><FileText size={15}/>Requests{waiting.length?<em>{waiting.length}</em>:null}</a>}<a href={"#portal-buyers"} onClick={jump}><Users size={15}/>Buyers</a><a href={"#portal-messages"} onClick={jump}><MessageSquare size={15}/>Messages{newMessages?<em>{newMessages}</em>:null}</a><a href={"#portal-documents"} onClick={jump}><FolderOpen size={15}/>Your documents</a></nav>
     <div className="portal-grid">
       <main className="portal-main">
         <section id="portal-steps" className="portal-section"><h2>Next steps</h2>
           {b.steps.length?<ol className="portal-steps">{b.steps.map(s=><li key={s.id} className={s.done?'done':''}><span className="portal-step-mark">{s.done?<Check size={14}/>:null}</span><div><strong>{s.text}</strong><small>{s.owner==='You'?'You':p.firmName}{s.due?', by '+fmtDate(s.due):''}{s.done?', done':''}</small></div></li>)}</ol>:<p className="portal-empty">{p.firmName} will add next steps here.</p>}
         </section>
-        <section id="portal-requests" className="portal-section"><h2>Document requests</h2>
+        {gated?<section id="portal-requests" className="portal-section"><h2>Document requests</h2><p className="portal-empty">Your document requests open here once the engagement letter is signed by both of us.</p></section>:<section id="portal-requests" className="portal-section"><h2>Document requests</h2>
           <p className="portal-lede">Each request explains what is needed, why, and who can see it. Your work saves as you go, so you can leave and come back. Send each request when you’re ready for it to be reviewed.</p>
           <div className="portal-requests">{[...b.requests].sort((x,y)=>requestOrder(x)-requestOrder(y)).map(r=><RequestCard key={r.id} r={r} b={b} store={store} readOnly={readOnly} refresh={refresh} open={openId===r.id} setOpen={o=>setOpenId(o?r.id:'')}/>)}</div>
           {!b.requests.length&&<p className="portal-empty">No documents requested yet.</p>}
-        </section>
+        </section>}
         <section id="portal-buyers" className="portal-section"><h2>Interested buyers</h2>
           {b.buyers.length?<div className="portal-buyers">{b.buyers.map(x=><article key={x.id}><div className="portal-buyer-head"><h3>{x.name}</h3><span className={'k-pill '+(x.stage==='Offer made'?'k-pill-green':x.stage==='Under NDA'||x.stage==='Reviewing information'?'k-pill-peri':'')}>{x.stage}</span></div>{x.summary&&<p>{x.summary}</p>}<small>{stageHelp[x.stage]} Updated {fmtDate(x.updatedAt)}.</small></article>)}</div>:<p className="portal-empty">No buyers are listed yet. {p.firmName} adds buyers here as conversations begin.</p>}
         </section>
@@ -64,12 +66,12 @@ export default function SellerPortal({store,portalId,preview=false,top}:{store:P
       <aside className="portal-side">
         <Messages b={b} store={store} readOnly={readOnly} refresh={refresh}/>
         <section id="portal-documents" className="portal-section portal-docs"><h2>Your documents</h2>
-          {b.files.length?<ul className="k-keylines">{b.files.map(f=><li key={f.id}><FileRow f={f} store={store}/><small>Used for {b.requests.filter(r=>r.fileIds.includes(f.id)).map(r=>r.title).join(', ')||'nothing yet'}</small></li>)}</ul>:<p className="portal-empty">Documents you provide appear here, so you never need to send the same one twice.</p>}
+          {b.files.length||b.letters.some(l=>l.status==='Countersigned')?<ul className="k-keylines"><SignedLetterLink b={b}/>{b.files.map(f=><li key={f.id}><FileRow f={f} store={store}/><small>Used for {b.requests.filter(r=>r.fileIds.includes(f.id)).map(r=>r.title).join(', ')||'nothing yet'}</small></li>)}</ul>:<p className="portal-empty">Documents you provide appear here, so you never need to send the same one twice.</p>}
           <p className="portal-access"><Lock size={13}/>Stored privately. Opened only by you{b.access.team.length?' and '+b.access.team.length+' '+(b.access.team.length===1?'person':'people')+' at '+p.firmName:''}.</p>
         </section>
       </aside>
     </div>
-    {!preview&&<nav className="portal-mobilebar" aria-label="Quick actions"><a href="#portal-messages" onClick={jump}><MessageSquare size={18}/>Messages{newMessages?<em>{newMessages}</em>:null}</a><button type="button" onClick={upload} disabled={readOnly||!b.requests.length}><Upload size={18}/>Upload</button></nav>}
+    {!preview&&<nav className="portal-mobilebar" aria-label="Quick actions"><a href="#portal-messages" onClick={jump}><MessageSquare size={18}/>Messages{newMessages?<em>{newMessages}</em>:null}</a><button type="button" onClick={upload} disabled={readOnly||gated||!b.requests.length}><Upload size={18}/>Upload</button></nav>}
   </div>;
 }
 

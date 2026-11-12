@@ -43,17 +43,17 @@ export const daysInStage=(c:Company,today=Date.now())=>{const t=asDeal(c).stageC
 
 /** Plain next steps the advisor sees for each stage. */
 export const stageChecklist:Record<SellStage,string[]>={
-  'Lead':['Call the owner and confirm they are thinking about selling','Note revenue, earnings and timing','Qualify or mark as lost'],
-  'Qualified':['Run the valuation with the owner’s numbers','Explain the process and the success fee in writing','Send the engagement letter'],
-  'Engaged':['Invite the owner to their portal','Request the standard documents','Agree on the asking price'],
-  'Preparing':['Finish the recast and add-backs','Draft the anonymous listing and pass the anonymity check','Prepare the confidential memorandum'],
-  'Listed':['Review NDA requests within one business day','Answer buyer questions','Share serious offers with the owner'],
-  'Under LOI':['Open the diligence checklist','Coordinate the lender and license transition','Track the closing date'],
-  'Closed':['Mark the listing sold','Ask the owner about a short case study','Record the final price for comparables'],
+  'Lead':['Call the owner and complete the qualify checklist','Note revenue, earnings and timing','Qualify or mark as not a fit'],
+  'Qualified':['Prepare the engagement letter and fill in the terms','Send the owner their portal link','Countersign once the owner signs'],
+  'Engaged':['Watch the owner’s documents arrive','Accept each document or ask for a change','Draft the recast from the accepted documents'],
+  'Preparing':['Review the recast draft and apply the lines you accept','Draft the teaser and pass the anonymity check','Draft the memorandum and get the owner’s approval','Propose the data room to the owner'],
+  'Listed':['Review NDA requests within one business day','Publish the data room once the owner approves it','Answer buyer questions and share serious offers'],
+  'Under LOI':['Open the after-LOI documents to the buyer','Coordinate the lender and license transition','Track the closing date'],
+  'Closed':['Mark the listing sold','Record the final price as a comparable sale','Ask the owner about a short case study'],
   'Lost':['Record why the deal stopped','Set a reminder to check back'],
 };
 export const primaryAction:Record<SellStage,{label:string;tab:string}>={
-  'Lead':{label:'Qualify this seller',tab:'Overview'},'Qualified':{label:'Run the valuation',tab:'Valuation and recast'},
+  'Lead':{label:'Qualify',tab:'Overview'},'Qualified':{label:'Prepare engagement letter',tab:'Owner'},
   'Engaged':{label:'Request documents',tab:'Documents'},'Preparing':{label:'Publish listing',tab:'Listing'},
   'Listed':{label:'Review buyers',tab:'Buyers'},'Under LOI':{label:'Review offers',tab:'Offers'},
   'Closed':{label:'See the activity',tab:'Activity'},'Lost':{label:'See the activity',tab:'Activity'},
@@ -80,13 +80,14 @@ export function askingVersusEstimate(asking:number,v:Pick<Valuation,'low'|'high'
 }
 
 /** A lead from the public site becomes a workspace company at Engaged, prefilled from the valuation. */
-export function startEngagement(w:Workspace,lead:Lead,actor:string):{workspace:Workspace;companyId:string}{
+/** Adds the business from a lead. Phase 3 adds it at Qualified; the letter moves it to Engaged. */
+export function startEngagement(w:Workspace,lead:Lead,actor:string,stage:SellStage='Engaged'):{workspace:Workspace;companyId:string}{
   need(!w.companies.some(c=>asDeal(c).leadId===lead.id),'This lead already has an engagement.');
   const id=uid(),sde=lead.valuation?.sde||0,revenue=lead.valuation?.revenue||0;
   const company={id,name:lead.businessName||`${lead.name.split(' ').slice(-1)[0]} HVAC (name to confirm)`,city:'',state:regionState(lead.region),industry:'HVAC',owner:lead.name,website:'',email:lead.email,phone:lead.phone,status:'Interested',nextAction:'Invite the owner to their portal',due:'',assignedTo:actor,sample:false,evidence:[],documents:[],conversations:lead.message?[{id:uid(),type:'Note',date:lead.createdAt.slice(0,10),body:'From the valuation form: '+lead.message,outcome:''}]:[],drafts:[],
-    sellStage:'Engaged' as SellStage,stageChangedAt:now(),leadId:lead.id,region:lead.region,
+    sellStage:stage,stageChangedAt:now(),leadId:lead.id,region:lead.region,
     recast:{inputs:{...defaultInputs,revenue,netProfit:sde},addBacks:[],askingPrice:0,updatedAt:now(),updatedBy:actor}} as DealCompany;
-  return {companyId:id,workspace:{...w,companies:[company,...w.companies],events:[{id:uid(),text:`${actor} started an engagement with ${lead.name}.`,date:now()},...w.events]}};
+  return {companyId:id,workspace:{...w,companies:[company,...w.companies],events:[{id:uid(),text:stage==='Engaged'?`${actor} started an engagement with ${lead.name}.`:`${actor} added ${lead.name} as a ${stage.toLowerCase()} seller.`,date:now()},...w.events]}};
 }
 
 /** Offers side by side: open offers first, then by price. */

@@ -1,7 +1,8 @@
 import {createContext,useContext,useEffect,useState,type FormEvent} from 'react';
 import {Copy,ExternalLink,Eye,Plus,Check,X,Pencil,Users,FileText,ListChecks,Settings2,Link2,Loader2} from 'lucide-react';
 import type {Company} from '../lib/domain';
-import {possessive,buyerStages,requestTemplates,portalProgress,unread,type Contact,type DocRequest,type Portal,type BuyerStage,type NextStep} from '../lib/portal';
+import {hvacRequestTemplates,dataRoomSharing} from '../lib/engagement';
+import {possessive,buyerStages,portalProgress,unread,type Contact,type DocRequest,type Portal,type BuyerStage,type NextStep} from '../lib/portal';
 import {inviteLink,type PortalStore,type RequestInput} from '../lib/portalStore';
 import SellerPortal,{usePortal,FileRow,Messages,fmtDate} from './SellerPortal';
 
@@ -19,6 +20,7 @@ export default function OwnerPortalAdmin({company,sections,onChange}:{company:Co
   if(!store)return null;
   const current=portals?.find(p=>p.status!=='Closed');
   if(portals===null)return <div className="portal-admin"><Loader2 className="spin"/></div>;
+  if(!current&&sections)return sections.includes('Requests')?<section className="panel portal-admin"><h2>No owner portal yet</h2><p>The owner’s document requests are prepared with the engagement letter. Open the Owner tab and prepare the letter first.</p></section>:null;
   if(!current)return <section className="panel portal-admin portal-admin-create"><h2>Give {company.owner||'the owner'} one place for everything.</h2>
     <p>The owner sees this business, interested buyers, document requests, messages and next steps. They never see your workspace, notes or other companies. Each request explains what you need, why, who can open it and whom to ask.</p>
     {error&&<p className="error-banner" role="alert">{error}</p>}
@@ -66,12 +68,12 @@ type ActFn=(fn:()=>Promise<unknown>)=>Promise<void>;
 type Bundle=NonNullable<ReturnType<typeof usePortal>['b']>;
 function RequestsAdmin({b,store,act,busy,w}:{b:Bundle;store:PortalStore;act:ActFn;busy:boolean;w:boolean}){
   const [editing,setEditing]=useState<DocRequest|'new'|null>(null),[template,setTemplate]=useState(-1),[notes,setNotes]=useState<Record<string,string>>({});
-  const p=b.portal,sharing=`Only ${possessive(p.firmName)} deal team can open these. We will not share them with any buyer without asking you first.`;
-  const t=template>=0?requestTemplates[template]:undefined,base=editing&&editing!=='new'?editing:undefined;
+  const p=b.portal,sharing=dataRoomSharing;
+  const templates=hvacRequestTemplates({today:new Date()}),t=template>=0?{...templates[template],needed:templates[template].guidance?templates[template].needed+' '+templates[template].guidance:templates[template].needed}:undefined,base=editing&&editing!=='new'?editing:undefined;
   return <div className="portal-admin-body">
     {w&&!editing&&<div className="button-row"><button className="btn primary" onClick={()=>{setTemplate(-1);setEditing('new');}}><Plus size={15}/>Request a document</button></div>}
     {editing&&<form key={(base?.id||'new')+template} className="portal-form portal-request-form" onSubmit={e=>{e.preventDefault();const d=v(e);const input:RequestInput={id:base?.id,title:d.title,needed:d.needed,why:d.why,sharing:d.sharing,contact:{name:d.contactName,email:d.contactEmail,phone:d.contactPhone},due:d.due};void act(async()=>{await store.saveRequest(p.id,input);setEditing(null);});}}>
-      {!base&&<label className="field"><span>Start from a common request</span><select value={template} onChange={e=>setTemplate(Number(e.target.value))}><option value={-1}>Write my own</option>{requestTemplates.map((x,i)=><option key={x.title} value={i}>{x.title}</option>)}</select></label>}
+      {!base&&<label className="field"><span>Start from a common request</span><select value={template} onChange={e=>setTemplate(Number(e.target.value))}><option value={-1}>Write my own</option>{(['First round','Second round'] as const).map(g=><optgroup key={g} label={g}>{templates.map((x,i)=>x.round===g?<option key={x.key} value={i}>{x.title}</option>:null)}</optgroup>)}</select></label>}
       <label className="field"><span>Title</span><input name="title" required minLength={3} maxLength={140} defaultValue={base?.title||t?.title}/></label>
       <label className="field"><span>What is needed, in plain words</span><textarea name="needed" rows={3} required minLength={10} maxLength={1500} defaultValue={base?.needed||t?.needed}/></label>
       <label className="field"><span>Why it is needed</span><textarea name="why" rows={2} required minLength={10} maxLength={1000} defaultValue={base?.why||t?.why}/></label>

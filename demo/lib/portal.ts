@@ -3,7 +3,7 @@
 export type Side='firm'|'seller';
 export type Contact={name:string;email:string;phone?:string};
 export type PortalStatus='Draft'|'Invited'|'Active'|'Closed';
-export type Portal={id:string;firmId:string;companyId:string;businessName:string;firmName:string;ownerName:string;ownerEmail:string;help:Contact;welcome:string;status:PortalStatus;createdAt:string;invitedAt?:string;acceptedAt?:string;sellerSeenAt?:string;firmSeenAt?:string};
+export type Portal={id:string;firmId:string;companyId:string;businessName:string;firmName:string;ownerName:string;ownerEmail:string;help:Contact;welcome:string;status:PortalStatus;requestsHidden?:boolean;createdAt:string;invitedAt?:string;acceptedAt?:string;sellerSeenAt?:string;firmSeenAt?:string};
 export const buyerStages=['Introduced','Interested','Under NDA','Reviewing information','Offer made','Not proceeding'] as const;
 export type BuyerStage=typeof buyerStages[number];
 export type Buyer={id:string;portalId:string;name:string;summary:string;stage:BuyerStage;updatedAt:string};
@@ -13,8 +13,13 @@ export type DocRequest={id:string;portalId:string;title:string;needed:string;why
 export type PortalFile={id:string;portalId:string;name:string;mime:string;size:number;sha256:string;status:'reserved'|'stored';uploadedBy:string;side:Side;createdAt:string};
 export type Message={id:string;portalId:string;side:Side;author:string;body:string;createdAt:string};
 export type NextStep={id:string;portalId:string;text:string;owner:'You'|'Firm';due:string;done:boolean};
-export type PortalBundle={portal:Portal;buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];access:{team:string[];seller:string[]};side:Side;canEdit:boolean};
-export type PortalDb={portals:Portal[];buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];invites:{token:string;portalId:string;email:string;expiresAt:string;usedAt?:string}[]};
+export const letterStatuses=['Draft','Ready to sign','Viewed by owner','Signed by owner','Countersigned','Void'] as const;
+export type LetterStatus=typeof letterStatuses[number];
+export type Signature={name:string;email:string;at:string;consent:true};
+/** An engagement letter. Its text is frozen once it is ready to sign; the hash proves which text was signed. */
+export type Letter={id:string;portalId:string;version:number;templateVersion:string;input:{ownerName:string;advisorName:string;[k:string]:unknown};text:string;textHash:string;status:LetterStatus;events:{status:LetterStatus;at:string;by:string;note?:string}[];ownerSignature?:Signature;firmSignature?:Signature;voidReason?:string;createdAt:string;updatedAt:string};
+export type PortalBundle={letters:Letter[];portal:Portal;buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];access:{team:string[];seller:string[]};side:Side;canEdit:boolean};
+export type PortalDb={portals:Portal[];buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];letters?:Letter[];invites:{token:string;portalId:string;email:string;expiresAt:string;usedAt?:string}[]};
 export type Actor={side:Side;name:string;email:string;canWrite?:boolean};
 
 export const fileLimits={maxBytes:10*1024*1024,maxFiles:100,maxPortalBytes:200*1024*1024,types:['application/pdf','image/png','image/jpeg','text/plain','text/csv','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/msword']};
@@ -41,7 +46,7 @@ const emailOk=(e:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)&&e.length<=254;
 function require_(ok:unknown,message:string):asserts ok{if(!ok)throw Error(message);}
 function contact(c:Partial<Contact>|undefined,label:string):Contact{const name=clean(c?.name,120),email=clean(c?.email,254).toLowerCase(),phone=clean(c?.phone,40);require_(name.length>=2,label+' needs a name.');require_(emailOk(email),label+' needs a valid email address.');return phone?{name,email,phone}:{name,email};}
 
-export const emptyPortalDb=():PortalDb=>({portals:[],buyers:[],requests:[],files:[],messages:[],steps:[],invites:[]});
+export const emptyPortalDb=():PortalDb=>({portals:[],buyers:[],requests:[],files:[],messages:[],steps:[],letters:[],invites:[]});
 function portalOf(db:PortalDb,id:string){const p=db.portals.find(x=>x.id===id);require_(p,'Owner portal not found.');return p;}
 function firmWriter(a:Actor){require_(a.side==='firm'&&a.canWrite!==false,'Only the firm’s team can change this.');}
 function sellerOf(a:Actor,p:Portal){require_(a.side==='seller'&&a.email.toLowerCase()===p.ownerEmail&&p.status==='Active','This portal is not available to this account.');}
@@ -104,7 +109,7 @@ export function reviewRequest(db:PortalDb,a:Actor,id:string,status:'Accepted'|'N
   return {...db,requests:db.requests.map(x=>x===r?{...r,status,reviewNote:clean(note,1000),updatedAt:now()}:x)};
 }
 
-function sellerRequest(db:PortalDb,a:Actor,id:string){const r=db.requests.find(x=>x.id===id);require_(r,'Request not found.');sellerOf(a,portalOf(db,r.portalId));require_(!['Accepted','Not applicable'].includes(r.status),'This request is already complete.');return r;}
+function sellerRequest(db:PortalDb,a:Actor,id:string){const r=db.requests.find(x=>x.id===id);require_(r,'Request not found.');const p=portalOf(db,r.portalId);sellerOf(a,p);require_(!p.requestsHidden,'Document requests open after the engagement letter is signed.');require_(!['Accepted','Not applicable'].includes(r.status),'This request is already complete.');return r;}
 /** Saving a note or a file moves a request to In progress; nothing is lost if the owner leaves. */
 export function saveSellerNote(db:PortalDb,a:Actor,id:string,note:string):PortalDb{
   const r=sellerRequest(db,a,id),sellerNote=clean(note,2000);
@@ -150,8 +155,10 @@ export function markSeen(db:PortalDb,a:Actor,portalId:string):PortalDb{const p=p
 
 export function bundle(db:PortalDb,a:Actor,portalId:string,team:string[]):PortalBundle{
   const portal=portalOf(db,portalId);require_(canRead(a,portal),'This portal is not available to this account.');
-  const requests=db.requests.filter(r=>r.portalId===portalId);
-  return {portal,buyers:db.buyers.filter(b=>b.portalId===portalId),requests,files:db.files.filter(f=>f.portalId===portalId&&f.status==='stored'),messages:db.messages.filter(m=>m.portalId===portalId),steps:db.steps.filter(s=>s.portalId===portalId),access:{team,seller:portal.status==='Active'?[portal.ownerEmail]:[]},side:a.side,canEdit:a.side==='firm'?a.canWrite!==false:portal.status==='Active'};
+  const seller=a.side==='seller';
+  const requests=seller&&portal.requestsHidden?[]:db.requests.filter(r=>r.portalId===portalId);
+  const letters=(db.letters||[]).filter(l=>l.portalId===portalId&&(!seller||l.status!=='Draft')).sort((x,y)=>y.version-x.version);
+  return {letters,portal,buyers:db.buyers.filter(b=>b.portalId===portalId),requests,files:db.files.filter(f=>f.portalId===portalId&&f.status==='stored'),messages:db.messages.filter(m=>m.portalId===portalId),steps:db.steps.filter(s=>s.portalId===portalId),access:{team,seller:portal.status==='Active'?[portal.ownerEmail]:[]},side:a.side,canEdit:a.side==='firm'?a.canWrite!==false:portal.status==='Active'};
 }
 
 /** Progress the owner sees at the top of their portal. */
@@ -164,3 +171,40 @@ export function unread(b:PortalBundle){const seen=b.side==='seller'?b.portal.sel
 export async function sha256Hex(data:ArrayBuffer){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',data))].map(x=>x.toString(16).padStart(2,'0')).join('');}
 export function requestOrder(r:DocRequest){return ['Needs changes','In progress','Open','Submitted','Accepted','Not applicable'].indexOf(r.status);}
 export const possessive=(name:string)=>name+(/s$/i.test(name.trim())?'’':'’s');
+
+// ── Engagement letters ──────────────────────────────────────────────────────────────────────
+const letterOf=(db:PortalDb,id:string)=>{const l=(db.letters||[]).find(x=>x.id===id);require_(l,'Letter not found.');return l;};
+const setLetter=(db:PortalDb,l:Letter):PortalDb=>({...db,letters:(db.letters||[]).map(x=>x.id===l.id?l:x)});
+const event=(l:Letter,status:LetterStatus,by:string,note?:string):Letter=>({...l,status,updatedAt:now(),events:[...l.events,{status,at:now(),by,...(note?{note}:{})}]});
+export const nameMatches=(typed:string,expected:string)=>{const n=(s:string)=>String(s||'').trim().replace(/\s+/g,' ').toLowerCase();return n(expected).length>=2&&n(typed)===n(expected);};
+/** Requests stay hidden from the owner until the letter is countersigned. */
+export function setRequestsHidden(db:PortalDb,a:Actor,portalId:string,hidden:boolean):PortalDb{firmWriter(a);portalOf(db,portalId);return {...db,portals:db.portals.map(p=>p.id===portalId?{...p,requestsHidden:hidden}:p)};}
+export function saveLetterDraft(db:PortalDb,a:Actor,portalId:string,l:{id?:string;templateVersion:string;input:Letter['input'];text:string;textHash:string}):{db:PortalDb;id:string}{
+  firmWriter(a);const p=portalOf(db,portalId);require_(p.status!=='Closed','This portal is closed.');
+  require_(l.text.length>=200&&/^[0-9a-f]{64}$/.test(l.textHash),'Fill in the letter first.');
+  const list=(db.letters||[]).filter(x=>x.portalId===portalId);
+  if(l.id){const old=letterOf(db,l.id);require_(old.status==='Draft','Only a draft letter can be edited. Void it and start a new version.');return {db:setLetter(db,{...old,input:l.input,text:l.text,textHash:l.textHash,templateVersion:l.templateVersion,updatedAt:now()}),id:old.id};}
+  require_(!list.some(x=>!['Void','Countersigned'].includes(x.status)),'This portal already has an open engagement letter.');
+  const letter:Letter={id:uid(),portalId,version:list.length+1,templateVersion:l.templateVersion,input:l.input,text:l.text,textHash:l.textHash,status:'Draft',events:[{status:'Draft',at:now(),by:a.name}],createdAt:now(),updatedAt:now()};
+  return {db:{...db,letters:[...(db.letters||[]),letter]},id:letter.id};
+}
+export function letterReady(db:PortalDb,a:Actor,id:string):PortalDb{firmWriter(a);const l=letterOf(db,id);require_(l.status==='Draft','This letter was already sent.');return setLetter(db,event(l,'Ready to sign',a.name));}
+export function letterViewed(db:PortalDb,a:Actor,id:string):PortalDb{const l=letterOf(db,id);sellerOf(a,portalOf(db,l.portalId));return l.status==='Ready to sign'?setLetter(db,event(l,'Viewed by owner',a.name)):db;}
+export function signLetter(db:PortalDb,a:Actor,id:string,typedName:string,agreed:boolean):PortalDb{
+  const l=letterOf(db,id);sellerOf(a,portalOf(db,l.portalId));
+  require_(['Ready to sign','Viewed by owner'].includes(l.status),'This letter is not waiting for your signature.');
+  require_(agreed,'Agree to sign electronically first.');require_(nameMatches(typedName,l.input.ownerName),`Type your full name exactly as it appears on the letter: ${l.input.ownerName}.`);
+  return setLetter(db,{...event(l,'Signed by owner',a.email),ownerSignature:{name:typedName.trim().replace(/\s+/g,' '),email:a.email.toLowerCase(),at:now(),consent:true}});
+}
+export function countersignLetter(db:PortalDb,a:Actor,id:string,typedName:string,agreed:boolean):PortalDb{
+  firmWriter(a);const l=letterOf(db,id);require_(l.status==='Signed by owner','The owner has not signed yet.');
+  require_(agreed,'Agree to sign electronically first.');require_(nameMatches(typedName,l.input.advisorName),`Type the advisor’s name exactly as it appears on the letter: ${l.input.advisorName}.`);
+  const signed={...event(l,'Countersigned',a.email),firmSignature:{name:typedName.trim().replace(/\s+/g,' '),email:a.email.toLowerCase(),at:now(),consent:true as const}};
+  return {...setLetter(db,signed),portals:db.portals.map(p=>p.id===l.portalId?{...p,requestsHidden:false}:p)};
+}
+export function voidLetter(db:PortalDb,a:Actor,id:string,reason:string):PortalDb{
+  firmWriter(a);const l=letterOf(db,id);require_(!['Countersigned','Void'].includes(l.status),'A countersigned letter cannot be voided here.');const r=clean(reason,500);require_(r.length>=5,'Say why the letter is void.');
+  return setLetter(db,{...event(l,'Void',a.name,r),voidReason:r});
+}
+/** The letter the owner and advisor are working on now: the newest that is not void. */
+export const currentLetter=(letters:Letter[])=>[...letters].sort((x,y)=>y.version-x.version).find(l=>l.status!=='Void');

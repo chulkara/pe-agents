@@ -2,14 +2,15 @@
 import {useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
 import type {Company,Workspace} from '../../lib/domain';
 import {money,type HvacInputs} from '../../lib/hvacValuation';
-import {sellStages,setStage,canMove,stageChecklist,primaryAction,recastValuation,recastSde,saveRecast,askingVersusEstimate,defaultInputs,draftEngagementPortal,type AddBack,type DealCompany,type SellStage} from '../../lib/deals';
+import {sellStages,setStage,canMove,stageChecklist,primaryAction,recastValuation,recastSde,saveRecast,askingVersusEstimate,defaultInputs,type AddBack,type DealCompany,type SellStage} from '../../lib/deals';
 import type {Listing} from '../../lib/brokerage';
 import {useAdvisor,listingOf,stageOf,unansweredThreads} from './data';
 import {AccessRequests,OfferComparison,QuestionThreads,ListingEditor} from './market';
 import {regionOf} from './pages';
 import {Button,StatusPill,Figure,Panel,KeylineList,EmptyState,Field,Tabs} from '../design/ui';
 import OwnerPortalAdmin,{PortalContextRef} from '../OwnerPortalAdmin';
-import {unread} from '../../lib/portal';
+import {unread,currentLetter} from '../../lib/portal';
+import {CompanyQualify,EngagementPanel} from './engagement';
 
 export const dealTabs=['Overview','Valuation and recast','Listing','Buyers','Offers','Documents','Owner','Research and drafting','Activity'] as const;
 export type DealTab=typeof dealTabs[number];
@@ -25,13 +26,13 @@ export default function DealRoom(p:Props){
     Buyers:(listing&&x.d?x.d.requests.filter(r=>r.listingId===listing.id&&r.status==='Pending').length+unansweredThreads(x.d.questions.filter(q=>q.listingId===listing.id)).length:0),
     Offers:listing&&x.d?x.d.offers.filter(o=>o.listingId===listing.id&&o.status==='Submitted').length:0,
     Documents:pe?.bundle?.requests.filter(r=>r.status==='Submitted').length||0,
-    Owner:pe?.bundle?unread(pe.bundle):0,'Research and drafting':p.aiCount};
+    Owner:(pe?.bundle?unread(pe.bundle):0)+(pe?.bundle?.letters.filter(l=>l.status==='Signed by owner').length||0),'Research and drafting':p.aiCount};
   async function move(to:SellStage,note?:string){try{const next=setStage(p.w,c.id,to,p.actor,{listing,portal:pe?.portal});if(await p.commit(next))setMsg(note||`Moved to ${to}.`);}catch(e){setMsg((e as Error).message);}}
   const before=(s:SellStage)=>sellStages.indexOf(stage)<sellStages.indexOf(s)&&stage!=='Lost';
-  async function engage(){if(portalCtx.store&&portalCtx.canWrite&&!pe&&c.email&&c.owner){try{await draftEngagementPortal(portalCtx.store,c,portalCtx.helpDefault.email?portalCtx.helpDefault:{name:p.actor,email:'team@local.demo'});await x.reloadPortals();}catch(e){setMsg((e as Error).message);return;}}await move('Engaged','Engaged. The owner portal is drafted with the standard requests. Invite the owner from the Owner tab.');}
   const action=(()=>{const a=primaryAction[stage];
-    if(stage==='Lead')return {label:a.label,run:()=>void move('Qualified')};
-    if(stage==='Qualified')return {label:'Start engagement',run:()=>void engage()};
+    const letter=currentLetter(pe?.bundle?.letters||[]);
+    if(stage==='Lead')return {label:'Qualify',run:()=>{p.setTab('Overview');requestAnimationFrame(()=>document.querySelector('.eng-qualify')?.scrollIntoView({block:'start'}));}};
+    if(stage==='Qualified'){if(letter?.status==='Signed by owner')return {label:'Countersign',run:()=>p.setTab('Owner')};if(letter&&['Ready to sign','Viewed by owner'].includes(letter.status))return {label:'Waiting for owner signature',run:()=>p.setTab('Owner')};return {label:'Prepare engagement letter',run:()=>p.setTab('Owner')};}
     if(stage==='Listed'&&counts.Offers)return {label:'Share offer with seller',run:()=>p.setTab('Offers')};
     return {label:a.label,run:()=>p.setTab(a.tab)};})();
   const head=listing?.askingPrice?{value:money(listing.askingPrice),label:'Asking price'}:c.recast?.askingPrice?{value:money(c.recast.askingPrice),label:'Asking price'}:v&&v.mid>0?{value:`${money(v.low)} to ${money(v.high)}`,label:'Estimated value'}:{value:'Not valued',label:'Estimated value'};
@@ -57,13 +58,13 @@ export default function DealRoom(p:Props){
       <main className="deal-main">
         <Tabs label="Deal Room sections" tabs={dealTabs.map(t=>({id:t,count:counts[t]}))} current={tab} onChange={p.setTab}/>
         <div className="adv-tabpanel" role="tabpanel" aria-label={tab}>
-          {tab==='Overview'&&<Overview c={c} listing={listing} stage={stage} w={p.w}/>}
+          {tab==='Overview'&&<>{stage==='Lead'&&<CompanyQualify c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}<Overview c={c} listing={listing} stage={stage} w={p.w}/></>}
           {tab==='Valuation and recast'&&<RecastEditor key={c.id} c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly} askingPrice={listing?.askingPrice}/>}
           {tab==='Listing'&&<ListingEditor key={c.id} listing={listing} company={c} onSaved={()=>{if(before('Preparing'))void move('Preparing','Listing saved as a draft. The deal is now Preparing.');}} onPublished={()=>{if(before('Listed'))void move('Listed','Published. The deal is now Listed.');}}/>}
           {tab==='Buyers'&&(listing?<><AccessRequests listingId={listing.id}/><h2 className="deal-sub">Questions from buyers</h2><QuestionThreads listingId={listing.id}/></>:<NoListing go={()=>p.setTab('Listing')}/>)}
           {tab==='Offers'&&(listing?<OfferComparison listing={listing} onAccepted={(l:Listing)=>{if(stage!=='Under LOI')void p.commit(setStage(p.w,c.id,'Under LOI',p.actor,{listing:l})).then(ok=>ok&&setMsg('The seller accepted. The deal is now Under LOI.'));}}/>:<NoListing go={()=>p.setTab('Listing')}/>)}
           {tab==='Documents'&&<OwnerPortalAdmin key={c.id+'d'} company={c} sections={['Requests']} onChange={()=>void x.reloadPortals()}/>}
-          {tab==='Owner'&&<OwnerPortalAdmin key={c.id+'o'} company={c} sections={['Messages','Next steps','Buyers','Settings','Owner’s view']} onChange={()=>void x.reloadPortals()}/>}
+          {tab==='Owner'&&<EngagementPanel key={c.id+'e'} c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}{tab==='Owner'&&<OwnerPortalAdmin key={c.id+'o'} company={c} sections={['Messages','Next steps','Buyers','Settings','Owner’s view']} onChange={()=>void x.reloadPortals()}/>}
           {tab==='Research and drafting'&&p.research}
           {tab==='Activity'&&<Activity w={p.w} c={c}/>}
         </div>

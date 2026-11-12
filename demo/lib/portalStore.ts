@@ -1,5 +1,5 @@
 import * as P from './portal.ts';
-import type {Actor,Contact,Portal,PortalBundle,PortalDb,PortalFile,BuyerStage,Side} from './portal.ts';
+import type {Actor,Contact,Portal,PortalBundle,PortalDb,PortalFile,BuyerStage,Side,Letter} from './portal.ts';
 
 export type CreatePortalInput={companyId:string;businessName:string;ownerName:string;ownerEmail:string;help:Contact;welcome?:string};
 export type RequestInput={id?:string;title:string;needed:string;why:string;sharing:string;contact:Contact;due:string};
@@ -27,7 +27,16 @@ export interface PortalStore{
   download(file:PortalFile):Promise<Blob>;
   message(portalId:string,body:string):Promise<void>;
   seen(portalId:string):Promise<void>;
+  // engagement letters
+  setRequestsHidden(portalId:string,hidden:boolean):Promise<void>;
+  saveLetter(portalId:string,l:LetterSave):Promise<string>;
+  letterReady(id:string):Promise<void>;
+  letterViewed(id:string):Promise<void>;
+  signLetter(id:string,typedName:string,agreed:boolean):Promise<void>;
+  countersignLetter(id:string,typedName:string,agreed:boolean):Promise<void>;
+  voidLetter(id:string,reason:string):Promise<void>;
 }
+export type LetterSave={id?:string;templateVersion:string;input:Letter['input'];text:string};
 export function inviteLink(token:string,base=typeof location!=='undefined'?location.origin+location.pathname:''){return base+'#portal='+token;}
 export function inviteTokenFromHash(hash:string){const m=hash.match(/(?:^#|&)portal=([0-9a-f]{64})\b/);return m?m[1]:'';}
 
@@ -76,6 +85,13 @@ export function localPortalStore(o:{actor:Actor;firmId:string;firmName:string;te
     async download(f:PortalFile){P.bundle(read(),a,f.portalId,o.team);const b=await bytes.get(f.id);if(!b)throw Error('This document’s contents are stored in a different browser.');return b;},
     async message(portalId:string,body:string){await apply(db=>P.postMessage(db,a,portalId,body));},
     async seen(portalId:string){await apply(db=>P.markSeen(db,a,portalId));},
+    async setRequestsHidden(portalId:string,hidden:boolean){await apply(db=>P.setRequestsHidden(db,a,portalId,hidden));},
+    async saveLetter(portalId:string,l:LetterSave){const textHash=await P.sha256Hex(new TextEncoder().encode(l.text).buffer as ArrayBuffer);const out=P.saveLetterDraft(read(),a,portalId,{...l,textHash});write(out.db);return out.id;},
+    async letterReady(id:string){await apply(db=>P.letterReady(db,a,id));},
+    async letterViewed(id:string){await apply(db=>P.letterViewed(db,a,id));},
+    async signLetter(id:string,n:string,ok:boolean){await apply(db=>P.signLetter(db,a,id,n,ok));},
+    async countersignLetter(id:string,n:string,ok:boolean){await apply(db=>P.countersignLetter(db,a,id,n,ok));},
+    async voidLetter(id:string,reason:string){await apply(db=>P.voidLetter(db,a,id,reason));},
     async acceptInvite(email:string,token:string){const out=P.acceptInvite(read(),email,token);write(out.db);return out.id;},
   };
   return store;

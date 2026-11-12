@@ -1,9 +1,12 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {sha256Hex,checkUpload,emptyPortalDb,type Portal,type PortalBundle,type PortalFile,type Side,type DocRequest,type Buyer,type NextStep,type Message} from './portal.ts';
 import type {PortalStore,RequestInput,UploadResult,CreatePortalInput} from './portalStore.ts';
+import type {Letter} from './portal.ts';
+type LetterRow={id:string;portal_id:string;version:number;template_version:string;input:Letter['input'];body:string;text_hash:string;status:Letter['status'];events:Letter['events'];owner_signature:Letter['ownerSignature']|null;firm_signature:Letter['firmSignature']|null;void_reason:string|null;created_at:string;updated_at:string};
+const letter=(r:LetterRow):Letter=>({id:r.id,portalId:r.portal_id,version:r.version,templateVersion:r.template_version,input:r.input,text:r.body,textHash:r.text_hash,status:r.status,events:r.events||[],ownerSignature:r.owner_signature||undefined,firmSignature:r.firm_signature||undefined,voidReason:r.void_reason||undefined,createdAt:r.created_at,updatedAt:r.updated_at});
 
-type PortalRow={id:string;firm_id:string;company_id:string;business_name:string;firm_name:string;owner_name:string;owner_email:string;help:Portal['help'];welcome:string;status:Portal['status'];created_at:string;invited_at:string|null;accepted_at:string|null;seller_seen_at:string|null;firm_seen_at:string|null};
-const portal=(r:PortalRow):Portal=>({id:r.id,firmId:r.firm_id,companyId:r.company_id,businessName:r.business_name,firmName:r.firm_name,ownerName:r.owner_name,ownerEmail:r.owner_email,help:r.help,welcome:r.welcome,status:r.status,createdAt:r.created_at,invitedAt:r.invited_at||undefined,acceptedAt:r.accepted_at||undefined,sellerSeenAt:r.seller_seen_at||undefined,firmSeenAt:r.firm_seen_at||undefined});
+type PortalRow={id:string;firm_id:string;company_id:string;business_name:string;firm_name:string;owner_name:string;owner_email:string;help:Portal['help'];welcome:string;status:Portal['status'];created_at:string;invited_at:string|null;accepted_at:string|null;seller_seen_at:string|null;firm_seen_at:string|null;requests_hidden?:boolean};
+const portal=(r:PortalRow):Portal=>({id:r.id,firmId:r.firm_id,companyId:r.company_id,businessName:r.business_name,firmName:r.firm_name,ownerName:r.owner_name,ownerEmail:r.owner_email,help:r.help,welcome:r.welcome,status:r.status,requestsHidden:!!r.requests_hidden,createdAt:r.created_at,invitedAt:r.invited_at||undefined,acceptedAt:r.accepted_at||undefined,sellerSeenAt:r.seller_seen_at||undefined,firmSeenAt:r.firm_seen_at||undefined});
 type FileRow={id:string;portal_id:string;name:string;mime:string;size:number;sha256:string;status:'reserved'|'stored';uploader_name:string;side:Side;created_at:string;object_path?:string};
 const file=(r:FileRow):PortalFile=>({id:r.id,portalId:r.portal_id,name:r.name,mime:r.mime,size:Number(r.size),sha256:r.sha256,status:r.status,uploadedBy:r.uploader_name,side:r.side,createdAt:r.created_at});
 
@@ -27,7 +30,8 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
         rows<{id:string;portal_id:string;side:Side;author:string;body:string;created_at:string}>(client.from('kalling_portal_messages').select('id,portal_id,side,author,body,created_at').eq('portal_id',id).order('created_at').limit(500)),
         call<{team:string[];seller:string[]}>('kalling_portal_access',{p_portal:id}),
       ]);
-      return {portal:portal(p),side:o.side,canEdit:o.side==='seller'?p.status==='Active':true,access,
+      const letters=await client.from('kalling_portal_letters').select('*').eq('portal_id',id).order('version',{ascending:false}).then(r=>r.error?[]:(r.data as LetterRow[]).map(letter));
+      return {letters,portal:portal(p),side:o.side,canEdit:o.side==='seller'?p.status==='Active':true,access,
         buyers:buyers.map(b=>({id:b.id,portalId:b.portal_id,name:b.name,summary:b.summary,stage:b.stage,updatedAt:b.updated_at})),
         steps:steps.map((s):NextStep=>({id:s.id,portalId:s.portal_id,text:s.text,owner:s.owner,due:s.due,done:s.done})),
         files:files.map(file),
@@ -58,6 +62,13 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
     async download(f){const path=await call<string>('kalling_portal_file_path',{p_file:f.id});const {data,error}=await client.storage.from('kalling-portal').download(path);if(error||!data)throw Error('Download failed: '+(error?.message||'no data'));return data;},
     async message(portalId,body){await call('kalling_portal_message',{p_portal:portalId,p_body:body});},
     async seen(portalId){await call('kalling_portal_seen',{p_portal:portalId});},
+    async setRequestsHidden(portalId,hidden){await call('kalling_portal_set_gate',{p_portal:portalId,p_hidden:hidden});},
+    async saveLetter(portalId,l){return call<string>('kalling_letter_save',{p_portal:portalId,p_letter:l});},
+    async letterReady(id){await call('kalling_letter_ready',{p_letter:id});},
+    async letterViewed(id){await call('kalling_letter_viewed',{p_letter:id});},
+    async signLetter(id,n,ok){await call('kalling_letter_sign',{p_letter:id,p_name:n,p_agree:ok});},
+    async countersignLetter(id,n,ok){await call('kalling_letter_countersign',{p_letter:id,p_name:n,p_agree:ok});},
+    async voidLetter(id,reason){await call('kalling_letter_void',{p_letter:id,p_reason:reason});},
   };
   return store;
 }

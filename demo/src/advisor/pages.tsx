@@ -2,7 +2,9 @@
 import {useState} from 'react';
 import type {Company,Workspace} from '../../lib/domain';
 import {money} from '../../lib/hvacValuation';
-import {sellStages,setStage,daysInStage,recastValuation,startEngagement,draftEngagementPortal,type DealCompany,type SellStage} from '../../lib/deals';
+import {sellStages,setStage,daysInStage,recastValuation,startEngagement,type DealCompany,type SellStage} from '../../lib/deals';
+import {qualify,markNotFit,type QualificationInput,type NotFitReason} from '../../lib/engagement';
+import {QualifyPanel,emptyQualification} from './engagement';
 import type {Lead,LeadStatus,Listing} from '../../lib/brokerage';
 import {useAdvisor,listingOf,stageOf,unansweredThreads,openOffer} from './data';
 import {AccessRequests,BuyerDirectory,OfferComparison,QuestionThreads,ListingEditor,ListingRows,site} from './market';
@@ -35,6 +37,7 @@ export function TodayPage(p:AdvisorProps&{aiReview:{c:Company;label:string}[]}){
     ...docs.map(({portal,r})=>({id:'d'+r.id,date:r.submittedAt||r.updatedAt,kind:'Seller documents',text:`${portal.ownerName} sent “${r.title}”`,action:'Review documents',run:()=>p.openDeal(portal.companyId,'Documents')})),
     ...unansweredThreads(d.questions).map(t=>{const q=t[t.length-1],b=d.buyers.find(z=>z.id===q.buyerId),l=d.listings.find(z=>z.id===q.listingId);return {id:'q'+q.id,date:q.createdAt,kind:'Buyer question',text:`${b?.name||'A buyer'} asked about ${l?.number}`,action:'Answer',run:toPage(q.listingId,'Buyers','Buyers')};}),
     ...d.offers.filter(o=>o.status==='Submitted').map(o=>{const b=d.buyers.find(z=>z.id===o.buyerId),l=d.listings.find(z=>z.id===o.listingId);return {id:'o'+o.id,date:o.createdAt,kind:'Offer',text:`${money(o.price)} from ${b?.name||'a buyer'} for ${l?.number}`,action:'Share with seller',run:toPage(o.listingId,'Offers','Offers')};}),
+    ...Object.values(portals).flatMap(({portal,bundle})=>(bundle?.letters||[]).filter(l=>l.status==='Signed by owner').map(l=>({id:'e'+l.id,date:l.ownerSignature?.at||l.updatedAt,kind:'Engagement letter',text:`${portal.ownerName} signed the engagement letter for ${portal.businessName}`,action:'Countersign',run:()=>p.openDeal(portal.companyId,'Owner')}))),
     ...p.aiReview.map(({c,label})=>({id:'a'+c.id,date:'',kind:'AI draft',text:`${label} for ${c.name}`,action:'Review draft',run:()=>p.openDeal(c.id,'Research and drafting')})),
   ].sort((a,b)=>b.date.localeCompare(a.date)):[];
   const counts=sellStages.map(s=>[s,p.w.companies.filter(c=>stageOf(x,c)===s).length] as const);
@@ -82,16 +85,20 @@ export function DealsPage(p:AdvisorProps){
 export function SellersPage(p:AdvisorProps){
   const x=useAdvisor(),portal=useContext(PortalContextRef);const [busy,setBusy]=useState(''),[err,setErr]=useState('');
   const linked=(l:Lead)=>p.w.companies.find(c=>(c as DealCompany).leadId===l.id);
-  async function engage(l:Lead){setBusy(l.id);setErr('');try{
-    const {workspace,companyId}=startEngagement(p.w,l,p.actor);if(!await p.commit(workspace))return;
-    const c=workspace.companies.find(z=>z.id===companyId)!;
-    if(portal.store&&portal.canWrite&&c.email)await draftEngagementPortal(portal.store,c,portal.helpDefault.email?portal.helpDefault:{name:p.actor,email:'team@local.demo'});
-    await x.act(()=>x.store.updateLead(l.id,{status:'Engaged',notes:[l.notes,`Engagement started ${new Date().toLocaleDateString()} as ${c.name}.`].filter(Boolean).join('\n')}));
-    p.openDeal(companyId,'Overview');
+  const [open,setOpen]=useState('');
+  async function qualifyLead(l:Lead,q:QualificationInput){setBusy(l.id);setErr('');try{
+    const existing=linked(l);let w=p.w,id=existing?.id;
+    if(!id){const r=startEngagement(w,l,p.actor,'Lead');w=r.workspace;id=r.companyId;}
+    if(!await p.commit(qualify(w,id,q,p.actor)))return;
+    await x.act(()=>x.store.updateLead(l.id,{status:'Qualified'}));setOpen('');p.openDeal(id,'Owner');
+  }catch(e){setErr((e as Error).message);}finally{setBusy('');}}
+  async function notFit(l:Lead,reason:NotFitReason,note:string,q:QualificationInput){setBusy(l.id);setErr('');try{
+    const existing=linked(l);if(existing)await p.commit(markNotFit(p.w,existing.id,reason,note,p.actor,q));
+    await x.act(()=>x.store.updateLead(l.id,{status:'Not a fit',notes:[l.notes,`Not a fit: ${reason}. ${note}`].filter(Boolean).join('\n')}));setOpen('');
   }catch(e){setErr((e as Error).message);}finally{setBusy('');}}
   const owners=p.w.companies.filter(c=>!c.sample&&c.owner);
   return <div className="adv-page">
-    <PageHead title="Sellers" lede="Owners who asked for a valuation or a call, and the owners you already work with."><PillLink href={site('/value')} target="_blank" rel="noreferrer">Open the valuation page</PillLink></PageHead>
+    <PageHead title="Sellers" lede="Owners who asked for a valuation or a call, and the owners you already work with. Qualify an inquiry during the first call; a qualified seller moves to Deals, where you prepare the engagement letter."><PillLink href={site('/value')} target="_blank" rel="noreferrer">Open the valuation page</PillLink></PageHead>
     {(err||x.error)&&<p className="error-banner" role="alert">{err||x.error}</p>}
     <Panel title="Inquiries">{!x.d?.leads.length?<EmptyState title="No inquiries yet">They arrive from the public valuation form and the contact form.</EmptyState>:
       <div className="adv-rows">{x.d.leads.map(l=>{const c=linked(l),est=l.valuation;return <article key={l.id} className={'adv-row'+(l.status==='New'?' adv-row-new':'')}>
@@ -100,8 +107,8 @@ export function SellersPage(p:AdvisorProps){
         {est&&<p className="adv-est"><span className="k-figure">{money(est.low)} to {money(est.high)}</span> estimated on {money(est.revenue)} revenue and {money(est.sde)} earnings</p>}
         {l.message&&<p className="adv-quote">“{l.message}”</p>}
         <Field label="Call notes"><textarea rows={2} defaultValue={l.notes} disabled={p.readOnly} onBlur={e=>{if(e.target.value!==l.notes)void x.act(()=>x.store.updateLead(l.id,{notes:e.target.value}));}}/></Field>
-        <div className="adv-buttons">{c?<Button arrow onClick={()=>p.openDeal(c.id)}>Open Deal Room</Button>:!p.readOnly&&l.status!=='Not a fit'&&<Button tone="primary" arrow disabled={!!busy} onClick={()=>void engage(l)}>{busy===l.id?'Starting…':'Start engagement'}</Button>}</div>
-        {!c&&!p.readOnly&&<p className="adv-muted">Starting an engagement adds the business to Deals at Engaged, fills the recast from this estimate and drafts an owner portal with the standard HVAC requests. Nothing is sent to the owner.</p>}
+        <div className="adv-buttons">{c&&<Button arrow onClick={()=>p.openDeal(c.id)}>Open Deal Room</Button>}{!p.readOnly&&!['Not a fit','Engaged','Qualified'].includes(l.status)&&open!==l.id&&<Button tone="primary" disabled={!!busy} onClick={()=>setOpen(l.id)}>Qualify</Button>}</div>
+        {open===l.id&&<QualifyPanel initial={emptyQualification(c)} estimate={est?`${money(est.low)} to ${money(est.high)} on ${money(est.revenue)} revenue`:undefined} busy={busy===l.id} onCancel={()=>setOpen('')} onQualified={q=>void qualifyLead(l,q)} onNotFit={(r,n,q)=>void notFit(l,r,n,q)}/>}
       </article>;})}</div>}</Panel>
     <Panel title="Owner contacts">{owners.length?<KeylineList>{owners.map(c=><li key={c.id}><div className="adv-grow"><strong>{c.owner}</strong><small>{c.name}. {regionOf(c)}{c.email?'. '+c.email:''}{c.phone?'. '+c.phone:''}</small></div><StagePill stage={stageOf(x,c)}/><Button tone="quiet" onClick={()=>p.openDeal(c.id,'Owner')}>Owner</Button></li>)}</KeylineList>:<EmptyState title="No owner contacts yet">Owners appear here once a business is in Deals with an owner name.</EmptyState>}</Panel>
   </div>;

@@ -1,7 +1,7 @@
 // End-to-end check of a whole sale in the local demo. Run `npm run build && npx vite preview --port 4173`,
 // then `node e2e/deal-flow.cjs [screenshot-dir]`. Uses one browser profile, so the public site, the advisor
 // workspace and the owner portal share the demo's local storage, as they would for one person testing.
-const {chromium}=require('playwright');const assert=require('node:assert/strict');const fs=require('node:fs');
+const {chromium}=require('playwright');const H=require('./helpers.cjs');const assert=require('node:assert/strict');const fs=require('node:fs');
 const U=process.env.BASE||'http://127.0.0.1:4173/',OUT=process.argv[2]||'';
 const shot=async(page,name,full=true)=>{if(OUT)await page.screenshot({path:`${OUT}/${name}.png`,fullPage:full});};
 const step=(n,t)=>console.log(`${n}. ${t}`);
@@ -12,20 +12,17 @@ const step=(n,t)=>console.log(`${n}. ${t}`);
   const watch=(p,tag)=>{p.on('pageerror',e=>errs.push(tag+': '+e.message));};
   const site=await ctx.newPage();watch(site,'site');
   // 1. An owner asks for a valuation on the public site.
-  await site.goto(U+'#/value');await site.waitForTimeout(600);
-  await site.fill('input[name=name]','Pat Russo');await site.fill('input[name=email]','pat@russohvac.test');await site.fill('input[name=businessName]','Russo Heating & Air');
-  await site.selectOption('select[name=region]','Central Jersey');await site.check('input[name=consent]');
-  await site.getByRole('button',{name:'Request a confidential review'}).click();await site.waitForSelector('text=Thank you, Pat');step(1,'lead submitted');
+  await H.submitLead(site,U);step(1,'lead submitted');
 
-  // 2. The advisor starts the engagement from Sellers.
+  // 2. The advisor qualifies the lead and the owner signs the engagement letter.
   const adv=await ctx.newPage();watch(adv,'advisor');
   await adv.goto(U+'#advisor/today');await adv.waitForSelector('text=Needs you');
   assert.ok(await adv.getByText('Call Pat Russo').count(),'the lead shows on Today');await shot(adv,'today-1440',false);
-  await adv.getByRole('button',{name:'Sellers',exact:true}).click();await adv.getByRole('button',{name:'Start engagement'}).first().click();
-  // 3. The Deal Room opens at Engaged with a drafted portal.
-  await adv.waitForSelector('.deal-head h1');assert.equal(await adv.inputValue('.deal-stage select'),'Engaged');
-  assert.match(adv.url(),/#advisor\/deal\/.+\/Overview$/);assert.equal(await adv.locator('.deal-head h1').innerText(),'Russo Heating & Air');
-  await adv.waitForSelector('text=Portal draft');step(3,'Deal Room open at Engaged');
+  await H.qualifyLead(adv);const link0=await H.prepareLetter(adv);
+  const signer=await ctx.newPage();watch(signer,'owner');await H.ownerSigns(signer,link0);await H.countersign(adv);
+  // 3. The Deal Room is at Engaged with the owner's requests open.
+  assert.match(adv.url(),/#advisor\/deal\/.+\/Owner$/);assert.equal(await adv.locator('.deal-head h1').innerText(),'Russo Heating & Air');
+  await adv.waitForSelector('text=Owner has joined');step(3,'Deal Room open at Engaged after the letter');
   const tab=async name=>{await adv.getByRole('tab',{name:new RegExp('^'+name)}).click();await adv.waitForTimeout(250);};
 
   // 4. Recast with an add-back.
@@ -70,8 +67,7 @@ const step=(n,t)=>console.log(`${n}. ${t}`);
   await shot(adv,'deal-buyers-1440');await adv.getByRole('button',{name:'Approve and share details'}).click();await adv.waitForSelector('text=Approved');step(7,'approved in the Deal Room');
 
   // 8. The owner portal shows the buyer without a name.
-  await tab('Owner');await adv.getByRole('button',{name:'Create invitation link'}).click();const link=await adv.inputValue('.portal-invite input');
-  const owner=await ctx.newPage();watch(owner,'owner');await owner.goto(link);await owner.fill('input[name=email]','pat@russohvac.test');await owner.getByRole('button',{name:'Open my portal'}).click();
+  const owner=signer;await owner.reload();
   await owner.waitForSelector('text=Document requests');const ownerText=await owner.locator('body').innerText();
   assert.match(ownerText,/Buyer 1, owner-operator/);assert.doesNotMatch(ownerText,/Alex Morgan/);step(8,'owner portal shows Buyer 1 without a name');
   await shot(owner,'owner-home-1440');
