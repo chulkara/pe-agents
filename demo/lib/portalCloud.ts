@@ -1,7 +1,7 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {sha256Hex,checkUpload,emptyPortalDb,type Portal,type PortalBundle,type PortalFile,type Side,type DocRequest,type Buyer,type NextStep,type Message} from './portal.ts';
 import type {PortalStore,RequestInput,UploadResult,CreatePortalInput} from './portalStore.ts';
-import type {Letter} from './portal.ts';
+import type {Letter,OwnerReview} from './portal.ts';
 import type {Extract} from './extract.ts';
 type LetterRow={id:string;portal_id:string;version:number;template_version:string;input:Letter['input'];body:string;text_hash:string;status:Letter['status'];events:Letter['events'];owner_signature:Letter['ownerSignature']|null;firm_signature:Letter['firmSignature']|null;void_reason:string|null;created_at:string;updated_at:string};
 const letter=(r:LetterRow):Letter=>({id:r.id,portalId:r.portal_id,version:r.version,templateVersion:r.template_version,input:r.input,text:r.body,textHash:r.text_hash,status:r.status,events:r.events||[],ownerSignature:r.owner_signature||undefined,firmSignature:r.firm_signature||undefined,voidReason:r.void_reason||undefined,createdAt:r.created_at,updatedAt:r.updated_at});
@@ -31,8 +31,12 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
         rows<{id:string;portal_id:string;side:Side;author:string;body:string;created_at:string}>(client.from('kalling_portal_messages').select('id,portal_id,side,author,body,created_at').eq('portal_id',id).order('created_at').limit(500)),
         call<{team:string[];seller:string[]}>('kalling_portal_access',{p_portal:id}),
       ]);
+      const optional=async<T>(q:PromiseLike<{data:unknown;error:unknown}>):Promise<T[]>=>{const r=await q;return r.error?[]:(r.data as T[])||[];};
+      const [ansRows,revRows]=await Promise.all([optional<{portal_id:string;history:string;services:string;strengths:string;team:string;after_sale:string;updated_at:string}>(client.from('kalling_portal_answers').select('*').eq('portal_id',id)),optional<{id:string;portal_id:string;kind:'cim';version:number;title:string;sections:OwnerReview['sections'];status:OwnerReview['status'];comments:OwnerReview['comments'];created_at:string;decided_at:string|null}>(client.from('kalling_portal_reviews').select('*').eq('portal_id',id).order('version',{ascending:false}))]);
+      const answers=ansRows[0]?{portalId:id,history:ansRows[0].history,services:ansRows[0].services,strengths:ansRows[0].strengths,team:ansRows[0].team,afterSale:ansRows[0].after_sale,updatedAt:ansRows[0].updated_at}:undefined;
+      const reviews=revRows.map((r):OwnerReview=>({id:r.id,portalId:r.portal_id,kind:r.kind,version:r.version,title:r.title,sections:r.sections,status:r.status,comments:r.comments||[],createdAt:r.created_at,decidedAt:r.decided_at||undefined}));
       const letters=await client.from('kalling_portal_letters').select('*').eq('portal_id',id).order('version',{ascending:false}).then(r=>r.error?[]:(r.data as LetterRow[]).map(letter));
-      return {letters,portal:portal(p),side:o.side,canEdit:o.side==='seller'?p.status==='Active':true,access,
+      return {answers,reviews,letters,portal:portal(p),side:o.side,canEdit:o.side==='seller'?p.status==='Active':true,access,
         buyers:buyers.map(b=>({id:b.id,portalId:b.portal_id,name:b.name,summary:b.summary,stage:b.stage,updatedAt:b.updated_at})),
         steps:steps.map((s):NextStep=>({id:s.id,portalId:s.portal_id,text:s.text,owner:s.owner,due:s.due,done:s.done})),
         files:files.map(file),
@@ -70,6 +74,12 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
     async signLetter(id,n,ok){await call('kalling_letter_sign',{p_letter:id,p_name:n,p_agree:ok});},
     async countersignLetter(id,n,ok){await call('kalling_letter_countersign',{p_letter:id,p_name:n,p_agree:ok});},
     async voidLetter(id,reason){await call('kalling_letter_void',{p_letter:id,p_reason:reason});},
+    async saveAnswers(portalId,a){await call('kalling_portal_save_answers',{p_portal:portalId,p:a});},
+    async publishReview(portalId,r){return call<string>('kalling_portal_publish_review',{p_portal:portalId,p:r});},
+    async decideReview(id,d,c){await call('kalling_portal_decide_review',{p_review:id,p_decision:d,p_comments:c});},
+    async uploadFirmFile(portalId,f){const sha=await sha256Hex(await f.arrayBuffer());const r=await call<{file:FileRow;duplicate:boolean}>('kalling_portal_reserve_firm_file',{p_portal:portalId,p_name:f.name,p_mime:f.type,p_size:f.size,p_sha256:sha});
+      if(r.duplicate)return file(r.file);const up=await client.storage.from('kalling-portal').upload(r.file.object_path!,f,{contentType:f.type,upsert:false});if(up.error&&!/exists|duplicate/i.test(up.error.message))throw Error('The upload was interrupted: '+up.error.message);
+      return file(await call<FileRow>('kalling_portal_finish_file',{p_file:r.file.id}));},
     async saveExtract(_portalId,ex){await call('kalling_portal_save_text',{p_file:ex.fileId,p_extract:ex});},
     async extracts(portalId){const {data,error}=await client.from('kalling_portal_file_text').select('*').eq('portal_id',portalId);if(error)return [];return (data as {file_id:string;status:Extract['status'];pages:Extract['pages'];text_hash:string;extractor:string;note:string;extracted_at:string}[]).map(r=>({fileId:r.file_id,status:r.status,pages:r.pages,textHash:r.text_hash,extractor:r.extractor,note:r.note,extractedAt:r.extracted_at,chars:r.pages.reduce((n,p)=>n+p.text.length,0)}));},
   };

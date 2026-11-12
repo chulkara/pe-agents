@@ -1,6 +1,6 @@
 import * as P from './portal.ts';
 import type {Extract} from './extract.ts';
-import type {Actor,Contact,Portal,PortalBundle,PortalDb,PortalFile,BuyerStage,Side,Letter} from './portal.ts';
+import type {Actor,Contact,Portal,PortalBundle,PortalDb,PortalFile,BuyerStage,Side,Letter,OwnerAnswers} from './portal.ts';
 
 export type CreatePortalInput={companyId:string;businessName:string;ownerName:string;ownerEmail:string;help:Contact;welcome?:string};
 export type RequestInput={id?:string;title:string;needed:string;why:string;sharing:string;contact:Contact;due:string};
@@ -38,6 +38,11 @@ export interface PortalStore{
   voidLetter(id:string,reason:string):Promise<void>;
   // text read from documents (firm only)
   saveExtract(portalId:string,ex:Extract):Promise<void>;
+  // owner answers, owner reviews and firm files
+  saveAnswers(portalId:string,a:Partial<Omit<OwnerAnswers,'portalId'|'updatedAt'>>):Promise<void>;
+  publishReview(portalId:string,r:{kind:'cim';version:number;title:string;sections:{key:string;title:string;text:string}[]}):Promise<string>;
+  decideReview(id:string,decision:'Approved'|'Changes requested',comments:{section:string;text:string}[]):Promise<void>;
+  uploadFirmFile(portalId:string,file:File):Promise<PortalFile>;
   extracts(portalId:string):Promise<Extract[]>;
 }
 export type LetterSave={id?:string;templateVersion:string;input:Letter['input'];text:string};
@@ -98,6 +103,10 @@ export function localPortalStore(o:{actor:Actor;firmId:string;firmName:string;te
     async signLetter(id:string,n:string,ok:boolean){await apply(db=>P.signLetter(db,a,id,n,ok));},
     async countersignLetter(id:string,n:string,ok:boolean){await apply(db=>P.countersignLetter(db,a,id,n,ok));},
     async voidLetter(id:string,reason:string){await apply(db=>P.voidLetter(db,a,id,reason));},
+    async saveAnswers(portalId:string,ans:Parameters<PortalStore['saveAnswers']>[1]){await apply(db=>P.saveAnswers(db,a,portalId,ans));},
+    async publishReview(portalId:string,r:Parameters<PortalStore['publishReview']>[1]){const out=P.publishReview(read(),a,portalId,r);write(out.db);return out.id;},
+    async decideReview(id:string,d:'Approved'|'Changes requested',c:{section:string;text:string}[]){await apply(db=>P.decideReview(db,a,id,d,c));},
+    async uploadFirmFile(portalId:string,file:File){const buf=await file.arrayBuffer(),sha256=await P.sha256Hex(buf),id=crypto.randomUUID();const db=read();if(!P.findDuplicate(db,portalId,sha256))await bytes.put(id,new Blob([buf],{type:file.type}));const out=P.addFirmFile(read(),a,portalId,{id,name:file.name,mime:file.type,size:file.size,sha256});write(out.db);return out.file;},
     async saveExtract(portalId:string,ex:Extract){if(a.side!=='firm'||a.canWrite===false)throw Error('Only the firm’s team can change this.');const all=readExtracts();all[portalId]={...(all[portalId]||{}),[ex.fileId]:ex};kv.setItem(LOCAL_EXTRACT_KEY,JSON.stringify(all));},
     async extracts(portalId:string){if(a.side!=='firm')return [];return Object.values(readExtracts()[portalId]||{});},
     async acceptInvite(email:string,token:string){const out=P.acceptInvite(read(),email,token);write(out.db);return out.id;},

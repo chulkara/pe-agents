@@ -1,3 +1,4 @@
+import {checkTeaser,blocking} from './anonymity.ts';
 // Kalling brokerage: sell-side marketplace for NJ/NY HVAC companies.
 // Public visitors see anonymized teasers. Registered buyers sign a listing NDA and request
 // access; an advisor approves before confidential details, questions and offers open up.
@@ -10,7 +11,7 @@ export type Focus='Residential service & replacement'|'Commercial HVAC/R'|'Resid
 export const focuses:Focus[]=['Residential service & replacement','Commercial HVAC/R','Residential & commercial','Refrigeration & controls'];
 export type ListingStatus='Draft'|'Live'|'Under LOI'|'Sold'|'Withdrawn';
 export type Listing={id:string;number:string;status:ListingStatus;sample:boolean;headline:string;region:Region;focus:Focus;askingPrice:number;revenue:number;sde:number;established:number;employees:number;technicians:number;agreements:number;recurringPct:number;residentialPct:number;vehicles:number;realEstate:'Leased facility'|'Real estate available'|'Home-based';sellerFinancing:boolean;reason:string;summary:string;highlights:string[];growth:string[];
-  confidential:{businessName:string;city:string;website:string;details:string};companyId?:string;portalId?:string;createdAt:string;publishedAt?:string;updatedAt:string};
+  confidential:{businessName:string;city:string;website:string;details:string;ownerName?:string};companyId?:string;portalId?:string;createdAt:string;publishedAt?:string;updatedAt:string};
 export type BuyerType='Owner-operator'|'Search fund'|'Strategic HVAC operator'|'Private equity / family office';
 export const buyerTypes:BuyerType[]=['Owner-operator','Search fund','Strategic HVAC operator','Private equity / family office'];
 export type Funds='Under $250K'|'$250K to $500K'|'$500K to $1M'|'$1M to $5M'|'Over $5M';
@@ -95,9 +96,8 @@ export function publishProblems(l:Listing):string[]{
   if(l.summary.length<120)p.push('Write a public summary of at least 120 characters.');
   if(!(l.askingPrice>0&&l.revenue>0&&l.sde>0))p.push('Enter asking price, revenue and SDE.');
   if(l.highlights.length<3)p.push('Add at least three highlights.');
-  const secret=[l.confidential.businessName,l.confidential.city,l.confidential.website.replace(/^https?:\/\/(www\.)?/,'').split('/')[0]].map(s=>s.trim().toLowerCase()).filter(s=>s.length>=4);
-  const publicText=[l.headline,l.summary,l.reason,...l.highlights,...l.growth].join(' ').toLowerCase();
-  for(const s of secret)if(publicText.includes(s))p.push(`The public text mentions “${s}”. Remove it so the business stays anonymous.`);
+  for(const f of blocking(checkTeaser({headline:l.headline,summary:l.summary,reason:l.reason,highlights:l.highlights,growth:l.growth},{businessName:l.confidential.businessName,city:l.confidential.city,website:l.confidential.website,ownerName:l.confidential.ownerName,region:l.region})))
+    if(!p.some(x=>x.includes('“'+f.text.toLowerCase()+'”')))p.push(`The public text mentions “${f.text.toLowerCase()}”. Remove it so the business stays anonymous.`);
   return p;
 }
 export function setListingStatus(db:BrokerDb,v:Viewer,id:string,status:ListingStatus):BrokerDb{

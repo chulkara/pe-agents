@@ -7,8 +7,8 @@ import {requestTemplates,type Portal} from './portal.ts';
 export const sellStages=['Lead','Qualified','Engaged','Preparing','Listed','Under LOI','Closed','Lost'] as const;
 export type SellStage=typeof sellStages[number];
 export type AddBack={id:string;item:string;amount:number;reason:string;evidence:string};
-export type Recast={inputs:HvacInputs;addBacks:AddBack[];askingPrice:number;updatedAt:string;updatedBy:string};
-export type DealFields={sellStage?:SellStage;stageChangedAt?:string;recast?:Recast;leadId?:string;region?:Region};
+export type Recast={inputs:HvacInputs;addBacks:AddBack[];askingPrice:number;updatedAt:string;updatedBy:string;version?:number;source?:'manual'|'draft';note?:string};
+export type DealFields={sellStage?:SellStage;stageChangedAt?:string;recast?:Recast;recastHistory?:Recast[];leadId?:string;region?:Region};
 export type DealCompany=Company&DealFields;
 
 const now=()=>new Date().toISOString();
@@ -64,12 +64,14 @@ export const defaultInputs:HvacInputs={revenue:0,ownerPay:0,netProfit:0,addBacks
 export function recastInputs(r:Pick<Recast,'inputs'|'addBacks'>):HvacInputs{return {...r.inputs,addBacks:r.addBacks.reduce((n,a)=>n+(Number.isFinite(a.amount)?a.amount:0),0)};}
 export function recastValuation(r:Pick<Recast,'inputs'|'addBacks'>):Valuation|null{try{return estimateHvacValue(recastInputs(r));}catch{return null;}}
 export const recastSde=(r:Pick<Recast,'inputs'|'addBacks'>)=>sellerDiscretionaryEarnings(recastInputs(r));
-export function saveRecast(w:Workspace,companyId:string,input:{inputs:HvacInputs;addBacks:(Partial<AddBack>&{item:string;amount:number;reason:string})[];askingPrice:number},actor:string):Workspace{
+export function saveRecast(w:Workspace,companyId:string,input:{inputs:HvacInputs;addBacks:(Partial<AddBack>&{item:string;amount:number;reason:string})[];askingPrice:number},actor:string,source:'manual'|'draft'='manual',note=''):Workspace{
   const c=w.companies.find(x=>x.id===companyId);need(c,'Company not found.');
   const addBacks:AddBack[]=input.addBacks.map(a=>({id:a.id||uid(),item:String(a.item||'').trim().slice(0,120),amount:Math.round(Number(a.amount)||0),reason:String(a.reason||'').trim().slice(0,400),evidence:String(a.evidence||'').trim().slice(0,200)})).filter(a=>a.item.length>=2);
   for(const a of addBacks)need(a.reason.length>=5,`Explain why “${a.item}” is added back.`);
-  const recast:Recast={inputs:{...input.inputs},addBacks,askingPrice:Math.max(0,Math.round(Number(input.askingPrice)||0)),updatedAt:now(),updatedBy:actor};
-  return {...w,companies:w.companies.map(x=>x.id===companyId?{...x,recast} as DealCompany:x),events:[{id:uid(),text:`${actor} saved the recast for ${c.name}.`,date:now()},...w.events]};
+  const prev=asDeal(c).recast,version=(prev?.version||(prev?1:0))+1;
+  const recast:Recast={inputs:{...input.inputs},addBacks,askingPrice:Math.max(0,Math.round(Number(input.askingPrice)||0)),updatedAt:now(),updatedBy:actor,version,source,...(note?{note:note.slice(0,300)}:{})};
+  const history=prev?[{...prev,version:prev.version||1},...(asDeal(c).recastHistory||[])].slice(0,20):asDeal(c).recastHistory;
+  return {...w,companies:w.companies.map(x=>x.id===companyId?{...x,recast,...(history?{recastHistory:history}:{})} as DealCompany:x),events:[{id:uid(),text:source==='draft'?`${actor} applied reviewed lines from the document draft to the recast for ${c.name}.`:`${actor} saved the recast for ${c.name}.`,date:now()},...w.events]};
 }
 /** Where the asking price sits against the estimate. */
 export function askingVersusEstimate(asking:number,v:Pick<Valuation,'low'|'high'>|null){
@@ -104,4 +106,15 @@ export async function draftEngagementPortal(store:{create(i:{companyId:string;bu
   const id=await store.create({companyId:c.id,businessName:c.name,ownerName:c.owner,ownerEmail:c.email,help,welcome:`Thanks for working with us on the sale of ${c.name}. Everything we need from you is listed here, with why we need it and who will see it.`});
   for(const t of requestTemplates.slice(0,count))await store.saveRequest(id,{...t,sharing:defaultSharing,contact:help,due:''});
   return id;
+}
+
+/** What changed between two recast versions, in plain words. */
+export function recastDiff(a:Recast|undefined,b:Recast){
+  const out:string[]=[];const money=(n:number)=>'$'+Math.round(n).toLocaleString('en-US');
+  for(const [k,label] of [['revenue','Revenue'],['netProfit','Net profit'],['ownerPay','Owner pay']] as const){const x=a?.inputs[k]||0,y=b.inputs[k]||0;if(x!==y)out.push(`${label} ${money(x)} to ${money(y)}`);}
+  const key=(x:AddBack)=>x.item+'|'+x.amount;const before=new Set((a?.addBacks||[]).map(key)),after=new Set(b.addBacks.map(key));
+  for(const x of b.addBacks)if(!before.has(key(x)))out.push(`Added ${x.item} ${money(x.amount)}`);
+  for(const x of a?.addBacks||[])if(!after.has(key(x)))out.push(`Removed ${x.item} ${money(x.amount)}`);
+  if((a?.askingPrice||0)!==b.askingPrice)out.push(`Asking price ${money(a?.askingPrice||0)} to ${money(b.askingPrice)}`);
+  return out;
 }

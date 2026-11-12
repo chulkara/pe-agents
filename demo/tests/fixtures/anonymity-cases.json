@@ -1,0 +1,129 @@
+[
+ {
+  "name": "clean teaser",
+  "text": "Central Jersey residential HVAC company with 850 maintenance agreements and four technicians.",
+  "ctx": {
+   "businessName": "Russo Heating & Air LLC",
+   "city": "Edison",
+   "website": "https://www.russohvac.com",
+   "ownerName": "Pat Russo"
+  },
+  "blocks": []
+ },
+ {
+  "name": "business name",
+  "text": "Russo Heating & Air is for sale.",
+  "ctx": {
+   "businessName": "Russo Heating & Air LLC",
+   "city": "Edison",
+   "website": "",
+   "ownerName": "Pat Russo"
+  },
+  "blocks": [
+   "business",
+   "owner"
+  ]
+ },
+ {
+  "name": "distinctive word, possessive",
+  "text": "Russo's team serves the region.",
+  "ctx": {
+   "businessName": "Russo Heating & Air LLC",
+   "city": "",
+   "website": "",
+   "ownerName": ""
+  },
+  "blocks": [
+   "business"
+  ]
+ },
+ {
+  "name": "city",
+  "text": "A company based in Edison with steady work.",
+  "ctx": {
+   "businessName": "Garden State Climate Co.",
+   "city": "Edison",
+   "website": "",
+   "ownerName": "Alex Morgan"
+  },
+  "blocks": [
+   "town"
+  ]
+ },
+ {
+  "name": "nearby town",
+  "text": "Serving Piscataway and nearby towns.",
+  "ctx": {
+   "businessName": "Garden State Climate Co.",
+   "city": "Edison",
+   "website": "",
+   "ownerName": ""
+  },
+  "blocks": [
+   "town"
+  ]
+ },
+ {
+  "name": "owner last name",
+  "text": "Founder Morgan will stay on for six months.",
+  "ctx": {
+   "businessName": "Garden State Climate Co.",
+   "city": "",
+   "website": "",
+   "ownerName": "Alex Morgan"
+  },
+  "blocks": [
+   "owner"
+  ]
+ },
+ {
+  "name": "website",
+  "text": "See gardenstateclimate.com for photos.",
+  "ctx": {
+   "businessName": "Garden State Climate Co.",
+   "city": "",
+   "website": "https://gardenstateclimate.com/about",
+   "ownerName": ""
+  },
+  "blocks": [
+   "domain"
+  ]
+ },
+ {
+  "name": "phone",
+  "text": "Call 908-555-0142 for details.",
+  "ctx": {
+   "businessName": "Garden State Climate Co.",
+   "city": "",
+   "website": "",
+   "ownerName": ""
+  },
+  "blocks": [
+   "phone"
+  ]
+ },
+ {
+  "name": "email",
+  "text": "Email owner@example.com today.",
+  "ctx": {
+   "businessName": "Garden State Climate Co.",
+   "city": "",
+   "website": "",
+   "ownerName": ""
+  },
+  "blocks": [
+   "email"
+  ]
+ },
+ {
+  "name": "generic words only",
+  "text": "A garden variety heating and cooling company in the state with a strong air conditioning business.",
+  "ctx": {
+   "businessName": "Garden State Heating & Air Co.",
+   "city": "",
+   "website": "",
+   "ownerName": ""
+  },
+  "blocks": []
+ }
+]

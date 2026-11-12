@@ -18,8 +18,19 @@ export type LetterStatus=typeof letterStatuses[number];
 export type Signature={name:string;email:string;at:string;consent:true};
 /** An engagement letter. Its text is frozen once it is ready to sign; the hash proves which text was signed. */
 export type Letter={id:string;portalId:string;version:number;templateVersion:string;input:{ownerName:string;advisorName:string;[k:string]:unknown};text:string;textHash:string;status:LetterStatus;events:{status:LetterStatus;at:string;by:string;note?:string}[];ownerSignature?:Signature;firmSignature?:Signature;voidReason?:string;createdAt:string;updatedAt:string};
-export type PortalBundle={letters:Letter[];portal:Portal;buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];access:{team:string[];seller:string[]};side:Side;canEdit:boolean};
-export type PortalDb={portals:Portal[];buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];letters?:Letter[];invites:{token:string;portalId:string;email:string;expiresAt:string;usedAt?:string}[]};
+export type OwnerAnswers={portalId:string;history:string;services:string;strengths:string;team:string;afterSale:string;updatedAt:string};
+export const answerQuestions:[keyof Omit<OwnerAnswers,'portalId'|'updatedAt'>,string,string][]=[
+  ['history','How did the business start, and how has it grown?','When it started, who started it, and the big steps since.'],
+  ['services','What work do you do, and for whom?','Service, replacement, maintenance plans, commercial work, the areas you cover.'],
+  ['strengths','What makes the business good?','What customers say, what you are proud of, what a new owner should keep.'],
+  ['team','Who does what on your team?','Roles and how long people have been with you. Names are not needed.'],
+  ['afterSale','What do you want for your team and customers after the sale?','For example, keeping everyone on, or how long you can help with the transition.'],
+];
+export const reviewStatuses=['Waiting for owner','Changes requested','Approved'] as const;
+/** A document the owner reviews before anything is shared with buyers, such as the memorandum. */
+export type OwnerReview={id:string;portalId:string;kind:'cim';version:number;title:string;sections:{key:string;title:string;text:string}[];status:typeof reviewStatuses[number];comments:{section:string;text:string;at:string}[];createdAt:string;decidedAt?:string};
+export type PortalBundle={answers?:OwnerAnswers;reviews:OwnerReview[];letters:Letter[];portal:Portal;buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];access:{team:string[];seller:string[]};side:Side;canEdit:boolean};
+export type PortalDb={portals:Portal[];buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];letters?:Letter[];answers?:OwnerAnswers[];reviews?:OwnerReview[];invites:{token:string;portalId:string;email:string;expiresAt:string;usedAt?:string}[]};
 export type Actor={side:Side;name:string;email:string;canWrite?:boolean};
 
 export const fileLimits={maxBytes:10*1024*1024,maxFiles:100,maxPortalBytes:200*1024*1024,types:['application/pdf','image/png','image/jpeg','text/plain','text/csv','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/msword']};
@@ -46,7 +57,7 @@ const emailOk=(e:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)&&e.length<=254;
 function require_(ok:unknown,message:string):asserts ok{if(!ok)throw Error(message);}
 function contact(c:Partial<Contact>|undefined,label:string):Contact{const name=clean(c?.name,120),email=clean(c?.email,254).toLowerCase(),phone=clean(c?.phone,40);require_(name.length>=2,label+' needs a name.');require_(emailOk(email),label+' needs a valid email address.');return phone?{name,email,phone}:{name,email};}
 
-export const emptyPortalDb=():PortalDb=>({portals:[],buyers:[],requests:[],files:[],messages:[],steps:[],letters:[],invites:[]});
+export const emptyPortalDb=():PortalDb=>({portals:[],buyers:[],requests:[],files:[],messages:[],steps:[],letters:[],answers:[],reviews:[],invites:[]});
 function portalOf(db:PortalDb,id:string){const p=db.portals.find(x=>x.id===id);require_(p,'Owner portal not found.');return p;}
 function firmWriter(a:Actor){require_(a.side==='firm'&&a.canWrite!==false,'Only the firm’s team can change this.');}
 function sellerOf(a:Actor,p:Portal){require_(a.side==='seller'&&a.email.toLowerCase()===p.ownerEmail&&p.status==='Active','This portal is not available to this account.');}
@@ -158,7 +169,8 @@ export function bundle(db:PortalDb,a:Actor,portalId:string,team:string[]):Portal
   const seller=a.side==='seller';
   const requests=seller&&portal.requestsHidden?[]:db.requests.filter(r=>r.portalId===portalId);
   const letters=(db.letters||[]).filter(l=>l.portalId===portalId&&(!seller||l.status!=='Draft')).sort((x,y)=>y.version-x.version);
-  return {letters,portal,buyers:db.buyers.filter(b=>b.portalId===portalId),requests,files:db.files.filter(f=>f.portalId===portalId&&f.status==='stored'),messages:db.messages.filter(m=>m.portalId===portalId),steps:db.steps.filter(s=>s.portalId===portalId),access:{team,seller:portal.status==='Active'?[portal.ownerEmail]:[]},side:a.side,canEdit:a.side==='firm'?a.canWrite!==false:portal.status==='Active'};
+  const reviews=(db.reviews||[]).filter(r=>r.portalId===portalId).sort((x,y)=>y.version-x.version),answers=(db.answers||[]).find(x=>x.portalId===portalId);
+  return {answers,reviews,letters,portal,buyers:db.buyers.filter(b=>b.portalId===portalId),requests,files:db.files.filter(f=>f.portalId===portalId&&f.status==='stored'),messages:db.messages.filter(m=>m.portalId===portalId),steps:db.steps.filter(s=>s.portalId===portalId),access:{team,seller:portal.status==='Active'?[portal.ownerEmail]:[]},side:a.side,canEdit:a.side==='firm'?a.canWrite!==false:portal.status==='Active'};
 }
 
 /** Progress the owner sees at the top of their portal. */
@@ -208,3 +220,28 @@ export function voidLetter(db:PortalDb,a:Actor,id:string,reason:string):PortalDb
 }
 /** The letter the owner and advisor are working on now: the newest that is not void. */
 export const currentLetter=(letters:Letter[])=>[...letters].sort((x,y)=>y.version-x.version).find(l=>l.status!=='Void');
+
+// ── Owner answers and reviews ───────────────────────────────────────────────────────────────
+export function saveAnswers(db:PortalDb,a:Actor,portalId:string,ans:Partial<Omit<OwnerAnswers,'portalId'|'updatedAt'>>):PortalDb{
+  const p=portalOf(db,portalId);sellerOf(a,p);const old=(db.answers||[]).find(x=>x.portalId===portalId);
+  const v:OwnerAnswers={portalId,history:clean(ans.history??old?.history,3000),services:clean(ans.services??old?.services,3000),strengths:clean(ans.strengths??old?.strengths,3000),team:clean(ans.team??old?.team,3000),afterSale:clean(ans.afterSale??old?.afterSale,3000),updatedAt:now()};
+  return {...db,answers:[...(db.answers||[]).filter(x=>x.portalId!==portalId),v]};
+}
+export function publishReview(db:PortalDb,a:Actor,portalId:string,r:{kind:'cim';version:number;title:string;sections:{key:string;title:string;text:string}[]}):{db:PortalDb;id:string}{
+  firmWriter(a);portalOf(db,portalId);require_(r.sections.length>=1,'Nothing to review.');
+  const v:OwnerReview={id:uid(),portalId,kind:r.kind,version:r.version,title:clean(r.title,160),sections:r.sections.map(x=>({key:clean(x.key,40),title:clean(x.title,120),text:clean(x.text,20000)})),status:'Waiting for owner',comments:[],createdAt:now()};
+  return {db:{...db,reviews:[...(db.reviews||[]).filter(x=>!(x.portalId===portalId&&x.kind===r.kind&&x.status==='Waiting for owner')),v]},id:v.id};
+}
+export function decideReview(db:PortalDb,a:Actor,id:string,decision:'Approved'|'Changes requested',comments:{section:string;text:string}[]):PortalDb{
+  const r=(db.reviews||[]).find(x=>x.id===id);require_(r,'Review not found.');sellerOf(a,portalOf(db,r.portalId));require_(r.status==='Waiting for owner','This was already answered.');
+  const c=comments.map(x=>({section:clean(x.section,40),text:clean(x.text,2000),at:now()})).filter(x=>x.text.length>=3);
+  if(decision==='Changes requested')require_(c.length>0,'Say what you would like changed.');
+  return {...db,reviews:(db.reviews||[]).map(x=>x.id===id?{...x,status:decision,comments:c,decidedAt:now()}:x)};
+}
+/** A file the firm adds itself, such as the approved memorandum, not tied to a request. */
+export function addFirmFile(db:PortalDb,a:Actor,portalId:string,f:{id?:string;name:string;mime:string;size:number;sha256:string}):{db:PortalDb;file:PortalFile}{
+  firmWriter(a);portalOf(db,portalId);require_(/^[0-9a-f]{64}$/.test(f.sha256),'File fingerprint missing.');
+  const dup=findDuplicate(db,portalId,f.sha256);if(dup)return {db,file:dup};checkUpload(db,portalId,f);
+  const file:PortalFile={id:f.id||uid(),portalId,name:clean(f.name,200),mime:f.mime,size:f.size,sha256:f.sha256,status:'stored',uploadedBy:a.name,side:'firm',createdAt:now()};
+  return {db:{...db,files:[...db.files,file]},file};
+}
