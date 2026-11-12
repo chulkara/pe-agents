@@ -64,7 +64,7 @@ export const defaultInputs:HvacInputs={revenue:0,ownerPay:0,netProfit:0,addBacks
 export function recastInputs(r:Pick<Recast,'inputs'|'addBacks'>):HvacInputs{return {...r.inputs,addBacks:r.addBacks.reduce((n,a)=>n+(Number.isFinite(a.amount)?a.amount:0),0)};}
 export function recastValuation(r:Pick<Recast,'inputs'|'addBacks'>):Valuation|null{try{return estimateHvacValue(recastInputs(r));}catch{return null;}}
 export const recastSde=(r:Pick<Recast,'inputs'|'addBacks'>)=>sellerDiscretionaryEarnings(recastInputs(r));
-export function saveRecast(w:Workspace,companyId:string,input:{inputs:HvacInputs;addBacks:Omit<AddBack,'id'>[]&{id?:string}[];askingPrice:number},actor:string):Workspace{
+export function saveRecast(w:Workspace,companyId:string,input:{inputs:HvacInputs;addBacks:(Partial<AddBack>&{item:string;amount:number;reason:string})[];askingPrice:number},actor:string):Workspace{
   const c=w.companies.find(x=>x.id===companyId);need(c,'Company not found.');
   const addBacks:AddBack[]=input.addBacks.map(a=>({id:a.id||uid(),item:String(a.item||'').trim().slice(0,120),amount:Math.round(Number(a.amount)||0),reason:String(a.reason||'').trim().slice(0,400),evidence:String(a.evidence||'').trim().slice(0,200)})).filter(a=>a.item.length>=2);
   for(const a of addBacks)need(a.reason.length>=5,`Explain why “${a.item}” is added back.`);
