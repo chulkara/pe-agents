@@ -55,7 +55,7 @@ function CloudOwner({token}:{token:string}){
     <h1>{token?'You’re invited.':'Welcome back.'}</h1><p>{token?'This is a private portal for your business. Sign in, or create an account, with the email address the invitation was sent to.':'Sign in to open your business’s portal.'}</p>
     {error&&<p className="error-banner" role="alert">{error}</p>}{notice&&<p className="studio-notice" role="status">{notice}</p>}
     <label className="field"><span>Email address</span><input name="email" type="email" required autoComplete="email"/></label>
-    <label className="field"><span>Password{mode==='up'?' · at least 12 characters':''}</span><input name="password" type="password" required minLength={12} autoComplete={mode==='up'?'new-password':'current-password'}/></label>
+    <label className="field"><span>Password{mode==='up'?', at least 12 characters':''}</span><input name="password" type="password" required minLength={12} autoComplete={mode==='up'?'new-password':'current-password'}/></label>
     <button className="btn primary" disabled={busy||!client}>{mode==='up'?'Create account':'Sign in'}</button>
     <button type="button" className="text-link" onClick={()=>setMode(mode==='up'?'in':'up')}>{mode==='up'?'I already have an account':'First time here? Create an account'}</button></form></Frame>;
   if(portalId&&store)return <Frame signOut={signOut}><SellerPortal store={store} portalId={portalId}/></Frame>;
