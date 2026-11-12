@@ -139,7 +139,8 @@ test('the local demo API accepts only Kalling pages on loopback and completes as
   const {packet}=await createResearchAssignment(setup(),setup().companies[0],'Analyst');
   assert.equal((await fetch(base+'/v1/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packet})})).status,403,'no origin, no write');
   assert.equal((await fetch(base+'/v1/jobs',{method:'POST',headers:{...kalling,'Content-Type':'text/plain'},body:JSON.stringify({packet})})).status,415);
-  assert.equal((await fetch(base+'/v1/jobs',{method:'POST',headers:kalling,body:JSON.stringify({packet:{...packet,pad:'x'.repeat(140000)}})})).status,413);
+  assert.equal((await fetch(base+'/v1/jobs',{method:'POST',headers:kalling,body:JSON.stringify({packet:{...packet,pad:'x'.repeat(660000)}})})).status,413);
+  assert.equal((await fetch(base+'/v1/jobs',{method:'POST',headers:kalling,body:JSON.stringify({packet:{...packet,pad:'x'.repeat(140000)}})})).status,400,'research assignments stay under 120 KB');
   const status=await (await fetch(base+'/v1/status',{headers:kalling})).json();assert.equal(status.app,'kalling-worker');
   const sub=await fetch(base+'/v1/jobs',{method:'POST',headers:kalling,body:JSON.stringify({packet})});assert.equal(sub.status,202);
   const done=await until(async()=>{const j=await (await fetch(base+'/v1/jobs/'+packet.id,{headers:kalling})).json();return j.status==='succeeded'&&j;});

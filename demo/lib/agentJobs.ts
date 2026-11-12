@@ -2,12 +2,12 @@
 // loopback worker (local browser demo). The browser never talks to Ollama directly.
 import type {SupabaseClient} from '@supabase/supabase-js';
 
-export type AgentKind='research'|'outreach';
+export type AgentKind='research'|'outreach'|'recast'|'teaser'|'cim'|'comps';
 export type JobStatus='queued'|'running'|'retry'|'succeeded'|'failed'|'cancelled'|'missing';
 export type JobProgress={stage?:string;label?:string;done?:number;total?:number;calls?:number;maxCalls?:number;at?:string;reason?:string;worker?:string};
 export type JobView={id:string;assignmentId:string;kind:AgentKind;status:JobStatus;progress:JobProgress;attempts:number;maxAttempts:number;error:string;createdAt:string;updatedAt:string;result?:unknown};
 export type ComputerState='online'|'busy'|'model-unavailable'|'offline'|'not-connected'|'unreachable'|'checking';
-export type ComputerView={state:ComputerState;name:string;detail:string;lastSeen?:string;count:number};
+export type ComputerView={state:ComputerState;name:string;detail:string;lastSeen?:string;count:number;version?:string};
 export type Computer={id:string;name:string;state:string;detail:string|null;last_seen_at:string|null;created_at:string;version:string|null;model:string|null};
 export interface AgentBackend{
   mode:'cloud'|'local';
@@ -28,7 +28,7 @@ export function summarizeComputers(list:Computer[],now=Date.now()):ComputerView{
   const pick=live.find(c=>c.state==='ready')||live.find(c=>c.state==='busy')||live[0];
   if(!pick){const last=list.map(c=>c.last_seen_at).filter(Boolean).sort().at(-1)||undefined;return {state:'offline',name:list[0].name,detail:'Your research computer is offline or asleep. Work waits and starts automatically when it reconnects.',lastSeen:last,count:list.length};}
   const state:ComputerState=pick.state==='busy'?'busy':pick.state==='model-unavailable'?'model-unavailable':pick.state==='ready'?'online':'online';
-  return {state,name:pick.name,detail:state==='model-unavailable'?'Online, but local Qwen is not ready on this computer. Work waits until it is.':state==='busy'?'Working on an assignment now.':'Ready.',lastSeen:pick.last_seen_at||undefined,count:list.length};
+  return {state,name:pick.name,version:pick.version||undefined,detail:state==='model-unavailable'?'Online, but local Qwen is not ready on this computer. Work waits until it is.':state==='busy'?'Working on an assignment now.':'Ready.',lastSeen:pick.last_seen_at||undefined,count:list.length};
 }
 
 type Row={id:string;assignment_id:string;kind:AgentKind;status:JobStatus;progress:JobProgress|null;attempts:number;max_attempts:number;last_error:string|null;created_at:string;updated_at:string;result:string|null};
@@ -68,8 +68,8 @@ export function localAgentBackend(base=localWorkerUrl,fetchImpl:typeof fetch=(..
     async status(){return request<LocalStatus>('/v1/status',undefined,2500);},
     async computer():Promise<ComputerView>{
       try{const s=await backend.status();if(s.app!=='kalling-worker')throw Error();const name='This Mac';
-        if(!s.model.ready)return {state:'model-unavailable',name,detail:'The research computer is running, but local Qwen is not ready: '+s.model.detail,count:1};
-        return {state:s.active?'busy':'online',name,detail:s.active?'Working on '+s.active.company+'.':'Ready · '+s.model.name+' on this Mac',count:1};}
+        if(!s.model.ready)return {state:'model-unavailable',name,version:s.version,detail:'The research computer is running, but local Qwen is not ready: '+s.model.detail,count:1};
+        return {state:s.active?'busy':'online',name,version:s.version,detail:s.active?'Working on '+s.active.company+'.':'Ready · '+s.model.name+' on this Mac',count:1};}
       catch{return {state:'unreachable',name:'',detail:'The Kalling research computer is not reachable from this browser.',count:0};}
     },
     async submit(_kind:AgentKind,packet:{id:string}){return toJob(await request('/v1/jobs',{method:'POST',body:JSON.stringify({packet})},10000));},

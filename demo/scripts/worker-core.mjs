@@ -5,12 +5,14 @@ import {mkdir,readFile,writeFile,rename,readdir,stat} from 'node:fs/promises';
 import {join} from 'node:path';
 import {runLocalResearch,runLocalOutreach,localModel,localRequest,localRunnerVersion,localSafetyPolicy} from './local-agent-runner.mjs';
 import {deployedCloudProject} from '../lib/cloudProject.ts';
+import {runLocalDraft} from './local-drafting.mjs';
+import {localModels} from '../lib/agentProtocol.ts';
 
-export const workerVersion='kalling-worker-1';
+export const workerVersion='kalling-worker-2';
 export const localApiPort=47311;
 export const allowedOrigins=Object.freeze(['https://chulkara.github.io','http://localhost:5173','http://127.0.0.1:5173','http://localhost:4173','http://127.0.0.1:4173']);
-const playbooks={'local-research-v1':'research','local-outreach-v1':'outreach'};
-const maxPacketBytes=120000;
+const playbooks={'local-research-v1':'research','local-outreach-v1':'outreach','local-recast-v1':'recast','local-teaser-v1':'teaser','local-cim-v1':'cim','local-comps-v1':'comps'};
+const maxPacketBytes=(kind)=>kind==='recast'||kind==='cim'?600000:120000;
 
 export class WorkerError extends Error{constructor(message,{status=0,denied=false}={}){super(message);this.status=status;this.denied=denied;}}
 
@@ -51,6 +53,7 @@ export function describeProgress(kind,packet,event,counter){
   if(event.status==='Checkpoint saved')counter.done=Math.min(total,counter.done+1);
   if(event.status==='Ready for human review')return {stage:'finishing',label:'Checking the result before it returns',done:total,total,calls:counter.calls};
   if(event.calls)counter.calls=event.calls;
+  if(event.label){counter.label=event.label;return {stage:'running',label:event.label,done:counter.done,calls:counter.calls};}
   let label=counter.label||(kind==='research'?'Starting research':'Starting the draft');
   const key=String(event.step||'');
   if(key.startsWith('source:')){const id=key.split(':')[1],i=Math.max(0,(packet.sources||[]).findIndex(s=>s.id===id));label=`Reading source ${i+1} of ${n}`;}
@@ -60,12 +63,14 @@ export function describeProgress(kind,packet,event,counter){
   return {stage:'running',label,done:counter.done,total,calls:counter.calls,maxCalls:kind==='research'?14:2};
 }
 
-export function createWorker({stateDir,configPath=join(stateDir,'worker.json'),model='qwen3:4b',request=localRequest,cloudFactory=cloudClient,runners={research:runLocalResearch,outreach:runLocalOutreach},log=()=>{},timing={}}={}){
+export function createWorker({stateDir,configPath=join(stateDir,'worker.json'),model='qwen3:4b',request=localRequest,cloudFactory=cloudClient,runners={research:runLocalResearch,outreach:runLocalOutreach,recast:runLocalDraft,teaser:runLocalDraft,cim:runLocalDraft,comps:runLocalDraft},log=()=>{},timing={}}={}){
   if(localSafetyPolicy!=='local-only-required-v2'||localRunnerVersion!=='local-playbooks-v2')throw Error('Worker safety versions do not match. Update the repository before starting.');
   const t={idle:5000,heartbeat:20000,renew:45000,modelOk:60000,modelRetry:15000,...timing};
   const localDir=join(stateDir,'local-jobs');
   const state={config:{},configMtime:0,model:{ready:false,detail:'Checking local Qwen…',checkedAt:0,digest:''},cloud:{status:'not-connected',detail:'',lastContact:0,waiting:0},active:null,local:new Map(),started:Date.now(),beat:0,stopped:false};
   let timer=null,loop=Promise.resolve(),cloud=null;
+  /** A larger local model can be set per kind in worker.json, for example {"models":{"cim":"qwen3:14b"}}. */
+  const modelFor=(kind)=>{const m=state.config?.models?.[kind];return typeof m==='string'&&localModels.includes(m)?m:model;};
 
   async function loadConfig(force=false){
     let s;try{s=await stat(configPath);}catch(e){if(e.code!=='ENOENT')throw e;state.config={};cloud=null;return;}
@@ -113,7 +118,7 @@ export function createWorker({stateDir,configPath=join(stateDir,'worker.json'),m
     if(source==='local'){const j=state.local.get(job.id);j.status='running';j.attempts=(j.attempts||0)+1;await saveLocal(j);}
     void report(active.progress);
     try{
-      const out=await runners[kind](packet,{model,stateDir,signal:ac.signal,request,onProgress:e=>void report(describeProgress(kind,packet,e,counter))});
+      const out=await runners[kind](packet,{model:modelFor(kind),stateDir,signal:ac.signal,request,onProgress:e=>void report(describeProgress(kind,packet,e,counter))});
       await chain;
       if(source==='cloud'){
         for(let n=0;;n++){try{const s=await cloud.finish(state.config.cloud.token,job.id,job.lease_token,out.result,null,true);log(`Finished ${kind} for ${active.company}: ${s==='ok'?'returned for review':s}.`);break;}
@@ -160,7 +165,7 @@ export function createWorker({stateDir,configPath=join(stateDir,'worker.json'),m
     status(){
       const queued=[...state.local.values()].filter(j=>j.status==='queued').length;
       return {app:'kalling-worker',version:workerVersion,startedAt:new Date(state.started).toISOString(),
-        model:{ready:state.model.ready,name:model,detail:state.model.detail},
+        model:{ready:state.model.ready,name:model,detail:state.model.detail,models:Object.fromEntries(['recast','teaser','cim','comps'].map(k=>[k,modelFor(k)]))},kinds:Object.values(playbooks),
         cloud:{status:state.cloud.status,firmName:state.config.cloud?.firmName||state.cloud.firmName||'',name:state.config.cloud?.name||'',waiting:state.cloud.waiting,detail:state.cloud.detail,lastContact:state.cloud.lastContact?new Date(state.cloud.lastContact).toISOString():null},
         active:state.active?{source:state.active.source,kind:state.active.kind,company:state.active.company,progress:state.active.progress,startedAt:new Date(state.active.startedAt).toISOString()}:null,
         local:{queued}};
@@ -174,8 +179,8 @@ export function createWorker({stateDir,configPath=join(stateDir,'worker.json'),m
     },
     async unpair(){const {cloud:_,...rest}=state.config;await saveConfig(rest);state.cloud={status:'not-connected',detail:'',lastContact:0,waiting:0};return api.status();},
     async submitLocal(packet){
-      if(!packet||typeof packet!=='object'||JSON.stringify(packet).length>maxPacketBytes)throw new WorkerError('Assignment must be a JSON object under 120 KB.',{status:400});
-      const kind=playbooks[packet.playbook];if(!kind||typeof packet.id!=='string'||!/^[\w-]{8,120}$/.test(packet.id))throw new WorkerError('Unsupported assignment.',{status:400});
+      const kind=playbooks[packet?.playbook];
+      if(!packet||typeof packet!=='object'||JSON.stringify(packet).length>maxPacketBytes(kind))throw new WorkerError(`Assignment must be a JSON object under ${maxPacketBytes(kind)/1000} KB.`,{status:400});if(!kind||typeof packet.id!=='string'||!/^[\w-]{8,120}$/.test(packet.id))throw new WorkerError('Unsupported assignment.',{status:400});
       const existing=state.local.get(packet.id);
       if(existing&&!['failed','cancelled'].includes(existing.status))return publicJob(existing);
       if([...state.local.values()].filter(j=>['queued','running'].includes(j.status)).length>=10)throw new WorkerError('Ten assignments are already waiting on this computer.',{status:429});
@@ -208,7 +213,7 @@ export function createLocalApi(worker,{port=localApiPort,origins=allowedOrigins}
       let body=null;
       if(req.method==='POST'){
         if(!String(req.headers['content-type']||'').startsWith('application/json'))return send(415,{error:'Use JSON.'});
-        const chunks=[];let size=0;for await(const c of req){size+=c.length;if(size>130000)return send(413,{error:'Assignment too large.'});chunks.push(c);}
+        const chunks=[];let size=0;for await(const c of req){size+=c.length;if(size>650000)return send(413,{error:'Assignment too large.'});chunks.push(c);}
         body=size?JSON.parse(Buffer.concat(chunks).toString('utf8')):{};
       }
       const m=path.match(/^\/v1\/jobs\/([\w-]{8,120})(\/cancel)?$/);

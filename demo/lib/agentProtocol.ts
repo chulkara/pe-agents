@@ -22,7 +22,7 @@ export type AgentResult = {
   duplicateCandidates:{companyId:string; reason:string}[];
   metrics:{apiCostUSD:0; elapsedMs:number; promptTokens:number; outputTokens:number; calls:number; resumed:boolean; usageIncomplete:boolean};
 };
-export const localModels = ['qwen3:4b', 'qwen3:8b'];
+export const localModels = ['qwen3:4b', 'qwen3:8b', 'qwen3:14b'];
 const instructionLike = /ignore\s+(all\s+)?(previous|prior|system)\s+instructions|system\s+prompt|(?:reveal|exfiltrate).{0,50}(?:credentials|password|api.key)|execute.{0,30}(?:shell|command)/i;
 function requireThat(ok:unknown, message:string):asserts ok {if(!ok) throw Error(message);}
 function string(value:unknown, min:number, max:number):value is string {return typeof value === 'string' && value.trim().length >= min && value.length <= max;}

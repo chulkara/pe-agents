@@ -23,11 +23,12 @@ One-time setup on the Mac that powers the pilot:
   node --experimental-strip-types scripts/kalling-worker.mjs start         Run in this window (for troubleshooting)
 
 Logs: ~/Library/Logs/Kalling/worker.log · Checkpoints: ~/.kalling-agent
-Set the model with --model qwen3:8b on install or start (default qwen3:4b).`;
+Set the model with --model qwen3:8b on install or start (default qwen3:4b).
+For larger drafts, add a per-kind model to ~/.kalling-agent/worker.json, for example {"models":{"cim":"qwen3:14b"}}.`;
 
 function option(name,fallback){const i=args.indexOf(name);if(i<0)return fallback;const v=args[i+1];args.splice(i,2);return v;}
 const model=option('--model','qwen3:4b');
-if(!localModels.includes(model))throw Error('Only --model qwen3:4b or --model qwen3:8b is supported.');
+if(!localModels.includes(model))throw Error('Only --model qwen3:4b, qwen3:8b or qwen3:14b is supported.');
 const run=(cmd,a)=>new Promise(r=>execFile(cmd,a,(e,stdout,stderr)=>r({code:e?.code??0,out:String(stdout||''),err:String(stderr||'')})));
 async function log(line){const text=`${new Date().toISOString()} ${line}\n`;process.stdout.write(text);
   try{await mkdir(logDir,{recursive:true});try{if((await stat(logFile)).size>2_000_000)await rename(logFile,logFile+'.1');}catch{}await appendFile(logFile,text);}catch{}}
