@@ -13,10 +13,10 @@ Owners never see your workspace, notes, research, other companies or other porta
 
 ## Firm side
 
-Open a company and go to the **Owner portal** tab.
+Open a company's Deal Room. **Documents** holds the requests and files; **Owner** holds messages, next steps, buyers, the invitation link, settings and the owner's view. **Start engagement** on a seller inquiry drafts the portal for you with the first six HVAC requests.
 
 1. **Create the portal.** Enter the owner's name and email, a help contact and an optional welcome note.
-2. **Request documents.** Start from a common request, such as financial statements, tax returns, a customer summary, the lease, a team overview, licenses and insurance, or vehicles and equipment. Edit every field so it reads plainly. Each request must include:
+2. **Request documents.** Start from a common HVAC request: profit and loss statements, tax returns, year-to-date financials, the maintenance agreement list, licenses and insurance, a team overview, customer and revenue mix, vehicles and equipment, or the lease. Edit every field so it reads plainly. Each request must include:
    * what is needed
    * why it is needed
    * who can see it
@@ -29,9 +29,12 @@ Changing the owner's email, or closing the portal, removes the earlier owner's a
 
 ## Owner side
 
+The portal uses the same design as the public site: the business name at display size with "Prepared by Kalling for" the owner, a purple help panel with the contact, progress figures with a bar (green for complete, periwinkle for sent), requests as an accordion sorted needs a change, in progress, to do, sent, complete, buyer cards with their stage explained, and a message thread where the owner's messages are purple and Kalling's are periwinkle. On a phone it is one column with a bar at the bottom for **Messages** and **Upload**; every control is at least 44px tall.
+
+
 The owner opens the link, signs in or creates an account with the invited email, and lands on their portal. They can come back any time at the same address with `#owner` at the end.
 
-* **Progress saves as they go.** Each file is stored when it finishes uploading, and notes save automatically. A request shows "Saved — not sent yet" until the owner presses **Send for review**. Leaving and returning keeps everything.
+* **Progress saves as they go.** Each file is stored when it finishes uploading, and notes save automatically. A request shows "Saved, not sent yet" until the owner presses **Send for review**. Leaving and returning keeps everything.
 * **Documents they already provided are remembered.** Uploading the same file again links the earlier copy instead of storing a duplicate, and the owner is told when that happens. Any earlier document can also be reused for another request.
 * **Requests that need a change** move to the top, with your note explaining what is missing.
 
