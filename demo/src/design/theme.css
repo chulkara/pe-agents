@@ -1,0 +1,23 @@
+/* Kalling theme for the advisor workspace and owner portal. Loaded after the older component styles. */
+body{font-family:var(--k-font);color:#000;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--k-font);font-weight:500}
+h1{letter-spacing:-.04em}h2{letter-spacing:-.025em}
+button,input,select,textarea,.btn,.badge,.eyebrow,.nav-item,.field,label,th,.tag,.status-pill,small{font-family:var(--k-ui)}
+.eyebrow{text-transform:none;letter-spacing:0;font-size:13px;color:var(--k-grey-1);font-weight:450}
+.btn{border-radius:var(--k-radius-pill);font-size:13px;border-color:rgba(0,0,0,.28);color:#000;padding-inline:18px}
+.btn:hover{border-color:#000}
+.btn.primary{background:var(--k-purple);border-color:var(--k-purple);color:#fff}
+.btn.primary:hover{background:var(--k-green);border-color:var(--k-green);color:#fff}
+.btn:focus-visible,.nav-item:focus-visible,a:focus-visible,button:focus-visible{outline:2px solid #000;outline-offset:2px}
+.badge{border-radius:var(--k-radius-pill);padding:4px 10px;font-size:11px;background:var(--k-peri-soft);color:var(--k-purple-ink)}
+.badge.green{background:var(--k-green-soft);color:var(--k-green)}
+.panel{border-radius:var(--k-radius-panel);border-color:var(--k-line)}
+.field input,.field select,.field textarea,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea{border-radius:var(--k-radius-input)}
+.sidebar{background-color:var(--k-purple);background-image:var(--k-grain);color:rgba(255,255,255,.6)}
+.nav-item{color:rgba(255,255,255,.72);border-radius:var(--k-radius-pill)}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active{background:#fff;color:var(--k-purple)}
+.nav-item .count,.nav-item small{color:inherit;opacity:.7}
+.error-banner{border-radius:var(--k-radius-input)}
+.k-figure{font-family:var(--k-figure);font-weight:400;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){*{transition-duration:0s!important;animation-duration:0s!important}}

@@ -1,0 +1,15 @@
+/* Kalling design tokens, shared by the public site, the advisor workspace and the owner portal. */
+:root{
+  --k-black:#000;--k-white:#fff;
+  --k-purple:#2d1650;--k-purple-2:#3d2068;--k-purple-ink:#1c1033;
+  --k-green:#1f4d36;--k-green-2:#173c2a;--k-green-soft:#e4efe8;
+  --k-peri:#a7b2f7;--k-peri-soft:#eef0fe;--k-peri-line:#d6dbfb;
+  --k-grey-1:#474747;--k-grey-2:#777;--k-surface:#f6f6f8;
+  --k-line:rgba(0,0,0,.14);--k-line-strong:#000;
+  --k-error:#9b2a15;--k-error-soft:#fde9e4;
+  --k-radius-panel:18px;--k-radius-input:12px;--k-radius-pill:999px;
+  --k-font:'Helvetica Neue',Helvetica,Arial,sans-serif;
+  --k-ui:'Zalando Sans Variable','Zalando Sans','Helvetica Neue',Helvetica,Arial,sans-serif;
+  --k-figure:'Forum',Georgia,'Times New Roman',serif;
+  --k-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}

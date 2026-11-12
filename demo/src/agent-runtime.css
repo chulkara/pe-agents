@@ -1,40 +1,40 @@
 .agent-run{margin:0 0 22px;display:grid;gap:14px}
-.agent-run-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:16px 18px;border:1px solid #dfe5d3;border-radius:10px;background:#fbfcf7}
+.agent-run-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:16px 18px;border:1px solid #dcdcdf;border-radius:10px;background:#fafafd}
 .agent-run-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.agent-run-importing{display:inline-flex;gap:8px;align-items:center;font-size:12px;color:#627347}
-.agent-run-blocker{font-size:12px;line-height:1.7;color:#7d8970;margin:0}
+.agent-run-importing{display:inline-flex;gap:8px;align-items:center;font-size:12px;color:var(--k-purple)}
+.agent-run-blocker{font-size:12px;line-height:1.7;color:#7c7c7f;margin:0}
 .computer-status{display:flex;gap:11px;align-items:flex-start;min-width:0}
-.computer-status strong{display:block;font-size:13px;color:#3c4630}
-.computer-status small{display:block;font-size:11px;line-height:1.7;color:#7d8970;margin-top:2px;max-width:560px}
-.computer-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;background:#b7bdad}
-.computer-status.online .computer-dot{background:#4f9a5b;box-shadow:0 0 0 4px rgba(79,154,91,.15)}
-.computer-status.warn .computer-dot{background:#d29a2c;box-shadow:0 0 0 4px rgba(210,154,44,.16)}
+.computer-status strong{display:block;font-size:13px;color:#111}
+.computer-status small{display:block;font-size:11px;line-height:1.7;color:#7c7c7f;margin-top:2px;max-width:560px}
+.computer-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;background:#b5b5b8}
+.computer-status.online .computer-dot{background:var(--k-green);box-shadow:0 0 0 4px rgba(79,154,91,.15)}
+.computer-status.warn .computer-dot{background:#7f7f82;box-shadow:0 0 0 4px rgba(210,154,44,.16)}
 .computer-status.offline .computer-dot{background:#c2593f;box-shadow:0 0 0 4px rgba(194,89,63,.13)}
 .computer-status.checking .computer-dot{animation:agent-pulse 1.2s ease-in-out infinite}
 .computer-status.compact{align-items:center}.computer-status.compact strong{font-size:11px;font-weight:600}
-.agent-run-state{display:flex;gap:13px;align-items:flex-start;padding:16px 18px;border-radius:10px;border:1px solid #dfe5d3;background:#fff}
-.agent-run-state strong{display:block;font-size:14px;color:#323b28}
-.agent-run-state p{margin:4px 0 0;font-size:12px;line-height:1.75;color:#6f7a63}
+.agent-run-state{display:flex;gap:13px;align-items:flex-start;padding:16px 18px;border-radius:10px;border:1px solid #dcdcdf;background:#fff}
+.agent-run-state strong{display:block;font-size:14px;color:#000}
+.agent-run-state p{margin:4px 0 0;font-size:12px;line-height:1.75;color:#6e6e71}
 .agent-run-state>div{flex:1;min-width:0}
-.agent-run-icon{flex-shrink:0;margin-top:1px;color:#627347}
-.agent-run-state.waiting{background:#fdf8ec;border-color:#efdfb4}.agent-run-state.waiting .agent-run-icon{color:#b07d1e}
+.agent-run-icon{flex-shrink:0;margin-top:1px;color:var(--k-purple)}
+.agent-run-state.waiting{background:var(--k-peri-soft);border-color:var(--k-peri-line)}.agent-run-state.waiting .agent-run-icon{color:#67676a}
 .agent-run-state.problem{background:#fcf1ee;border-color:#efcdc4}.agent-run-state.problem .agent-run-icon{color:#b14b33}
-.agent-run-state.done{background:#f1f7ee;border-color:#cfe2c8}.agent-run-state.done .agent-run-icon{color:#4f9a5b}
-.agent-run-progress{height:5px;border-radius:5px;background:#e8ecdf;margin-top:12px;overflow:hidden}
-.agent-run-progress span{display:block;height:100%;background:#7c9157;border-radius:5px;transition:width .6s ease}
+.agent-run-state.done{background:#f2f2f5;border-color:#d5d5d8}.agent-run-state.done .agent-run-icon{color:var(--k-green)}
+.agent-run-progress{height:5px;border-radius:5px;background:#e6e6e9;margin-top:12px;overflow:hidden}
+.agent-run-progress span{display:block;height:100%;background:var(--k-purple);border-radius:5px;transition:width .6s ease}
 .spin{animation:agent-spin 1s linear infinite}
 @keyframes agent-spin{to{transform:rotate(360deg)}}
 @keyframes agent-pulse{50%{opacity:.35}}
-.agent-connect{border:1px dashed #d4dcc4;border-radius:10px;padding:14px 18px;font-size:12px;line-height:1.8;color:#6f7a63}
-.agent-connect summary{cursor:pointer;display:flex;gap:8px;align-items:center;color:#4f5d3a;font-weight:600}
-.agent-connect code{display:block;padding:11px 13px;margin:8px 0;background:#252b23;color:#e1e7b0;border-radius:6px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}
+.agent-connect{border:1px dashed #d0d0d3;border-radius:10px;padding:14px 18px;font-size:12px;line-height:1.8;color:#6e6e71}
+.agent-connect summary{cursor:pointer;display:flex;gap:8px;align-items:center;color:#4c4c4f;font-weight:600}
+.agent-connect code{display:block;padding:11px 13px;margin:8px 0;background:#14141a;color:var(--k-peri);border-radius:6px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}
 .agent-connect-note code,.agent-connect p code{display:inline;padding:2px 6px;margin:0}
-.agent-connect-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #edf0e6}
-.agent-connect-row small{display:block;color:#8a947d}
+.agent-connect-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #ebebee}
+.agent-connect-row small{display:block;color:#88888b}
 .agent-connect-form{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-top:12px}.agent-connect-form .field{margin:0;flex:1;min-width:200px}
-.agent-connect-code{margin-top:12px;padding:14px;border-radius:8px;background:#f3f4e9}.agent-connect-code p{margin:0;font-size:11px}.agent-connect-code strong{font-size:18px;letter-spacing:1.5px;color:#323b28;font-family:ui-monospace,monospace}
-.agent-advanced{margin-top:6px;border-top:1px solid #edf0e6;padding-top:14px}
-.agent-advanced>summary{cursor:pointer;font-size:12px;color:#627347}
+.agent-connect-code{margin-top:12px;padding:14px;border-radius:8px;background:#eeeef1}.agent-connect-code p{margin:0;font-size:11px}.agent-connect-code strong{font-size:18px;letter-spacing:1.5px;color:#000;font-family:ui-monospace,monospace}
+.agent-advanced{margin-top:6px;border-top:1px solid #ebebee;padding-top:14px}
+.agent-advanced>summary{cursor:pointer;font-size:12px;color:var(--k-purple)}
 @media (max-width:760px){.agent-run-bar{padding:14px}.agent-run-actions{width:100%}.agent-run-actions .btn{flex:1;justify-content:center}}
 @media (prefers-reduced-motion:reduce){.spin,.computer-status.checking .computer-dot{animation:none}.agent-run-progress span{transition:none}}
 .sidebar-computer{padding:10px 12px;margin:0 0 6px;border-top:1px solid rgba(255,255,255,.08)}.sidebar-computer .computer-status strong{color:inherit;opacity:.85}
