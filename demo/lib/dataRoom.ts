@@ -1,3 +1,4 @@
+import {loiConfirmed} from './transactions.ts';
 // The data room: documents the owner approved, shown read-only to buyers who signed the NDA.
 // Every open is logged before the file is served; the owner sees who opened what, by anonymous label.
 import type {BrokerDb,Viewer,Buyer} from './brokerage.ts';
@@ -66,7 +67,7 @@ export function buyerTier(db:FullDb,b:Buyer|undefined,listingId:string):0|1|2{
   if(!b||b.status==='Restricted')return 0;const l=db.listings.find(x=>x.id===listingId);if(!l||!['Live','Under LOI'].includes(l.status))return 0;
   const r=R(db),room=r.rooms.find(x=>x.listingId===listingId);if(!room||room.status!=='Published')return 0;
   if(!db.access.some(a=>a.listingId===listingId&&a.buyerId===b.id&&a.status==='Approved'))return 0;
-  const loi=db.offers.some(o=>o.listingId===listingId&&o.buyerId===b.id&&o.status==='Accepted')||r.loiGrants.some(g=>g.listingId===listingId&&g.buyerId===b.id);
+  const loi=!!db.transactions?.some(t=>t.listingId===listingId&&t.buyerId===b.id&&t.state==='LOI reviewed'&&loiConfirmed(db,t));
   return loi?2:1;
 }
 const visible=(it:RoomItem,tier:number)=>it.ownerStatus==='Approved'&&(it.tier==='After NDA'?tier>=1:tier>=2);

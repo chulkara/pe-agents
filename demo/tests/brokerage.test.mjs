@@ -70,7 +70,7 @@ test('buyer journey: profile, NDA signature, approval, questions and offers',asy
   await assert.rejects(()=>adv.setOffer(o.id,'Accepted','Seller accepted.'),/Share and review/);
   await adv.offerDesk.share(o.id,1,'Owner-facing terms prepared for review.');
   await adv.setOffer(o.id,'Accepted','Seller accepted this exact version by telephone.');
-  assert.equal((await adv.listing(l.id)).status,'Under LOI');
+  assert.equal((await adv.listing(l.id)).status,'Live','an owner instruction is not signed LOI evidence');
   const me=await buyer.me();assert.equal(me.offers[0].status,'Accepted');assert.equal(me.access[0].status,'Approved');
   await buyer.toggleSaved(l.id);assert.deepEqual((await buyer.me()).buyer.saved,[l.id]);
   await adv.vet(me.buyer.id,'Restricted','Breached NDA');assert.equal((await buyer.listing(l.id)).confidential.businessName,'','restricted buyers lose access');

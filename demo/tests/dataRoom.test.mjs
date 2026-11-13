@@ -38,13 +38,15 @@ test('a material change sends the document back to the owner; a note change does
   const changed=D.saveItem(db,adv,{...item(),id:cim,allowDownload:true}).db;assert.equal(changed.roomItems.find(x=>x.id===cim).ownerStatus,'Pending');
   assert.equal(D.buyerItems(changed,alex,'L1').items.some(x=>x.id===cim),false,'pending items are hidden from buyers');
 });
-test('buyers see after-NDA documents; after-LOI documents need an accepted offer or an advisor grant',()=>{
+test('buyers see after-NDA documents; after-LOI documents need reviewed current execution evidence',()=>{
   let {db,cim,lease}=published();
   const v=D.buyerItems(db,alex,'L1');assert.equal(v.tier,1);assert.deepEqual(v.items.map(x=>[x.id,x.open]),[[cim,true],[lease,false]]);
   assert.equal(D.buyerItems(db,sam,'L1').tier,0,'pending NDA sees nothing open');
   let out=D.openItem(db,alex,lease);assert.match(out.error,/do not have access/);assert.equal(out.db.views.at(-1).event,'denied');
   assert.throws(()=>D.grantLoi(db,adv,'L1','b1','ok'),/Add a note/);
   db=D.grantLoi(db,adv,'L1','b1','Signed LOI received by email on Nov 10.');
+  assert.match(D.openItem(db,alex,lease).error,/do not have access/,'a legacy grant cannot substitute for signed evidence');
+  const source={fileId:'execution-loi',page:1,excerpt:'Both fictional parties signed this LOI.'};db={...db,executionFiles:[{id:'execution-loi',transactionId:'T1',family:'loi',version:1,status:'Stored'}],transactions:[{id:'T1',listingId:'L1',buyerId:'b1',state:'LOI reviewed',lois:[{fileId:'execution-loi',review:{source},signatories:[{side:'buyer',source},{side:'seller',source}]}]}]};
   out=D.openItem(db,alex,lease);assert.ok(out.ticket);assert.equal(out.db.views.at(-1).event,'opened');
 });
 test('every open is logged before a ticket is issued, and tickets expire after two minutes',()=>{

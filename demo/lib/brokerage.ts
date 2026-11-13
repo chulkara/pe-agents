@@ -103,6 +103,8 @@ export function publishProblems(l:Listing):string[]{
 }
 export function setListingStatus(db:BrokerDb,v:Viewer,id:string,status:ListingStatus):BrokerDb{
   advisor(v);const l=db.listings.find(x=>x.id===id);need(l,'Listing not found.');
+  if(status==='Sold'&&l.status!=='Sold')throw Error('Use the reviewed completion record to mark this listing sold.');
+  if(l.status==='Sold'&&status!=='Sold')throw Error('This completed acquisition is an archive.');
   if(status==='Live'){const p=publishProblems(l);need(!p.length,p.join(' '));}
   return {...db,listings:db.listings.map(x=>x===l?{...l,status,publishedAt:status==='Live'&&!l.publishedAt?now():l.publishedAt,updatedAt:now()}:x)};
 }
