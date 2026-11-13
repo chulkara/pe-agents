@@ -1,7 +1,7 @@
 -- Kalling: the data room. Documents the owner approved, read-only for buyers who signed the NDA.
 -- Every open writes a log row before a short-lived ticket is issued; storage serves a file only
 -- for a ticket under two minutes old. No IP address or device fingerprint is stored.
--- Apply after 004, 005 and 011.
+-- Apply after 004 and 005. Applying 004 to 011 in numeric order works.
 begin;
 
 create table public.kalling_dataroom_rooms (
