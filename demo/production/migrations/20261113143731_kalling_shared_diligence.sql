@@ -1,0 +1,47 @@
+-- Shared diligence: explicit audiences, evidence-version reviews and one dependency graph.
+begin;
+create function kalling_private.execution_graph(p jsonb) returns boolean language plpgsql immutable set search_path='' as $$
+ declare bad boolean;begin
+ if exists(select 1 from jsonb_array_elements(p) i cross join lateral jsonb_array_elements_text(i->'dependsOn') dep where not exists(select 1 from jsonb_array_elements(p) x where x->>'id'=dep)) then return false;end if;
+ with recursive edges as(select i->>'id' id,dep parent from jsonb_array_elements(p) i cross join lateral jsonb_array_elements_text(i->'dependsOn') dep),walk as(select id,parent,array[id,parent] path,id=parent cycle from edges union all select w.id,e.parent,w.path||e.parent,e.parent=any(w.path) from walk w join edges e on e.id=w.parent where not w.cycle) select coalesce(bool_or(cycle),false) into bad from walk;return not bad;end $$;
+create function kalling_private.execution_item_ok(t kalling_private.execution_transactions,i jsonb,p_seen text[] default '{}') returns boolean language plpgsql stable security definer set search_path='' as $$
+ declare dep text;x jsonb;begin
+ if i is null or i->>'id'=any(p_seen) or i->>'status' not in ('Resolved','Not applicable') or (i#>>'{review,revision}')::integer is distinct from (i->>'revision')::integer or exists(select 1 from jsonb_array_elements(i->'sources') s where not kalling_private.execution_source(t.id,s)) then return false;end if;
+ for dep in select * from jsonb_array_elements_text(i->'dependsOn') loop select z into x from jsonb_array_elements(t.data->'items') z where z->>'id'=dep;if not kalling_private.execution_item_ok(t,x,p_seen||array[i->>'id']) then return false;end if;end loop;return true;end $$;
+create function public.kalling_execution_diligence(p_transaction uuid,p_revision integer,p_action text,p jsonb) returns jsonb language plpgsql security definer set search_path='' as $$
+ declare t kalling_private.execution_transactions;d jsonb;r text;i jsonb;n jsonb;items jsonb;dep text;x jsonb;key text;hist jsonb;by_name text;begin
+ select * into t from kalling_private.execution_transactions where id=p_transaction for update;r=kalling_private.execution_role(t.id);
+ if r is null or r='viewer' or t.state in ('Closed','Abandoned') then raise exception 'Diligence access denied' using errcode='42501';end if;if t.revision<>p_revision then raise exception 'This transaction changed. Reload before saving.';end if;d=t.data;
+ select z into i from jsonb_array_elements(d->'items') z where z->>'id'=p->>'id';by_name=case when r='buyer' then 'Selected buyer' when r='seller' then 'Seller' when r='advisor' then kalling_private.actor_name() else 'Specialist' end;
+ if p_action='item' then
+ if r<>'advisor' then raise exception 'Only a brokerage reviewer can define a request.';end if;
+ if p->>'id' is not null and i is null then raise exception 'Diligence item not found.';end if;
+ if not kalling_private.execution_safe(p->>'title',3,160) or not kalling_private.execution_safe(p->>'why',10,1500) or not kalling_private.execution_safe(p->>'nextAction',5,1000) or not kalling_private.execution_safe(p->>'owner',2,120) or not kalling_private.execution_safe(p->>'requestor',2,120) or not kalling_private.execution_safe(p->>'reviewer',2,120) or not coalesce(kalling_private.execution_deadline(p->'due'),false) or coalesce(p->>'priority','') not in ('Normal','High') or coalesce(p->>'authority','') not in ('Internal','Contract','Lender','Regulator') or jsonb_typeof(p->'audience') is distinct from 'array' or jsonb_typeof(p->'contributors') is distinct from 'array' or jsonb_typeof(p->'dependsOn') is distinct from 'array' or jsonb_typeof(p->'sources') is distinct from 'array' or jsonb_typeof(p->'blocking') is distinct from 'boolean' then raise exception 'Every request needs a responsible coordinator, purpose, next action and deadline or stated reason.';end if;
+ for key in select * from jsonb_array_elements_text(p->'audience') loop if key not in ('seller','buyer') and not exists(select 1 from kalling_private.execution_participants g where g.transaction_id=t.id and g.id::text=key and g.status='Active' and g.expires_at>now()) then raise exception 'Choose active transaction participants.';end if;end loop;
+ if exists(select 1 from jsonb_array_elements(p->'sources') s where not kalling_private.execution_source(t.id,s)) then raise exception 'Refresh the supporting document versions.';end if;
+ if p->>'origin' is not null and exists(select 1 from jsonb_array_elements(d->'items') z where z->>'origin'=p->>'origin' and z->>'id' is distinct from i->>'id') then return kalling_private.execution_projection(t.id);end if;
+ n=jsonb_build_object('id',coalesce(i->>'id',gen_random_uuid()::text),'title',p->>'title','category',left(coalesce(p->>'category','Other'),120),'why',p->>'why','nextAction',p->>'nextAction','owner',p->>'owner','requestor',p->>'requestor','reviewer',p->>'reviewer','contributors',p->'contributors','due',p->'due','audience',p->'audience','priority',p->>'priority','blocking',p->'blocking','authority',p->>'authority','dependsOn',p->'dependsOn','sources',p->'sources','revision',coalesce((i->>'revision')::integer,0)+1,'status','Open','thread',coalesce(i->'thread','[]'),'history',coalesce(i->'history','[]'));if p->>'origin' is not null then n=n||jsonb_build_object('origin',p->>'origin');end if;
+ else
+ if i is null or (r<>'advisor' and not (i->'audience' ? r)) then raise exception 'This request is not assigned or shared with you.';end if;
+ if p_action='respond' then
+ if not kalling_private.execution_safe(p->>'response',10,3000) or not kalling_private.execution_safe(p->>'nextAction',5,1000) or coalesce(p->>'status','') not in ('In progress','Waiting','Submitted') or jsonb_typeof(p->'sources') is distinct from 'array' then raise exception 'Record a response, next action and valid state.';end if;
+ if (p->>'status'='Submitted' and not kalling_private.execution_sources(t.id,p->'sources')) or exists(select 1 from jsonb_array_elements(p->'sources') s where not kalling_private.execution_source(t.id,s) or (r<>'advisor' and not kalling_private.execution_file_allowed((s->>'fileId')::uuid) and not exists(select 1 from kalling_private.execution_files f where f.id=(s->>'fileId')::uuid and f.uploaded_by=auth.uid()))) then raise exception 'Use current document versions permitted to you.';end if;
+ n=(i-'review')||jsonb_build_object('response',p->>'response','nextAction',p->>'nextAction','sources',p->'sources','status',p->>'status','revision',(i->>'revision')::integer+1);
+ elsif p_action='review_item' then
+ if r<>'advisor' or (p->>'revision')::integer is distinct from (i->>'revision')::integer or coalesce(p->>'decision','') not in ('Resolved','Changes needed','Not applicable') or not kalling_private.execution_safe(p->>'note',20,2000) then raise exception 'Review the exact current response and explain the decision.';end if;
+ if p->>'decision'='Resolved' then
+ if i->>'status'<>'Submitted' or not kalling_private.execution_sources(t.id,i->'sources') then raise exception 'Submit a sourced response before resolution.';end if;
+ for dep in select * from jsonb_array_elements_text(i->'dependsOn') loop select z into x from jsonb_array_elements(d->'items') z where z->>'id'=dep;if not kalling_private.execution_item_ok(t,x) then raise exception 'Resolve current dependencies first.';end if;end loop;end if;
+ if p->>'decision'='Not applicable' or (i->>'authority'<>'Internal' and p->>'decision'='Resolved') then if not kalling_private.execution_safe(p->>'externalAuthority',20,1000) or not kalling_private.execution_sources(t.id,i->'sources') then raise exception 'Record the actual professional or party instruction and evidence.';end if;end if;
+ n=i||jsonb_build_object('status',p->>'decision','nextAction',case when p->>'decision'='Changes needed' then 'Address review feedback: '||(p->>'note') else '' end,'review',jsonb_build_object('revision',i->'revision','by',by_name,'at',now(),'note',p->>'note','decision',p->>'decision','externalAuthority',p->>'externalAuthority'));
+ elsif p_action='comment' then
+ if not kalling_private.execution_safe(p->>'body',2,2000) then raise exception 'Write a shared comment.';end if;n=jsonb_set(i,'{thread}',i->'thread'||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'by',by_name,'body',p->>'body','at',now())));
+ else raise exception 'Unknown diligence action';end if;end if;
+ hist=jsonb_build_object('id',gen_random_uuid(),'action',p_action,'by',by_name,'at',now(),'note',coalesce(p->>'note',p->>'nextAction',''));n=jsonb_set(n,'{history}',coalesce(n->'history','[]')||jsonb_build_array(hist));
+ select coalesce(jsonb_agg(case when z->>'id'=n->>'id' then n else z end),'[]') into items from jsonb_array_elements(d->'items') z;if i is null then items=items||jsonb_build_array(n);end if;
+ if not kalling_private.execution_graph(items) then raise exception 'Dependencies cannot form cycles or cross transactions.';end if;
+ d=jsonb_set(d,'{items}',items);if p_action<>'comment' then d=d-'closePackage';end if;perform kalling_private.execution_save(t,d,p_action,n->>'title');return kalling_private.execution_projection(t.id);end $$;
+revoke all on function kalling_private.execution_graph(jsonb),kalling_private.execution_item_ok(kalling_private.execution_transactions,jsonb,text[]) from public,anon,authenticated;
+revoke all on function public.kalling_execution_diligence(uuid,integer,text,jsonb) from public,anon;grant execute on function public.kalling_execution_diligence(uuid,integer,text,jsonb) to authenticated;
+commit;
+
