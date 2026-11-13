@@ -1,3 +1,4 @@
+import {localExecutionStore,type ExecutionStore} from './executionStore.ts';
 import {sharedOffers,ownerOfferAction,type SharedOffer,type OwnerOfferAction} from './offerVersions.ts';
 import * as P from './portal.ts';
 import {anonymousBuyerLabel,type BrokerDb} from './brokerage.ts';
@@ -9,6 +10,7 @@ export type CreatePortalInput={companyId:string;businessName:string;ownerName:st
 export type RequestInput={id?:string;title:string;needed:string;why:string;sharing:string;contact:Contact;due:string};
 export type UploadResult={file:PortalFile;duplicate:boolean};
 export interface PortalStore{
+  execution:ExecutionStore;
   mode:'local'|'cloud';side:Side;
   sharedOffers(portalId:string):Promise<SharedOffer[]>;
   offerAction(portalId:string,id:string,version:number,kind:OwnerOfferAction['kind'],message:string):Promise<void>;
@@ -75,7 +77,7 @@ export function localPortalStore(o:{actor:Actor;firmId:string;firmName:string;te
   const store={
     async sharedOffers(id:string){const b=P.bundle(read(),a,id,o.team);let d:BrokerDb;try{d=JSON.parse(kv.getItem('kalling-broker-demo-v1')||'null');}catch{return [];}if(!d)return [];return d.listings.filter(l=>l.companyId===b.portal.companyId).flatMap(l=>sharedOffers(d,l.id));},
     async offerAction(portalId:string,id:string,version:number,kind:OwnerOfferAction['kind'],message:string){const b=P.bundle(read(),a,portalId,o.team);if(a.side!=='seller')throw Error('Only the owner can record an offer response.');const d=JSON.parse(kv.getItem('kalling-broker-demo-v1')||'null') as BrokerDb;const offer=d?.offers.find(o=>o.id===id),listing=d?.listings.find(l=>l.id===offer?.listingId);if(!listing||listing.companyId!==b.portal.companyId)throw Error('Offer access denied.');const next=ownerOfferAction(d,listing.id,id,version,kind,message);const portalDb=P.postMessage(read(),a,portalId,kind+' for offer version '+version+': '+message+' (Discussion only; not legal acceptance.)');kv.setItem('kalling-broker-demo-v1',JSON.stringify(next));write(portalDb);},
-    mode:'local' as const,side:a.side,
+    mode:'local' as const,side:a.side,execution:localExecutionStore({viewer:a.side==='seller'?{kind:'seller',portalId:'',email:a.email}:{kind:'advisor',id:'local-advisor',name:a.name,role:a.canWrite===false?'viewer':'owner'},kv,portalBytes:bytes}),
     async listForCompany(companyId:string){return read().portals.filter(p=>p.companyId===companyId&&p.firmId===o.firmId).sort((x,y)=>y.createdAt.localeCompare(x.createdAt));},
     async myPortals(){return read().portals.filter(p=>p.ownerEmail===a.email.toLowerCase()&&p.status==='Active');},
     async firmPortals(){if(a.side!=='firm')return [];return read().portals.filter(p=>p.firmId===o.firmId).sort((x,y)=>y.createdAt.localeCompare(x.createdAt));},

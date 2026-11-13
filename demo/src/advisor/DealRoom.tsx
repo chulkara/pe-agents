@@ -1,3 +1,5 @@
+import {dollars as centsMoney} from '../../lib/transactions';
+import {ExecutionWorkspace} from '../execution/ExecutionWorkspace';
 // The Deal Room: one screen per company for the whole sale.
 import {useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
 import type {Company,Workspace} from '../../lib/domain';
@@ -20,7 +22,7 @@ import {canShareInDataRoom} from '../../lib/cim';
 import {acceptedInputs} from '../../lib/extract';
 import type {Draft as ListingDraft} from './market';
 
-export const dealTabs=['Overview','Valuation and recast','Listing','Materials','Data room','Buyers','Offers','Documents','Owner','Research and drafting','Activity'] as const;
+export const dealTabs=['Overview','Valuation and recast','Listing','Materials','Data room','Buyers','Offers','LOI','Diligence','Closing','Documents','Owner','Research and drafting','Activity'] as const;
 export type DealTab=typeof dealTabs[number];
 type Props={c:Company;w:Workspace;commit:(next:Workspace)=>Promise<boolean>;actor:string;readOnly:boolean;tab:string;setTab:(t:string)=>void;back:()=>void;backLabel:string;edit:()=>void;research:ReactNode;computer:ReactNode;aiCount:number};
 const dt=(s?:string)=>s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'';
@@ -38,9 +40,7 @@ export default function DealRoom(p:Props){
     Offers:listing&&x.d?x.d.offers.filter(o=>o.listingId===listing.id&&o.status==='Submitted').length:0,
     Documents:pe?.bundle?.requests.filter(r=>r.status==='Submitted').length||0,
     Owner:(pe?.bundle?unread(pe.bundle):0)+(pe?.bundle?.letters.filter(l=>l.status==='Signed by owner').length||0),'Research and drafting':p.aiCount,Materials:mat.drafts.filter(d=>d.status==='ready').length+(mat.cim[0]?.status==='Changes requested'?1:0)};
-  async function move(to:SellStage,note?:string){try{let next=setStage(p.w,c.id,to,p.actor,{listing,portal:pe?.portal});
-    // A closed Kalling deal becomes a comparable sale, at the accepted price.
-    const won=to==='Closed'&&listing&&x.d?x.d.offers.find(o=>o.listingId===listing.id&&o.status==='Accepted'):undefined;if(won){const comp=closedDealComp(c,won.price,p.actor);if(!validateComp(comp).length)next=saveComp(next,comp,p.actor);}
+  async function move(to:SellStage,note?:string){try{if(listing?.status==='Sold')throw Error('This completed acquisition is an archive. Use a versioned closing correction.');if(to==='Closed')throw Error('Record actual completion in Closing before marking the acquisition closed.');if(to==='Under LOI')throw Error('Record reviewed external signatures in LOI first.');let next=setStage(p.w,c.id,to,p.actor,{listing,portal:pe?.portal});
    if(await p.commit(next))setMsg(note||`Moved to ${to}.`);}catch(e){setMsg((e as Error).message);}}
   const before=(s:SellStage)=>sellStages.indexOf(stage)<sellStages.indexOf(s)&&stage!=='Lost';
   const accepted=pe?.bundle?acceptedInputs(pe.bundle).length:0,recastDone=mat.drafts.some(d=>d.kind==='recast'&&d.status==='applied'),teaserDone=mat.drafts.some(d=>d.kind==='teaser'&&d.status==='applied')||!!listing,cimOk=canShareInDataRoom(mat.cim[0],c);
@@ -52,14 +52,15 @@ export default function DealRoom(p:Props){
     if(stage==='Listed'&&counts.Offers)return {label:'Share offer with seller',run:()=>p.setTab('Offers')};
     if(stage==='Listed'&&!roomLive)return {label:'Open data room',run:()=>p.setTab('Data room')};
     return {label:a.label,run:()=>p.setTab(a.tab)};})();
-  const head=listing?.askingPrice?{value:money(listing.askingPrice),label:'Asking price'}:c.recast?.askingPrice?{value:money(c.recast.askingPrice),label:'Asking price'}:v&&v.mid>0?{value:`${money(v.low)} to ${money(v.high)}`,label:'Estimated value'}:{value:'Not valued',label:'Estimated value'};
+  const closed=x.execution.find(b=>b.transaction.listingId===listing?.id&&b.transaction.state==='Closed')?.transaction.closes.at(-1);
+  const head=closed?{value:centsMoney(closed.amounts.fixed),label:'Fixed consideration at close'}:listing?.askingPrice?{value:money(listing.askingPrice),label:'Asking price'}:c.recast?.askingPrice?{value:money(c.recast.askingPrice),label:'Asking price'}:v&&v.mid>0?{value:`${money(v.low)} to ${money(v.high)}`,label:'Estimated value'}:{value:'Not valued',label:'Estimated value'};
   const portalPill=!pe?<StatusPill>No owner portal</StatusPill>:pe.portal.status==='Active'?<StatusPill tone="green">Owner has joined</StatusPill>:pe.portal.status==='Invited'?<StatusPill tone="peri">Owner invited</StatusPill>:<StatusPill>Portal draft</StatusPill>;
   return <div className="adv-page deal-room">
     <div className="deal-top"><Button tone="quiet" onClick={p.back}>Back to {p.backLabel}</Button>{c.sample&&<StatusPill>Fictional sample</StatusPill>}</div>
     <header className="deal-head">
       <div className="deal-id"><h1>{c.name}</h1><p>{regionOf(c)}. {c.industry}.</p><p className="deal-owner">{c.owner?<><strong>{c.owner}</strong>{c.email&&<> <a href={'mailto:'+c.email}>{c.email}</a></>}{c.phone&&<> <a href={'tel:'+c.phone}>{c.phone}</a></>}</>:'Owner not known yet.'} {!p.readOnly&&<Button tone="quiet" onClick={p.edit}>Edit details</Button>}</p></div>
       <div className="deal-controls">
-        <label className={'deal-stage stage-'+stage.replace(/\s/g,'-').toLowerCase()}><span className="sr-only">Stage</span><select aria-label="Stage" value={stage} disabled={p.readOnly} onChange={e=>void move(e.target.value as SellStage)}>{sellStages.map(s=><option key={s} disabled={!canMove(stage,s)&&s!==stage}>{s}</option>)}</select></label>
+        <label className={'deal-stage stage-'+stage.replace(/\s/g,'-').toLowerCase()}><span className="sr-only">Stage</span><select aria-label="Stage" value={stage} disabled={p.readOnly||listing?.status==='Sold'} onChange={e=>void move(e.target.value as SellStage)}>{sellStages.map(s=><option key={s} disabled={s==='Closed'||s==='Under LOI'||!canMove(stage,s)&&s!==stage}>{s}</option>)}</select></label>
         {portalPill}{p.computer}
         {!p.readOnly&&<Button tone="primary" arrow onClick={action.run}>{action.label}</Button>}
       </div>
@@ -80,7 +81,8 @@ export default function DealRoom(p:Props){
           {tab==='Listing'&&<TeaserDraftPanel c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly||listing?.status==='Live'} current={teaserNow} onAccept={(f,all)=>setIncoming({fields:f,all,nonce:Date.now()})}/>}{tab==='Listing'&&<ListingEditor key={c.id} listing={listing} company={c} incoming={incoming} onChange={x=>setTeaserNow({headline:x.headline,summary:x.summary,highlights:x.highlights,growth:x.growth,reason:x.reason})} onSaved={()=>{if(before('Preparing'))void move('Preparing','Listing saved as a draft. The deal is now Preparing.');}} onPublished={()=>{if(before('Listed'))void move('Listed','Published. The deal is now Listed.');}}/>}
           {tab==='Data room'&&<DataRoomTab key={c.id+'r'} c={c} listing={listing} pe={pe} readOnly={p.readOnly} onLive={setRoomLive} goListing={()=>p.setTab('Listing')}/>}
           {tab==='Buyers'&&(listing?<><AccessRequests listingId={listing.id}/><h2 className="deal-sub">Questions from buyers</h2><QuestionThreads listingId={listing.id}/></>:<NoListing go={()=>p.setTab('Listing')}/>)}
-          {tab==='Offers'&&(listing?<OfferComparison listing={listing} onAccepted={(l:Listing)=>{if(stage!=='Under LOI')void p.commit(setStage(p.w,c.id,'Under LOI',p.actor,{listing:l})).then(ok=>ok&&setMsg('The seller accepted. The deal is now Under LOI.'));}}/>:<NoListing go={()=>p.setTab('Listing')}/>)}
+          {tab==='Offers'&&(listing?<OfferComparison listing={listing} onAccepted={()=>{setMsg('Owner instruction recorded. Open LOI to start execution and review the external signatures.');p.setTab('LOI');}}/>:<NoListing go={()=>p.setTab('Listing')}/>)}
+          {(['LOI','Diligence','Closing'] as string[]).includes(tab)&&(listing?<ExecutionWorkspace store={x.store.execution} ownerFiles={pe?.bundle?.files.filter(f=>f.mime==='application/pdf'&&pe.bundle!.requests.some(r=>r.status==='Accepted'&&r.fileIds.includes(f.id)))} listingId={listing.id} initialTab={tab} canWrite={!p.readOnly} watermark={p.actor+' | Kalling advisor'} onChanged={()=>void x.reload()} starter={pe?{companyId:c.id,firmId:pe.portal.firmId,portalId:pe.portal.id,offers:x.d?.offers.filter(o=>o.listingId===listing.id)||[],originalEstimate:v?{version:String(c.recast?.version||1),low:v.low,mid:v.mid,high:v.high,asOf:c.recast?.updatedAt||new Date().toISOString(),source:'Original transparent HVAC estimate from saved recast'}:null}:undefined}/>:<NoListing go={()=>p.setTab('Listing')}/>)}
           {tab==='Documents'&&<OwnerPortalAdmin key={c.id+'d'} company={c} sections={['Requests']} onChange={()=>void x.reloadPortals()}/>}
           {tab==='Owner'&&<EngagementPanel key={c.id+'e'} c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}{tab==='Owner'&&<OwnerPortalAdmin key={c.id+'o'} company={c} sections={['Messages','Next steps','Buyers','Settings','Owner’s view']} onChange={()=>void x.reloadPortals()}/>}
           {tab==='Research and drafting'&&p.research}

@@ -1,3 +1,4 @@
+import {cloudExecutionStore} from './executionStore.ts';
 import {cloudAlertStore} from './alertStore.ts';
 import {cloudOfferVersionStore} from './offerVersionStore.ts';
 import {cloudLenderStore} from './lenderStore.ts';
@@ -29,7 +30,7 @@ export function cloudBrokerStore(client:SupabaseClient,viewer:Viewer):BrokerStor
     return ls.map(r=>{const l=listing(r,priv.find(p=>p.listing_id===r.id)),a=acc.filter(x=>x.listingId===r.id).at(-1);return {...l,...(viewer.kind==='advisor'?{}:{companyId:undefined}),access:viewer.kind==='advisor'?'Advisor' as const:a?.status||'None'};});
   }
   const store:BrokerStore={
-    mode:'cloud',viewer,lenders:cloudLenderStore(client),offerDesk:cloudOfferVersionStore(client),alerts:cloudAlertStore(client),verification:cloudVerificationStore(client),
+    mode:'cloud',viewer,execution:cloudExecutionStore(client),lenders:cloudLenderStore(client),offerDesk:cloudOfferVersionStore(client),alerts:cloudAlertStore(client),verification:cloudVerificationStore(client),
     async listings(){const ls=await rows<LRow>(client.from('kalling_listings').select('*').order('published_at',{ascending:false,nullsFirst:false}));return (await view(ls)).sort((a,b)=>(a.status==='Sold'?1:0)-(b.status==='Sold'?1:0));},
     async listing(key){const col=/^KL-\d+$/i.test(key)?'number':'id';const ls=await rows<LRow>(client.from('kalling_listings').select('*').eq(col,col==='number'?key.toUpperCase():key));if(!ls.length)throw Error('This listing is not available.');return (await view(ls))[0];},
     async submitLead(i){await call('kalling_submit_lead',{p:i});},

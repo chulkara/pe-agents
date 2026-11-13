@@ -79,12 +79,9 @@ export default function DataRoomTab(p:P){
 
     <div className="adv-grid2">
       <Panel title="After-LOI documents">
-        <p className="dr-help">Buyers with an accepted offer see after-LOI documents automatically. Grant access to another buyer here, with a note.</p>
-        {r?.loi.map(g=><p key={g.buyerId} className="dr-loi"><strong>{nameOf(g.buyerId)}</strong> {g.note} <small>{g.by}, {when(g.at)}</small></p>)}
-        {!p.readOnly&&approvedBuyers.length>0&&<form className="dr-loi-form" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget),t=e.currentTarget;void act(async()=>{await x.room.grantLoi(listing.id,String(f.get('buyer')),String(f.get('note')));t.reset();},'Access granted.');}}>
-          <Field label="Buyer"><select name="buyer" required>{approvedBuyers.map(b=><option key={b!.id} value={b!.id}>{b!.name}</option>)}</select></Field>
-          <Field label="Why" hint="For example, the signed LOI date."><input name="note" required minLength={5} maxLength={400}/></Field>
-          <Button disabled={busy}>Grant after-LOI access</Button></form>}
+        <p className="dr-help">After-LOI access requires the selected transaction’s current reviewed external signatures. An accepted offer or an earlier access note does not unlock this tier.</p>
+        <a className="k-button" href={'#advisor/deal/'+p.c.id+'/LOI'}>Review execution and signed evidence</a>
+        {r?.loi.length?<details><summary>Earlier access notes, retained as history</summary>{r.loi.map(g=><p key={g.buyerId}><strong>{nameOf(g.buyerId)}</strong> {g.note} <small>{g.by}, {when(g.at)}</small></p>)}</details>:null}
       </Panel>
       <Panel title="Weekly summary for the owner">
         <p className="dr-help">{r?.room?.weeklySummary?'The owner asked for a weekly summary. Nothing is sent automatically: review it and send it as a portal message.':'The owner has not asked for a weekly summary. You can still send one.'}</p>
@@ -103,7 +100,7 @@ function ItemForm({it,busy,onSave,onCancel}:{it:RoomItem|Choice;busy:boolean;onS
     <div className="adv-grid2">
       <Field label="Name buyers see"><input required minLength={2} maxLength={160} value={v.displayName} onChange={e=>setV({...v,displayName:e.target.value})}/></Field>
       <Field label="Folder"><select value={v.folder} onChange={e=>setV({...v,folder:e.target.value as Folder})}>{folders.map(f=><option key={f}>{f}</option>)}</select></Field>
-      <Field label="Who can open it" hint="After LOI means an accepted offer or your grant."><select value={v.tier} onChange={e=>setV({...v,tier:e.target.value as Tier})}>{tiers.map(t=><option key={t}>{t}</option>)}</select></Field>
+      <Field label="Who can open it" hint="After LOI requires current reviewed external signatures for the selected transaction."><select value={v.tier} onChange={e=>setV({...v,tier:e.target.value as Tier})}>{tiers.map(t=><option key={t}>{t}</option>)}</select></Field>
       <Field label="Note for buyers" hint="Optional."><input maxLength={400} value={v.note} onChange={e=>setV({...v,note:e.target.value})}/></Field>
     </div>
     <label className="dr-check"><input type="checkbox" checked={v.allowDownload} onChange={e=>setV({...v,allowDownload:e.target.checked})}/>Allow download (each copy is stamped with the buyer’s name)</label>

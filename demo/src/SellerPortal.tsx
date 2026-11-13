@@ -1,3 +1,4 @@
+import {ExecutionWorkspace} from './execution/ExecutionWorkspace';
 import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Check,ChevronDown,CircleHelp,Download,FileText,Lock,Mail,MessageSquare,Phone,Send,Upload,Users,X,Loader2,ListChecks,FolderOpen,AlertTriangle,Paperclip} from 'lucide-react';
 import {possessive,portalProgress,privacyReminder,requestOrder,unread,type DocRequest,type PortalBundle,type PortalFile,type Buyer} from '../lib/portal';
@@ -46,6 +47,7 @@ export default function SellerPortal({store,portalId,preview=false,top,room}:{st
     </header>
     {error&&<p role="alert" className="error-banner">{error}</p>}
     <OwnerLetter b={b} store={store} readOnly={readOnly} refresh={refresh}/>
+    {!gated&&<ExecutionWorkspace store={store.execution} portalId={portalId} canWrite={!readOnly} watermark={p.ownerName+' | '+p.ownerEmail}/>}
     {!gated&&<section className="portal-summary" aria-label="Your progress">
       <div><strong className="k-figure">{prog.done}<small> of {prog.total}</small></strong><span>complete</span></div>
       <div><strong className="k-figure">{waiting.length}</strong><span>waiting for you</span></div>

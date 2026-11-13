@@ -1,3 +1,4 @@
+import {cloudExecutionStore} from './executionStore.ts';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {sha256Hex,checkUpload,emptyPortalDb,type Portal,type PortalBundle,type PortalFile,type Side,type DocRequest,type Buyer,type NextStep,type Message} from './portal.ts';
 import type {PortalStore,RequestInput,UploadResult,CreatePortalInput} from './portalStore.ts';
@@ -16,7 +17,7 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
   async function call<T>(name:string,args:Record<string,unknown>):Promise<T>{const {data,error}=await client.rpc(name,args);if(error)throw Error(error.message);return data as T;}
   async function rows<T>(q:PromiseLike<{data:unknown;error:{message:string}|null}>):Promise<T[]>{const {data,error}=await q;if(error)throw Error(/does not exist|schema cache/i.test(error.message)?'The owner portal is not set up for this cloud project yet. An administrator must apply database migration 004.':error.message);return (data||[]) as T[];}
   const store:PortalStore={
-    mode:'cloud',side:o.side,
+    mode:'cloud',side:o.side,execution:cloudExecutionStore(client),
     async listForCompany(companyId){return (await rows<PortalRow>(client.from('kalling_portals').select('*').eq('firm_id',o.firmId!).eq('company_id',companyId).order('created_at',{ascending:false}))).map(portal);},
     async firmPortals(){if(o.side!=='firm'||!o.firmId)return [];return (await rows<PortalRow>(client.from('kalling_portals').select('*').eq('firm_id',o.firmId).order('created_at',{ascending:false}))).map(portal);},
     async myPortals(){return (await rows<PortalRow>(client.from('kalling_portals').select('*').eq('status','Active').order('accepted_at',{ascending:false}))).map(portal);},

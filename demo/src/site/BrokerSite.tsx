@@ -1,3 +1,5 @@
+import {PublicStories} from '../execution/PublicStories';
+import {SpecialistPortal} from '../execution/SpecialistPortal';
 import {createContext,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
 import '@fontsource-variable/zalando-sans/wght.css';
 import '@fontsource/forum/400.css';
@@ -43,10 +45,12 @@ export default function BrokerSite(){
   else if(a==='listings'&&b)page=<ListingPage id={b}/>;
   else if(a==='listings')page=<ListingsPage route={route}/>;
   else if(a==='buy')page=<BuyPage/>;
+  else if(a==='stories')page=<PublicStories id={b}/>;
+  else if(a==='deal-invite'||a==='deal-room')page=<SpecialistPortal token={route.query.get('token')||''}/>;
   else if(a==='account')page=<AccountPage route={route}/>;
   else page=<section className="ks-wrap ks-notfound"><h1>That page isn’t here.</h1><p><a href={href('/')}>Go to the home page</a> or <a href={href('/listings')}>browse listings</a>.</p></section>;
   useEffect(()=>{document.title=({'':'Kalling: sell or buy an HVAC company in New Jersey and New York',sell:'Sell your HVAC company | Kalling',value:'What is my HVAC company worth? | Kalling',listings:'HVAC companies for sale in NJ and NY | Kalling',buy:'Buy an HVAC company | Kalling',account:'Your buyer account | Kalling'} as Record<string,string>)[a||'']||'Kalling';},[a]);
-  if(checked&&connectionError&&['account','listings','value','unsubscribe'].includes(a))page=<section className="ks-wrap ks-page-head"><h1>Online marketplace unavailable</h1><p role="alert">{connectionError} Contact Kalling before submitting real information.</p><button className="ks-btn ks-btn-primary" onClick={chooseDemo}>Explore fictional demo</button></section>;
+  if(checked&&connectionError&&['account','listings','value','unsubscribe','deal-invite','deal-room','stories'].includes(a))page=<section className="ks-wrap ks-page-head"><h1>Online marketplace unavailable</h1><p role="alert">{connectionError} Contact Kalling before submitting real information.</p><button className="ks-btn ks-btn-primary" onClick={chooseDemo}>Explore fictional demo</button></section>;
   return <Ctx.Provider value={session}><div className="ks">
     <a className="ks-skip" href="#ks-main" onClick={e=>{e.preventDefault();document.getElementById('ks-main')?.focus();}}>Skip to content</a>
     <Header active={a||''}/>{checked&&!client&&<div className="ks-wrap buyer-demo" role="status">{connectionError?<>{connectionError} <button className="ks-link" onClick={chooseDemo}>Explore fictional demo</button></>:<>Fictional local demo. Records stay in this browser. Do not enter real documents or contact information. <button className="ks-link" onClick={()=>{localStorage.removeItem('kalling-marketplace-demo-v1');localStorage.removeItem(DISCONNECTED_KEY);location.reload();}}>Check online marketplace</button></>}</div>}

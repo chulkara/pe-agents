@@ -140,7 +140,7 @@ export function ListingRows({onEdit,onOpenDeal,companies}:{onEdit:(l:Listing)=>v
     {d.listings.map(l=>{const co=companies.find(c=>c.id===l.companyId),problems=l.status==='Draft'?publishProblems(l):[];return <tr key={l.id}>
       <td><strong>{l.number}. {l.headline||'Untitled draft'}</strong><small>{l.region}{l.sample?'. Sample listing':''}{co?'. '+co.name:''}{problems.length?`. ${problems.length} thing${problems.length===1?'':'s'} to fix before publishing`:''}</small></td>
       <td className="adv-num">{money(l.askingPrice)}</td><td className="adv-num">{d.requests.filter(r=>r.listingId===l.id&&r.status==='Approved').length}</td><td className="adv-num">{d.offers.filter(o=>o.listingId===l.id).length}</td>
-      <td><select aria-label={'Status for '+l.number} value={l.status} disabled={busy||!canWrite||l.sample} onChange={e=>void act(()=>store.setStatus(l.id,e.target.value as ListingStatus))}>{['Draft','Live','Under LOI','Sold','Withdrawn'].map(s=><option key={s}>{s}</option>)}</select></td>
+      <td><select aria-label={'Status for '+l.number} value={l.status} disabled={busy||!canWrite||l.sample||l.status==='Sold'} onChange={e=>void act(()=>store.setStatus(l.id,e.target.value as ListingStatus))}>{['Draft','Live','Under LOI','Sold','Withdrawn'].map(s=><option key={s} disabled={s==='Sold'||s==='Under LOI'}>{s}</option>)}</select></td>
       <td className="adv-actions">{co?<Button tone="quiet" onClick={()=>onOpenDeal(co.id)}>Deal Room</Button>:!l.sample&&<Button tone="quiet" onClick={()=>onEdit(l)}>Edit</Button>}<a className="k-btn k-btn-quiet" href={site('/listings/'+l.number)} target="_blank" rel="noreferrer">Public page</a></td></tr>;})}
   </tbody></table></div>;
 }

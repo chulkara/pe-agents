@@ -1,3 +1,4 @@
+import {ExecutionWorkspace} from '../execution/ExecutionWorkspace';
 import {useEffect,useState,type FormEvent} from 'react';
 import {money} from '../../lib/hvacValuation';
 import {ndaText,regions,focuses,buyerTypes,fundBands,filterListings,regionState,type ListingFilter,type Region,type Focus,type BuyerType,type Funds} from '../../lib/brokerage';
@@ -54,7 +55,7 @@ export function ListingsPage({route}:{route:Route}){
 }
 
 export function ListingPage({id}:{id:string}){
-  const s=useSession();const res=useAsync(()=>Promise.all([s.store.listing(id),s.store.me(),s.store.questions()]),[s.store,id]);
+  const s=useSession();const res=useAsync(()=>Promise.all([s.store.listing(id),s.store.me(),s.store.questions()]),[s.store,id]);const stories=useAsync(()=>s.store.execution.publicCases(),[s.store]);
   const [error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[showNda,setShowNda]=useState(false);
   if(res.error)return <section className="ks-wrap ks-page-head"><h1>Listing not available</h1><p>{res.error}</p><a className="ks-btn" href={href('/listings')}>Browse listings</a></section>;
   if(!res.data)return <section className="ks-wrap ks-page-head"><p>Loading…</p></section>;
@@ -84,12 +85,11 @@ export function ListingPage({id}:{id:string}){
       </div>
       <aside className="ks-listing-side">
         <div className="ks-access">
-          {!s.buyerEmail?<><h2>Get the full details</h2><p>Sign in with a free buyer profile, sign this listing’s NDA, and an advisor reviews your request.</p><a className="ks-btn ks-btn-primary" href={href('/account?next='+encodeURIComponent('/listings/'+l.number))}>Sign in to request details</a></>
+          {l.status==='Sold'?<><h2>Acquisition completed</h2><p>This listing is closed to new NDA and access requests.</p>{stories.data?.filter(c=>c.listingNumber===l.number).map(c=><a className="ks-btn" key={c.id} href={href('/stories/'+c.id)}>Read the seller-approved account</a>)}<a className="ks-link" href={href('/listings')}>Browse available listings</a></>:!s.buyerEmail?<><h2>Get the full details</h2><p>Sign in with a free buyer profile, sign this listing’s NDA, and an advisor reviews your request.</p><a className="ks-btn ks-btn-primary" href={href('/account?next='+encodeURIComponent('/listings/'+l.number))}>Sign in to request details</a></>
           :!me?<><h2>One more step</h2><p>Create your buyer profile so the advisor knows who you are.</p><a className="ks-btn ks-btn-primary" href={href('/account?next='+encodeURIComponent('/listings/'+l.number))}>Create buyer profile</a></>
           :l.access==='Approved'?<><h2>You have access</h2><p>Your NDA was approved. Confidential details, questions and offers are open on this page.</p></>
           :l.access==='Pending'?<><h2>Request received</h2><p>An advisor is reviewing your profile and signed NDA, usually within one business day.</p></>
           :l.access==='Declined'?<><h2>Request declined</h2><p>This seller is looking for a different kind of buyer. Contact Kalling if you think that’s a mistake.</p></>
-          :l.status==='Sold'?<><h2>Sold</h2><p>Turn on listing alerts to hear about similar companies.</p></>
           :showNda?<NdaForm l={l} name={me.buyer.name} busy={busy} onCancel={()=>setShowNda(false)} submit={(n,a,m)=>act(async()=>{await s.store.requestAccess(l,n,a,m);setShowNda(false);},'NDA signed. Your request is with an advisor.')}/>
           :<><h2>Request the full details</h2><p>Sign this listing’s confidentiality agreement online. An advisor checks your profile, then shares the name, financials and documents.</p><button className="ks-btn ks-btn-primary" onClick={()=>setShowNda(true)}>Review and sign the NDA</button></>}
           {notice&&<p className="ks-ok" role="status">{notice}</p>}{error&&<p className="ks-error" role="alert">{error}</p>}
@@ -168,7 +168,7 @@ export function AccountPage({route}:{route:Route}){
         <section><h2>Saved listings</h2>{me.buyer.saved.length?<div className="ks-plates ks-plates-tight">{all.filter(l=>me.buyer.saved.includes(l.id)).map(l=><Nameplate key={l.id} l={l}/>)}</div>:<p className="ks-empty">Save listings to compare them here.</p>}</section>
 
         <section><h2>Your profile</h2><p>{me.buyer.type} · {me.buyer.funds} available · {me.buyer.regions.join(', ')||'any region'}</p><p className="ks-fine">Status: {me.buyer.status==='Verified'?'Legacy status. Review financing evidence below.':me.buyer.status==='Restricted'?'Restricted. Contact Kalling.':'Profile complete'}</p><a className="ks-btn" href={href('/account?next=profile')}>Edit profile</a></section>
-      </div><BuyerOffers store={s.store} offers={me.offers} refresh={res.reload}/><BuyerAlerts store={s.store.alerts} listings={all}/><BuyerVerification store={s.store.verification} name={me.buyer.company||me.buyer.name}/><BuyerLenderPreparation store={s.store.lenders} listings={all} verificationRef={verificationBadge(proofs.data?.[0]).status==='Verified'?proofs.data?.[0]?.id:undefined}/><OpenedHistory room={s.room}/></>}
+      </div><ExecutionWorkspace store={s.store.execution} watermark={me.buyer.name+' | '+me.buyer.email}/><BuyerOffers store={s.store} offers={me.offers} refresh={res.reload}/><BuyerAlerts store={s.store.alerts} listings={all}/><BuyerVerification store={s.store.verification} name={me.buyer.company||me.buyer.name}/><BuyerLenderPreparation store={s.store.lenders} listings={all} verificationRef={verificationBadge(proofs.data?.[0]).status==='Verified'?proofs.data?.[0]?.id:undefined}/><OpenedHistory room={s.room}/></>}
   </section>;
 }
 

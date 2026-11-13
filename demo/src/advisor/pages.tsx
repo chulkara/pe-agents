@@ -55,6 +55,7 @@ export function TodayPage(p:AdvisorProps&{aiReview:{c:Company;label:string}[]}){
       if(rd&&used!==undefined&&b&&acc!==used&&!rd.usedAnyway)out.push({id:'st'+rd.id,date:rd.requestedAt,kind:'Changed inputs',text:`New documents since the recast draft for ${c.name}`,action:'Draft again',run:()=>p.openDeal(c.id,'Valuation and recast')});
       if(m.cim[0]?.status==='Changes requested')out.push({id:'cim'+c.id,date:m.cim[0].createdAt,kind:'Memorandum',text:`${c.owner||'The owner'} asked for changes to the memorandum`,action:'Review changes',run:()=>p.openDeal(c.id,'Materials')});
       return out;}),
+    ...x.execution.flatMap(({transaction:t})=>t.items.filter(i=>['Submitted','Changes needed'].includes(i.status)).map(i=>({id:'execution:'+i.id,date:t.createdAt,kind:'Diligence review',text:i.title+'; coordinator '+i.owner,action:'Review diligence',run:()=>p.openDeal(t.companyId,'Diligence')}))),
     ...p.aiReview.map(({c,label})=>({id:'a'+c.id,date:'',kind:'AI draft',text:`${label} for ${c.name}`,action:'Review draft',run:()=>p.openDeal(c.id,'Research and drafting')})),
   ].sort((a,b)=>b.date.localeCompare(a.date)):[];
   const counts=sellStages.map(s=>[s,p.w.companies.filter(c=>stageOf(x,c)===s).length] as const);
