@@ -25,7 +25,7 @@ test('packets have stable ids and fingerprints; validation checks type, ids and 
 });
 
 test('the worker is new enough for drafting, and older versions are refused',()=>{
-  assert.equal(workerVersion,'kalling-worker-2');assert.ok(D.supportsDrafting(workerVersion));assert.ok(!D.supportsDrafting('kalling-worker-1'));assert.ok(!D.supportsDrafting(undefined));
+  assert.equal(workerVersion,'kalling-worker-3');assert.ok(D.supportsDrafting(workerVersion));assert.ok(!D.supportsDrafting('kalling-worker-1'));assert.ok(!D.supportsDrafting(undefined));
   assert.match(D.workerUpdateCommand,/kalling-worker\.mjs install/);
 });
 

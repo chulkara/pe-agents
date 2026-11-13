@@ -2,7 +2,7 @@
 // loopback worker (local browser demo). The browser never talks to Ollama directly.
 import type {SupabaseClient} from '@supabase/supabase-js';
 
-export type AgentKind='research'|'outreach'|'recast'|'teaser'|'cim'|'comps';
+export type AgentKind='research'|'outreach'|'recast'|'teaser'|'cim'|'comps'|'execution';
 export type JobStatus='queued'|'running'|'retry'|'succeeded'|'failed'|'cancelled'|'missing';
 export type JobProgress={stage?:string;label?:string;done?:number;total?:number;calls?:number;maxCalls?:number;at?:string;reason?:string;worker?:string};
 export type JobView={id:string;assignmentId:string;kind:AgentKind;status:JobStatus;progress:JobProgress;attempts:number;maxAttempts:number;error:string;createdAt:string;updatedAt:string;result?:unknown};

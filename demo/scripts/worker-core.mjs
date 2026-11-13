@@ -1,3 +1,4 @@
+import {runLocalExecution} from './local-execution.mjs';
 // Kalling research computer: claims connected assignments, runs them with local Qwen,
 // reports progress, retries safely and serves the local demo on 127.0.0.1 only.
 import {createServer} from 'node:http';
@@ -8,10 +9,10 @@ import {deployedCloudProject} from '../lib/cloudProject.ts';
 import {runLocalDraft} from './local-drafting.mjs';
 import {localModels} from '../lib/agentProtocol.ts';
 
-export const workerVersion='kalling-worker-2';
+export const workerVersion='kalling-worker-3';
 export const localApiPort=47311;
 export const allowedOrigins=Object.freeze(['https://chulkara.github.io','http://localhost:5173','http://127.0.0.1:5173','http://localhost:4173','http://127.0.0.1:4173']);
-const playbooks={'local-research-v1':'research','local-outreach-v1':'outreach','local-recast-v1':'recast','local-teaser-v1':'teaser','local-cim-v1':'cim','local-comps-v1':'comps'};
+const playbooks={'local-research-v1':'research','local-outreach-v1':'outreach','local-recast-v1':'recast','local-teaser-v1':'teaser','local-cim-v1':'cim','local-comps-v1':'comps','local-execution-v1':'execution'};
 const maxPacketBytes=(kind)=>kind==='recast'||kind==='cim'?600000:120000;
 
 export class WorkerError extends Error{constructor(message,{status=0,denied=false}={}){super(message);this.status=status;this.denied=denied;}}
@@ -63,7 +64,7 @@ export function describeProgress(kind,packet,event,counter){
   return {stage:'running',label,done:counter.done,total,calls:counter.calls,maxCalls:kind==='research'?14:2};
 }
 
-export function createWorker({stateDir,configPath=join(stateDir,'worker.json'),model='qwen3:4b',request=localRequest,cloudFactory=cloudClient,runners={research:runLocalResearch,outreach:runLocalOutreach,recast:runLocalDraft,teaser:runLocalDraft,cim:runLocalDraft,comps:runLocalDraft},log=()=>{},timing={}}={}){
+export function createWorker({stateDir,configPath=join(stateDir,'worker.json'),model='qwen3:4b',request=localRequest,cloudFactory=cloudClient,runners={research:runLocalResearch,outreach:runLocalOutreach,recast:runLocalDraft,teaser:runLocalDraft,cim:runLocalDraft,comps:runLocalDraft,execution:runLocalExecution},log=()=>{},timing={}}={}){
   if(localSafetyPolicy!=='local-only-required-v2'||localRunnerVersion!=='local-playbooks-v2')throw Error('Worker safety versions do not match. Update the repository before starting.');
   const t={idle:5000,heartbeat:20000,renew:45000,modelOk:60000,modelRetry:15000,...timing};
   const localDir=join(stateDir,'local-jobs');
@@ -165,7 +166,7 @@ export function createWorker({stateDir,configPath=join(stateDir,'worker.json'),m
     status(){
       const queued=[...state.local.values()].filter(j=>j.status==='queued').length;
       return {app:'kalling-worker',version:workerVersion,startedAt:new Date(state.started).toISOString(),
-        model:{ready:state.model.ready,name:model,detail:state.model.detail,models:Object.fromEntries(['recast','teaser','cim','comps'].map(k=>[k,modelFor(k)]))},kinds:Object.values(playbooks),
+        model:{ready:state.model.ready,name:model,detail:state.model.detail,models:Object.fromEntries(['recast','teaser','cim','comps','execution'].map(k=>[k,modelFor(k)]))},kinds:Object.values(playbooks),
         cloud:{status:state.cloud.status,firmName:state.config.cloud?.firmName||state.cloud.firmName||'',name:state.config.cloud?.name||'',waiting:state.cloud.waiting,detail:state.cloud.detail,lastContact:state.cloud.lastContact?new Date(state.cloud.lastContact).toISOString():null},
         active:state.active?{source:state.active.source,kind:state.active.kind,company:state.active.company,progress:state.active.progress,startedAt:new Date(state.active.startedAt).toISOString()}:null,
         local:{queued}};
