@@ -13,7 +13,8 @@ if(!['127.0.0.1','localhost'].includes(new URL(U).hostname))throw Error('Executi
     page.on('pageerror',e=>errors.push(e.message));
     await page.goto(U+'e2e/phase5.html');
     await page.getByRole('button',{name:'Run fictional acquisition',exact:true}).click();
-    await page.waitForFunction(()=>document.querySelector('#result').textContent.includes('PASS: twelve'),{timeout:30000});
+    await page.waitForFunction(()=>document.querySelector('#result').textContent.includes('PASS: twelve'),null,{timeout:30000});
+    assert.match(await page.locator('#result').innerText(),/Stopped branch: no Sold transition/);
     console.log('PASS: twelve fictional acquisition stages.');
     const frame=page.frameLocator('#app');
     const headings={advisor:'Fictional HVAC',owner:'Fictional HVAC',buyer:'Welcome back, Fictional',public:'Fictional HVAC execution example',guest:'Transaction specialist'};

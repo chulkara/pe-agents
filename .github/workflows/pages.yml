@@ -11,6 +11,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       pages: write
@@ -35,6 +36,7 @@ jobs:
       - name: Install browser for fictional workflow checks
         run: npx playwright install --with-deps chromium
       - name: Start the fictional test server
+        id: fixture_server
         run: |
           npm run dev -- --host 127.0.0.1 --port 4173 > /tmp/kalling-vite.log 2>&1 &
           for attempt in $(seq 1 30); do
@@ -46,8 +48,10 @@ jobs:
       - name: Check existing deal flow
         run: npm run e2e
       - name: Check existing seller flow
+        if: ${{ !cancelled() && steps.fixture_server.outcome == 'success' }}
         run: npm run e2e:seller
       - name: Check execution, permissions and three screen widths
+        if: ${{ !cancelled() && steps.fixture_server.outcome == 'success' }}
         run: npm run e2e:execution
       - name: Configure Pages
         if: github.ref == 'refs/heads/main'
