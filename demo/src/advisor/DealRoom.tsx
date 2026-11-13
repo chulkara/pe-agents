@@ -14,6 +14,7 @@ import {CompanyQualify,EngagementPanel} from './engagement';
 import {RecastDraftPanel,TeaserDraftPanel,type TeaserFields} from './drafts';
 import MaterialsTab from './cimEditor';
 import {CompsPanel} from './comps';
+import DataRoomTab from './dataRoom';
 import {materialsOf,closedDealComp,saveComp,validateComp} from '../../lib/materials';
 import {canShareInDataRoom} from '../../lib/cim';
 import {acceptedInputs} from '../../lib/extract';
@@ -27,8 +28,9 @@ const dt=(s?:string)=>s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateStri
 export default function DealRoom(p:Props){
   const x=useAdvisor(),portalCtx=useContext(PortalContextRef),c=p.c as DealCompany;
   const mat=materialsOf(c),[incoming,setIncoming]=useState<{fields:Partial<ListingDraft>;all:boolean;nonce:number}|undefined>(),[teaserNow,setTeaserNow]=useState<TeaserFields>({headline:'',summary:'',highlights:[],growth:[],reason:''});
-  const roomLive=false;
+  const [roomLive,setRoomLive]=useState(false);
   const listing=listingOf(x.d,c),pe=x.portals[c.id],stage=stageOf(x,c),[msg,setMsg]=useState('');
+  useEffect(()=>{if(!listing?.id)return;let on=true;x.room.room(listing.id).then(r=>{if(on)setRoomLive(r.room?.status==='Published');}).catch(()=>{});return()=>{on=false;};},[x.room,listing?.id]);
   const tab=(dealTabs as readonly string[]).includes(p.tab)?p.tab as DealTab:'Overview';
   const v=c.recast?recastValuation(c.recast):null,sde=c.recast?recastSde(c.recast):0,revenue=c.recast?.inputs.revenue||listing?.revenue||0;
   const counts:Partial<Record<DealTab,number>>={
@@ -74,8 +76,9 @@ export default function DealRoom(p:Props){
         <Tabs label="Deal Room sections" tabs={dealTabs.map(t=>({id:t,count:counts[t]}))} current={tab} onChange={p.setTab}/>
         <div className="adv-tabpanel" role="tabpanel" aria-label={tab}>
           {tab==='Overview'&&<>{stage==='Lead'&&<CompanyQualify c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}<Overview c={c} listing={listing} stage={stage} w={p.w}/></>}
-          {tab==='Valuation and recast'&&<RecastDraftPanel c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}{tab==='Valuation and recast'&&<RecastEditor key={c.id+'-'+(c.recast?.version||0)} c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly} askingPrice={listing?.askingPrice}/>}{tab==='Valuation and recast'&&<CompsPanel c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}{tab==='Materials'&&<MaterialsTab c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}
+          {tab==='Valuation and recast'&&<RecastDraftPanel c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}{tab==='Valuation and recast'&&<RecastEditor key={c.id+'-'+(c.recast?.version||0)} c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly} askingPrice={listing?.askingPrice} onSaved={setMsg}/>}{tab==='Valuation and recast'&&<CompsPanel c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}{tab==='Materials'&&<MaterialsTab c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly}/>}
           {tab==='Listing'&&<TeaserDraftPanel c={c} w={p.w} commit={p.commit} actor={p.actor} readOnly={p.readOnly||listing?.status==='Live'} current={teaserNow} onAccept={(f,all)=>setIncoming({fields:f,all,nonce:Date.now()})}/>}{tab==='Listing'&&<ListingEditor key={c.id} listing={listing} company={c} incoming={incoming} onChange={x=>setTeaserNow({headline:x.headline,summary:x.summary,highlights:x.highlights,growth:x.growth,reason:x.reason})} onSaved={()=>{if(before('Preparing'))void move('Preparing','Listing saved as a draft. The deal is now Preparing.');}} onPublished={()=>{if(before('Listed'))void move('Listed','Published. The deal is now Listed.');}}/>}
+          {tab==='Data room'&&<DataRoomTab key={c.id+'r'} c={c} listing={listing} pe={pe} readOnly={p.readOnly} onLive={setRoomLive} goListing={()=>p.setTab('Listing')}/>}
           {tab==='Buyers'&&(listing?<><AccessRequests listingId={listing.id}/><h2 className="deal-sub">Questions from buyers</h2><QuestionThreads listingId={listing.id}/></>:<NoListing go={()=>p.setTab('Listing')}/>)}
           {tab==='Offers'&&(listing?<OfferComparison listing={listing} onAccepted={(l:Listing)=>{if(stage!=='Under LOI')void p.commit(setStage(p.w,c.id,'Under LOI',p.actor,{listing:l})).then(ok=>ok&&setMsg('The seller accepted. The deal is now Under LOI.'));}}/>:<NoListing go={()=>p.setTab('Listing')}/>)}
           {tab==='Documents'&&<OwnerPortalAdmin key={c.id+'d'} company={c} sections={['Requests']} onChange={()=>void x.reloadPortals()}/>}
@@ -134,7 +137,7 @@ function Overview({c,listing,stage,w}:{c:DealCompany;listing?:Listing;stage:Sell
 const ownerRoles:[HvacInputs['ownerRole'],string][]=[['runs-everything','Runs everything'],['key-relationships','Holds key relationships'],['manager-runs-day-to-day','A manager runs the day to day']];
 const licenses:[HvacInputs['licenseHolder'],string][]=[['owner-only','Owner only'],['owner-and-employee','Owner and an employee'],['employee','An employee']];
 /** Inputs saved per company; the add-backs table feeds SDE and every adjustment is explained. */
-function RecastEditor({c,w,commit,actor,readOnly,askingPrice:listed}:{c:DealCompany;w:Workspace;commit:(n:Workspace)=>Promise<boolean>;actor:string;readOnly:boolean;askingPrice?:number}){
+function RecastEditor({c,w,commit,actor,readOnly,askingPrice:listed,onSaved}:{c:DealCompany;w:Workspace;commit:(n:Workspace)=>Promise<boolean>;actor:string;readOnly:boolean;askingPrice?:number;onSaved:(m:string)=>void}){
   const [inputs,setInputs]=useState<HvacInputs>(()=>({...defaultInputs,...c.recast?.inputs})),[rows,setRows]=useState<(Partial<AddBack>&{key:string})[]>(()=>(c.recast?.addBacks||[]).map(a=>({...a,key:a.id}))),[asking,setAsking]=useState(c.recast?.askingPrice||listed||0),[msg,setMsg]=useState(''),[err,setErr]=useState('');
   useEffect(()=>setMsg(''),[inputs,rows,asking]);
   const r={inputs,addBacks:rows.map(x=>({id:x.id||x.key,item:x.item||'',amount:Number(x.amount)||0,reason:x.reason||'',evidence:x.evidence||''}))};
@@ -143,7 +146,7 @@ function RecastEditor({c,w,commit,actor,readOnly,askingPrice:listed}:{c:DealComp
   const set=<K extends keyof HvacInputs>(k:K,val:HvacInputs[K])=>setInputs(p=>({...p,[k]:val}));
   const n=(k:'revenue'|'ownerPay'|'netProfit'|'maintenancePct'|'agreements'|'commercialPct'|'newConstructionPct'|'technicians'|'topCustomerPct'|'years',label:string,hint?:string)=><Field key={k} label={label} hint={hint}><input inputMode="numeric" value={inputs[k]||''} onChange={e=>set(k,num(e.target.value))}/></Field>;
   const docs=c.documents.map(d=>d.name);
-  async function save(){setErr('');try{if(await commit(saveRecast(w,c.id,{inputs,addBacks:r.addBacks.filter(a=>a.item),askingPrice:asking},actor)))setMsg('Recast saved.');}catch(e){setErr((e as Error).message);}}
+  async function save(){setErr('');try{if(await commit(saveRecast(w,c.id,{inputs,addBacks:r.addBacks.filter(a=>a.item),askingPrice:asking},actor)))onSaved('Recast saved.');}catch(e){setErr((e as Error).message);}}
   return <form className="deal-recast" onSubmit={e=>{e.preventDefault();void save();}}>
     <fieldset disabled={readOnly}>
       <div className="deal-recast-figs" aria-live="polite"><Figure value={money(sde)} label="Seller’s discretionary earnings"/><Figure value={v&&v.mid>0?`${money(v.low)} to ${money(v.high)}`:'Enter the numbers'} label={v?`Estimated value, ${v.multipleLow.toFixed(1)} to ${v.multipleHigh.toFixed(1)} times earnings`:'Estimated value'}/></div>

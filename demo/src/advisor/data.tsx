@@ -2,6 +2,7 @@
 import {createContext,useCallback,useContext,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import type {BrokerStore} from '../../lib/brokerStore';
 import {localBrokerStore} from '../../lib/brokerStore';
+import {localDataRoomStore,type DataRoomStore} from '../../lib/dataRoomStore';
 import {anonymousBuyerLabel,type Lead,type Listing,type Buyer,type BuyerCheck,type AccessRequest,type Offer,type Question,type BrokerDb} from '../../lib/brokerage';
 import type {Company} from '../../lib/domain';
 import type {Portal,PortalBundle} from '../../lib/portal';
@@ -9,14 +10,15 @@ import {dealStage,type SellStage} from '../../lib/deals';
 import {PortalContextRef} from '../OwnerPortalAdmin';
 
 export type BrokerData={leads:Lead[];listings:Listing[];buyers:Buyer[];requests:AccessRequest[];offers:Offer[];questions:Question[];checks:BuyerCheck[]};
-type Ctx={d:BrokerData|null;error:string;busy:boolean;store:BrokerStore;canWrite:boolean;
+type Ctx={d:BrokerData|null;error:string;busy:boolean;store:BrokerStore;room:DataRoomStore;canWrite:boolean;
   act:(fn:()=>Promise<unknown>)=>Promise<boolean>;reload:()=>Promise<void>;
   portals:Record<string,{portal:Portal;bundle?:PortalBundle}>;reloadPortals:()=>Promise<void>;
   syncPortal:(listing:Listing|undefined,buyer:Buyer|undefined,stage:'Under NDA'|'Offer made'|'Not proceeding')=>Promise<void>};
 const C=createContext<Ctx|null>(null);
 export function useAdvisor(){const c=useContext(C);if(!c)throw Error('Advisor data is not loaded.');return c;}
 
-export function AdvisorDataProvider({store:given,operator,canWrite,children}:{store?:BrokerStore;operator:string;canWrite:boolean;children:ReactNode}){
+export function AdvisorDataProvider({store:given,room:givenRoom,operator,canWrite,children}:{store?:BrokerStore;room?:DataRoomStore;operator:string;canWrite:boolean;children:ReactNode}){
+  const room=useMemo(()=>givenRoom||localDataRoomStore({kind:'advisor',name:operator,canWrite:true}),[givenRoom,operator]);
   const store=useMemo(()=>given||localBrokerStore({kind:'advisor',name:operator,canWrite:true}),[given,operator]);
   const portal=useContext(PortalContextRef);
   const [d,setD]=useState<BrokerData|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[portals,setPortals]=useState<Ctx['portals']>({});
@@ -32,7 +34,7 @@ export function AdvisorDataProvider({store:given,operator,canWrite,children}:{st
     const name=anonymousBuyerLabel(db,buyer,listing.id),existing=(await portal.store.load(p.id)).buyers.find(b=>b.name===name);
     await portal.store.saveBuyer(p.id,{id:existing?.id,name,summary:`${buyer.type}. ${buyer.funds} available; plans to pay with ${buyer.financing.join(', ')||'a method to be confirmed'}. Approved by your advisor after signing the NDA.`,stage});
   },[portal.store,store]);
-  return <C.Provider value={{d,error,busy,store,canWrite,act,reload,portals,reloadPortals,syncPortal}}>{children}</C.Provider>;
+  return <C.Provider value={{d,error,busy,store,room,canWrite,act,reload,portals,reloadPortals,syncPortal}}>{children}</C.Provider>;
 }
 
 /** The listing that represents this company on the marketplace, if any. */

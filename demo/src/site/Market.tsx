@@ -3,6 +3,7 @@ import {money} from '../../lib/hvacValuation';
 import {ndaText,regions,focuses,buyerTypes,fundBands,filterListings,regionState,type ListingFilter,type Region,type Focus,type BuyerType,type Funds} from '../../lib/brokerage';
 import type {ViewListing} from '../../lib/brokerStore';
 import {href,go,useAsync,useSession,Arrow,type Route} from './BrokerSite';
+import {BuyerDataRoom,OpenedHistory} from './DataRoom';
 
 /** Listing card: where and what, then the asking price as the headline number. */
 export function Nameplate({l}:{l:ViewListing}){
@@ -70,7 +71,8 @@ export function ListingPage({id}:{id:string}){
         <h2>Operations</h2>
         <dl className="ks-specs"><div><dt>Employees</dt><dd>{l.employees}</dd></div><div><dt>Field technicians</dt><dd>{l.technicians}</dd></div><div><dt>Maintenance agreements</dt><dd>{l.agreements.toLocaleString()}</dd></div><div><dt>Service and maintenance revenue</dt><dd>{l.recurringPct}%</dd></div><div><dt>Residential share</dt><dd>{l.residentialPct}%</dd></div><div><dt>Service vehicles</dt><dd>{l.vehicles}</dd></div><div><dt>Facility</dt><dd>{l.realEstate}</dd></div><div><dt>Seller financing</dt><dd>{l.sellerFinancing?'Considered for qualified buyers':'Not offered'}</dd></div></dl>
         {approved&&<section className="ks-confidential"><h2>Confidential details</h2><p className="ks-fine">Shared under your signed NDA. Don’t contact the business, its staff or customers directly.</p><dl className="ks-specs"><div><dt>Business</dt><dd>{l.confidential.businessName}</dd></div><div><dt>Location</dt><dd>{l.confidential.city}</dd></div>{l.confidential.website&&<div><dt>Website</dt><dd>{l.confidential.website}</dd></div>}</dl><p className="ks-prose">{l.confidential.details}</p></section>}
-        {approved&&<section className="ks-qa"><h2>Questions for the advisor</h2>{questions.map(q=><div key={q.id} className={'ks-q '+q.side}><p>{q.body}</p><small>{q.side==='buyer'?'You':q.author} · {new Date(q.createdAt).toLocaleDateString()}</small></div>)}
+        {approved&&<BuyerDataRoom room={s.room} listingId={l.id} questions={questions} onAsked={res.reload}/>}
+        {approved&&<section className="ks-qa"><h2>Questions for the advisor</h2>{questions.filter(q=>!q.itemId||q.side==='advisor').map(q=><div key={q.id} className={'ks-q '+q.side}><p>{q.body}</p><small>{q.side==='buyer'?'You':q.author} · {new Date(q.createdAt).toLocaleDateString()}</small></div>)}
           <form onSubmit={e=>{e.preventDefault();const t=e.currentTarget,v=String(new FormData(t).get('q'));void act(async()=>{await s.store.ask(l.id,v);t.reset();},'Question sent. Answers appear here.');}}><label className="ks-field"><span>Ask a question</span><textarea name="q" rows={2} required maxLength={3000}/></label><button className="ks-btn" disabled={busy}>Send question</button></form></section>}
         {approved&&['Live','Under LOI'].includes(l.status)&&<OfferForm l={l} busy={busy} submit={o=>act(()=>s.store.offer(l.id,o),'Offer submitted. Your advisor will be in touch.')}/>}
         {offers.length>0&&<section><h2>Your offers</h2><ul className="ks-offers">{offers.map(o=><li key={o.id}><span>{o.kind} · {money(o.price)} · close in {o.closeDays} days</span><b>{o.status}</b>{o.advisorNote&&<small>{o.advisorNote}</small>}{['Submitted','Shared with seller','Countered'].includes(o.status)&&<button className="ks-link" disabled={busy} onClick={()=>void act(()=>s.store.setOffer(o.id,'Withdrawn',''))}>Withdraw</button>}</li>)}</ul></section>}
@@ -174,7 +176,7 @@ export function AccountPage({route}:{route:Route}){
         <section><h2>Saved listings</h2>{me.buyer.saved.length?<div className="ks-plates ks-plates-tight">{all.filter(l=>me.buyer.saved.includes(l.id)).map(l=><Nameplate key={l.id} l={l}/>)}</div>:<p className="ks-empty">Save listings to compare them here.</p>}</section>
         <section><h2>Matches for you</h2><div className="ks-plates ks-plates-tight">{all.filter(l=>l.status==='Live'&&(!me.buyer.regions.length||me.buyer.regions.includes(l.region))&&(!me.buyer.maxPrice||l.askingPrice<=me.buyer.maxPrice*1.1)).slice(0,4).map(l=><Nameplate key={l.id} l={l}/>)}</div></section>
         <section><h2>Your profile</h2><p>{me.buyer.type} · {me.buyer.funds} available · {me.buyer.regions.join(', ')||'any region'}</p><p className="ks-fine">Status: {me.buyer.status==='Verified'?'Verified by an advisor':me.buyer.status==='Restricted'?'Restricted. Contact Kalling.':'Profile complete'}</p><a className="ks-btn" href={href('/account?next=profile')}>Edit profile</a></section>
-      </div></>}
+      </div><OpenedHistory room={s.room}/></>}
   </section>;
 }
 

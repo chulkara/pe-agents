@@ -4,6 +4,7 @@ import '@fontsource/forum/400.css';
 import './site.css';
 import {localBrokerStore,type BrokerStore} from '../../lib/brokerStore';
 import {cloudBrokerStore,brokerageReady} from '../../lib/brokerCloud';
+import {localDataRoomStore,cloudDataRoomStore,type DataRoomStore} from '../../lib/dataRoomStore';
 import {CONFIG_KEY,DISCONNECTED_KEY,deviceConnection,clientFor} from '../../lib/cloud';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {HomePage,SellPage} from './Pages';
@@ -15,7 +16,7 @@ const parse=():Route=>{const raw=location.hash.replace(/^#\/?/,'');const [p,q=''
 export const href=(path:string)=>'#'+path;
 export function go(path:string){location.hash=path;}
 const BUYER_KEY='kalling-buyer-email';
-export type Session={store:BrokerStore;buyerEmail:string;signIn:(email:string)=>void;signOut:()=>void;demo:boolean;client:SupabaseClient|null};
+export type Session={store:BrokerStore;room:DataRoomStore;buyerEmail:string;signIn:(email:string)=>void;signOut:()=>void;demo:boolean;client:SupabaseClient|null};
 const Ctx=createContext<Session|null>(null);
 export const useSession=()=>useContext(Ctx)!;
 const getEmail=()=>{try{return localStorage.getItem(BUYER_KEY)||'';}catch{return '';}};
@@ -28,7 +29,8 @@ export default function BrokerSite(){
   useEffect(()=>{let live=true;void (async()=>{try{const cfg=deviceConnection(localStorage.getItem(CONFIG_KEY),localStorage.getItem(DISCONNECTED_KEY)==='true');if(!cfg)return;const c=await clientFor(cfg);if(!(await brokerageReady(c)))return;const {data}=await c.auth.getUser();if(!live)return;setCloudEmail(data.user?.email_confirmed_at?data.user.email||'':'');c.auth.onAuthStateChange((_e,sess)=>setCloudEmail(sess?.user?.email_confirmed_at?sess.user.email||'':''));setClient(c);}catch{/* demo */}finally{if(live)setChecked(true);}})();return()=>{live=false;};},[]);
   const email=client?cloudEmail:buyerEmail;
   const store=useMemo(()=>client?cloudBrokerStore(client,email?{kind:'buyer',email}:{kind:'public'}):localBrokerStore(email?{kind:'buyer',email}:{kind:'public'}),[client,email]);
-  const session:Session={store,buyerEmail:email,demo:!client,client,signIn:e=>{try{localStorage.setItem(BUYER_KEY,e);}catch{/* private mode */}setBuyer(e);},signOut:()=>{if(client){void client.auth.signOut();return;}try{localStorage.removeItem(BUYER_KEY);}catch{/* */}setBuyer('');}};
+  const room=useMemo(()=>client?cloudDataRoomStore(client):localDataRoomStore(email?{kind:'buyer',email}:{kind:'public'}),[client,email]);
+  const session:Session={store,room,buyerEmail:email,demo:!client,client,signIn:e=>{try{localStorage.setItem(BUYER_KEY,e);}catch{/* private mode */}setBuyer(e);},signOut:()=>{if(client){void client.auth.signOut();return;}try{localStorage.removeItem(BUYER_KEY);}catch{/* */}setBuyer('');}};
   const [a,b]=route.parts;
   let page:ReactNode;
   if(!a)page=<HomePage/>;

@@ -4,6 +4,7 @@ import {Loader2,Lock,LogOut} from 'lucide-react';
 import {CONFIG_KEY,DISCONNECTED_KEY,deviceConnection,clientFor} from '../lib/cloud';
 import {LOCAL_PORTAL_KEY,inviteTokenFromHash,localPortalStore,type PortalStore} from '../lib/portalStore';
 import {cloudPortalStore,acceptPortalInvite} from '../lib/portalCloud';
+import {localDataRoomStore,cloudDataRoomStore} from '../lib/dataRoomStore';
 import type {Portal,PortalDb} from '../lib/portal';
 import SellerPortal from './SellerPortal';
 import './portal.css';
@@ -30,13 +31,14 @@ function LocalOwner({token}:{token:string}){
   const store=useMemo(()=>email?localPortalStore({actor:{side:'seller',name:'Owner',email},firmId:'local-demo',firmName:'',team:[]}):null,[email]);
   useEffect(()=>{if(!store)return;void (async()=>{try{if(token){const id=await (store as ReturnType<typeof localPortalStore>).acceptInvite(email,token);ss.set(TOKEN_KEY,'');setPortalId(id);}const list=await store.myPortals();setPortals(list);if(list.length===1)setPortalId(list[0].id);}catch(e){setError((e as Error).message);ss.set(LOCAL_OWNER,'');setEmail('');}})();},[store]);// eslint-disable-line react-hooks/exhaustive-deps
   const team=useMemo(()=>{const p=localDb()?.portals.find(x=>x.id===portalId);return p?localPortalStore({actor:{side:'seller',name:p.ownerName,email},firmId:p.firmId,firmName:p.firmName,team:[p.help.name+' (this browser)']}):null;},[portalId,email]);
+  const localRoom=useMemo(()=>localDataRoomStore({kind:'public'}),[]);
   if(!email)return <Frame><form className="portal-gate" onSubmit={(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const v=String(new FormData(e.currentTarget).get('email')).trim().toLowerCase();ss.set(LOCAL_OWNER,v);setError('');setEmail(v);}}>
     <h1>Welcome.</h1><p>You’ve been invited to a private portal for your business. Enter the email address the invitation was sent to.</p>
     <p className="portal-demo-note">Local demo: records stay in this browser and no password is needed. A real portal asks you to sign in.</p>
     {error&&<p className="error-banner" role="alert">{error}</p>}
     <label className="field"><span>Your email address</span><input name="email" type="email" required autoComplete="email" autoFocus/></label><button className="btn primary">Open my portal</button></form></Frame>;
   const signOut=()=>{ss.set(LOCAL_OWNER,'');setEmail('');setPortalId('');};
-  if(portalId&&team)return <Frame signOut={signOut}><SellerPortal store={team as PortalStore} portalId={portalId}/></Frame>;
+  if(portalId&&team)return <Frame signOut={signOut}><SellerPortal store={team as PortalStore} portalId={portalId} room={localRoom}/></Frame>;
   return <Frame signOut={signOut}>{portals&&!portals.length?<div className="portal-gate"><h1>No portal yet</h1><p>There’s no active portal for {email}. Use the invitation link you received, or ask your contact for a new one.</p></div>:portals?<Picker portals={portals} open={setPortalId}/>:<div className="portal-gate"><Loader2 className="spin"/></div>}</Frame>;
 }
 
@@ -58,6 +60,6 @@ function CloudOwner({token}:{token:string}){
     <label className="field"><span>Password{mode==='up'?', at least 12 characters':''}</span><input name="password" type="password" required minLength={12} autoComplete={mode==='up'?'new-password':'current-password'}/></label>
     <button className="btn primary" disabled={busy||!client}>{mode==='up'?'Create account':'Sign in'}</button>
     <button type="button" className="text-link" onClick={()=>setMode(mode==='up'?'in':'up')}>{mode==='up'?'I already have an account':'First time here? Create an account'}</button></form></Frame>;
-  if(portalId&&store)return <Frame signOut={signOut}><SellerPortal store={store} portalId={portalId}/></Frame>;
+  if(portalId&&store)return <Frame signOut={signOut}><SellerPortal store={store} portalId={portalId} room={client?cloudDataRoomStore(client):undefined}/></Frame>;
   return <Frame signOut={signOut}><div className="portal-gate">{error&&<p className="error-banner" role="alert">{error}</p>}{portals===null?<Loader2 className="spin"/>:portals.length?<Picker portals={portals} open={setPortalId}/>:<><h1>No portal yet</h1><p>There’s no active portal for {user.email}. Open the invitation link you received while signed in with that address, or ask your contact for a new link.</p></>}</div></Frame>;
 }

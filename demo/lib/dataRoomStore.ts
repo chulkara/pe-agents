@@ -27,6 +27,7 @@ export interface DataRoomStore{
   open(itemId:string,kind?:'opened'|'downloaded'):Promise<Opened>;
   logPages(ticket:string,events:{page:number;seconds:number}[]):Promise<void>;
   history():Promise<ReturnType<typeof D.buyerHistory>>;
+  ask(itemId:string,page:number,body:string):Promise<void>;
 }
 
 type KV={getItem(k:string):string|null;setItem(k:string,v:string):void};
@@ -57,6 +58,7 @@ export function localDataRoomStore(viewer:Viewer,o:{kv?:KV;bytes?:ByteStore}={})
     },
     async logPages(t,ev){await apply(db=>D.logEvents(db,viewer,t,ev));},
     async history(){return D.buyerHistory(read(),viewer);},
+    async ask(i,pg,body){await apply(db=>D.askAbout(db,viewer,i,pg,body));},
   };
 }
 
@@ -90,6 +92,7 @@ export function cloudDataRoomStore(client:SupabaseClient):DataRoomStore{
       return {ticket:r.ticket,blob:await res.blob(),item:{id:itemId,displayName:r.name,mime:r.mime,allowDownload:r.allow_download,fileName:r.file_name},watermark:r.watermark};
     },
     async logPages(t,ev){await call('kalling_dataroom_events',{p_ticket:t,p_events:ev});},
+    async ask(i,pg,body){await call('kalling_dataroom_ask',{p_item:i,p_page:pg,p_body:body});},
     async history(){return (await rows<{at:string;document:string;listing:string}>(client.rpc('kalling_dataroom_history',{}) as unknown as PromiseLike<{data:unknown;error:{message:string}|null}>));},
   };
 }

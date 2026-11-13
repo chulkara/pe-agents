@@ -1,7 +1,8 @@
 // The data room: documents the owner approved, shown read-only to buyers who signed the NDA.
 // Every open is logged before the file is served; the owner sees who opened what, by anonymous label.
 import type {BrokerDb,Viewer,Buyer} from './brokerage.ts';
-import {anonymousBuyerLabel} from './brokerage.ts';
+import {anonymousBuyerLabel,askQuestion} from './brokerage.ts';
+import {classifyDoc} from './drafting.ts';
 
 const now=()=>new Date().toISOString();
 const uid=()=>crypto.randomUUID();
@@ -109,8 +110,37 @@ export function ownerLog(db:FullDb,listingId:string){
 }
 export function buyerHistory(db:FullDb,v:Viewer){const b=buyerOf(db,v);if(!b)return [];const r=R(db);return r.views.filter(x=>x.buyerId===b.id&&x.event==='opened').map(x=>({at:x.at,document:r.roomItems.find(i=>i.id===x.itemId)?.displayName||'A document',listing:db.listings.find(l=>l.id===x.listingId)?.number||''})).reverse();}
 export const watermarkText=(name:string,email:string,at=new Date())=>`${name}, ${email}, ${at.toISOString().slice(0,10)}. Confidential, Kalling data room`;
-export function weeklySummary(db:FullDb,listingId:string,since=Date.now()-7*864e5){
-  const log=ownerLog(db,listingId).map(x=>({...x,entries:x.entries.filter(e=>Date.parse(e.last)>=since)})).filter(x=>x.entries.length);
-  if(!log.length)return 'No buyer opened a document in the data room this week.';
-  return 'Data room this week:\n'+log.map(x=>`${x.item}: `+x.entries.map(e=>`${e.label} (${e.opens} open${e.opens===1?'':'s'}${e.downloaded?', downloaded':''})`).join('; ')).join('\n');
+/** Plain text for the owner's weekly summary, from per-document entries. */
+export function summaryText(log:{item:string;entries:{label:string;opens:number;last:string;downloaded:boolean}[]}[],since=Date.now()-7*864e5){
+  const recent=log.map(x=>({...x,entries:x.entries.filter(e=>Date.parse(e.last)>=since)})).filter(x=>x.entries.length);
+  if(!recent.length)return 'No buyer opened a document in the data room this week.';
+  return 'Data room this week:\n'+recent.map(x=>`${x.item}: `+x.entries.map(e=>`${e.label} (${e.opens} open${e.opens===1?'':'s'}${e.downloaded?', downloaded':''})`).join('; ')).join('\n');
+}
+export const weeklySummary=(db:FullDb,listingId:string,since=Date.now()-7*864e5)=>summaryText(ownerLog(db,listingId),since);
+/** A starting folder and tier for an owner document. The advisor can change both. */
+export function suggestPlacement(name:string,requests:string[]=[]):{folder:Folder;tier:Tier}{
+  const t=(name+' '+requests.join(' ')).toLowerCase();
+  if(/memorandum|\bcim\b|teaser/.test(t))return {folder:'Overview',tier:'After NDA'};
+  if(/licen[cs]e|insurance|lease|contract|legal|permit|certificate/.test(t))return {folder:'Legal and licenses',tier:'After LOI'};
+  if(/fleet|vehicle|equipment|software|vendor|supplier/.test(t))return {folder:'Operations',tier:'After NDA'};
+  const k=classifyDoc(name.replace(/[-_]+/g,' '),requests);
+  if(k==='pl'||k==='ledger')return {folder:'Financials',tier:'After NDA'};
+  if(k==='tax')return {folder:'Financials',tier:'After LOI'};
+  if(k==='agreements'||k==='mix')return {folder:'Customers',tier:/customer list|names/.test(t)?'After LOI':'After NDA'};
+  if(k==='team')return {folder:'Team',tier:'After LOI'};
+  return {folder:'Other',tier:'After NDA'};
+}
+/** A buyer question about one document, and the page they were reading. */
+export function askAbout(db:FullDb,v:Viewer,itemId:string,page:number,body:string):FullDb{
+  const r=R(db),it=r.roomItems.find(x=>x.id===itemId),b=buyerOf(db,v);need(it&&b&&visible(it,buyerTier(db,b,it.listingId)),'You do not have access to this document.');
+  const next=askQuestion(db,v,it.listingId,body) as FullDb,q=next.questions.at(-1)!;
+  return {...next,questions:next.questions.map(x=>x.id===q.id?{...x,itemId,page:Math.max(1,Math.round(page))}:x)};
+}
+/** A readable name for buyers, from the file name and the request it answered. */
+export function suggestName(fileName:string,requests:string[]=[]){
+  const base=fileName.replace(/\.[a-z0-9]+$/i,''),year=(base.match(/\b(19|20)\d{2}\b/)||[''])[0],k=classifyDoc(base.replace(/[-_]+/g,' '),requests);
+  if(k==='pl')return `Profit and loss statement${year?', '+year:''}`;
+  if(k==='tax')return `Business tax returns${year?', '+year:''}`;
+  const words=base.replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim();
+  return words.charAt(0).toUpperCase()+words.slice(1);
 }

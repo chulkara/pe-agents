@@ -73,12 +73,14 @@ export function OfferComparison({listing,onAccepted}:{listing:Listing;onAccepted
 
 /** Buyer question threads, newest first, with a reply box. */
 export function QuestionThreads({listingId}:{listingId?:string}){
-  const {d,act,busy,canWrite,store}=useAdvisor();if(!d)return null;
+  const {d,act,busy,canWrite,store,room}=useAdvisor(),[docs,setDocs]=useState<Record<string,string>>({});
+  useEffect(()=>{if(!listingId)return;void room.room(listingId).then(r=>setDocs(Object.fromEntries(r.items.map(i=>[i.id,i.displayName])))).catch(()=>{});},[room,listingId]);
+  if(!d)return null;
   const threads=Object.values(d.questions.filter(q=>!listingId||q.listingId===listingId).reduce<Record<string,typeof d.questions>>((m,q)=>{(m[q.listingId+'|'+q.buyerId]??=[]).push(q);return m;},{}));
   if(!threads.length)return <EmptyState title="No buyer questions">Approved buyers can ask questions from the listing page.</EmptyState>;
   return <div className="adv-rows">{threads.map(t=>{const q0=t[0],b=d.buyers.find(x=>x.id===q0.buyerId),l=d.listings.find(x=>x.id===q0.listingId),waiting=t[t.length-1].side==='buyer';
     return <article key={q0.id} className={'adv-row'+(waiting?' adv-row-new':'')}><header><div><h3>{b?.name}{!listingId&&l?' on '+l.number:''}</h3></div>{waiting&&<StatusPill tone="purple">Needs an answer</StatusPill>}</header>
-      <div className="adv-thread">{t.map(q=><p key={q.id} className={q.side}><b>{q.side==='buyer'?b?.name:q.author}</b>{q.body}</p>)}</div>
+      <div className="adv-thread">{t.map(q=><p key={q.id} className={q.side}><b>{q.side==='buyer'?b?.name:q.author}</b>{q.itemId&&<small className="adv-q-ref">About {docs[q.itemId]||'a data room document'}, page {q.page}</small>}{q.body}</p>)}</div>
       {canWrite&&<form className="adv-reply" onSubmit={(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=e.currentTarget,v=String(new FormData(f).get('a'));void act(async()=>{await store.ask(q0.listingId,v,q0.buyerId);f.reset();});}}><Field label={'Answer '+(b?.name||'the buyer')}><input name="a" required maxLength={2000}/></Field><Button disabled={busy}>Send answer</Button></form>}</article>;})}</div>;
 }
 

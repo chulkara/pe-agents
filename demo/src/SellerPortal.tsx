@@ -6,6 +6,8 @@ import './portal.css';
 import {ProgressBar} from './design/ui';
 import OwnerLetter,{SignedLetterLink} from './LetterView';
 import {AboutBusiness,MemorandumReview} from './OwnerReview';
+import OwnerDataRoom from './OwnerDataRoom';
+import type {DataRoomStore} from '../lib/dataRoomStore';
 
 // In-page links must not change the URL hash, which selects the app.
 const jump=(e:{preventDefault():void;currentTarget:HTMLAnchorElement})=>{e.preventDefault();document.getElementById(e.currentTarget.getAttribute('href')!.slice(1))?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});};
@@ -22,7 +24,7 @@ export function usePortal(store:PortalStore,portalId:string){
   return {b,error,refresh};
 }
 
-export default function SellerPortal({store,portalId,preview=false,top}:{store:PortalStore;portalId:string;preview?:boolean;top?:ReactNode}){
+export default function SellerPortal({store,portalId,preview=false,top,room}:{store:PortalStore;portalId:string;preview?:boolean;top?:ReactNode;room?:DataRoomStore}){
   const {b,error,refresh}=usePortal(store,portalId);
   const seenOnce=useRef(false),[openState,setOpenState]=useState<string|null>(null),setOpenId=(id:string)=>setOpenState(id);
   useEffect(()=>{if(b&&!preview&&!seenOnce.current){seenOnce.current=true;void store.seen(portalId).catch(()=>{});}},[b,preview,store,portalId]);
@@ -61,6 +63,7 @@ export default function SellerPortal({store,portalId,preview=false,top}:{store:P
           {!b.requests.length&&<p className="portal-empty">No documents requested yet.</p>}
         </section>}
         {!gated&&<MemorandumReview b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
+        {!gated&&<OwnerDataRoom room={room} portalId={portalId} readOnly={readOnly} firm={p.firmName}/>}
         {!gated&&<AboutBusiness b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
         <section id="portal-buyers" className="portal-section"><h2>Interested buyers</h2>
           {b.buyers.length?<div className="portal-buyers">{b.buyers.map(x=><article key={x.id}><div className="portal-buyer-head"><h3>{x.name}</h3><span className={'k-pill '+(x.stage==='Offer made'?'k-pill-green':x.stage==='Under NDA'||x.stage==='Reviewing information'?'k-pill-peri':'')}>{x.stage}</span></div>{x.summary&&<p>{x.summary}</p>}<small>{stageHelp[x.stage]} Updated {fmtDate(x.updatedAt)}.</small></article>)}</div>:<p className="portal-empty">No buyers are listed yet. {p.firmName} adds buyers here as conversations begin.</p>}

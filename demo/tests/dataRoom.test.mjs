@@ -89,3 +89,11 @@ test('the local store returns bytes only after logging, with a watermark for the
   const owner=localDataRoomStore({kind:'public'},{kv:KV,bytes});const rooms=await owner.ownerRooms(['P1']);assert.equal(rooms[0].log[0].entries[0].label,'Buyer 1, owner-operator');
   assert.deepEqual(await owner.ownerRooms(['P2']),[]);
 });
+test('documents get a starting folder, tier and readable name',()=>{
+  assert.deepEqual(D.suggestPlacement('tax-returns.pdf',['Business tax returns for 2023, 2024 and 2025']),{folder:'Financials',tier:'After LOI'});
+  assert.deepEqual(D.suggestPlacement('pl-2025.pdf'),{folder:'Financials',tier:'After NDA'});
+  assert.equal(D.suggestPlacement('team.xlsx',['Team overview']).folder,'Team');
+  assert.equal(D.suggestName('pl-2025.pdf'),'Profit and loss statement, 2025');
+  assert.equal(D.suggestName('tax-returns.pdf'),'Business tax returns');
+  assert.equal(D.suggestName('agreements.csv'),'Agreements');
+});
