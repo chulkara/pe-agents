@@ -49,6 +49,7 @@ create function public.kalling_execution_close(p_transaction uuid,p_revision int
  c=jsonb_build_object('id',(p->>'commandId')::uuid,'version',1,'date',p->>'date','amounts',p->'amounts','evidence',p->'evidence','note',p->>'note','by',kalling_private.actor_name(),'at',now(),'packageRevision',t.revision,'loiVersion',d->'lois'->-1->'version','handover',p->'handover');
  end if;
  d=(d-'closePackage')||jsonb_build_object('state','Closed','closes',d->'closes'||jsonb_build_array(c));
+ if p_action='close' then d=jsonb_set(d,'{cases}',jsonb_build_array(jsonb_build_object('version',1,'title','A completed HVAC acquisition','body','The parties completed an HVAC acquisition. Kalling will prepare a short account of the process only if the seller chooses to take part.','fields',jsonb_build_array('Text only'),'channels',jsonb_build_array('Website'),'rights','Private preparation only. Publication and any third-party permissions require separate review.','status','Draft','createdAt',now(),'createdBy',kalling_private.actor_name())));end if;
  perform kalling_private.execution_save(t,d,case when p_action='close' then 'Acquisition closed' else 'Closing record corrected' end,p->>'note');
  if p_action='close' then
  update public.kalling_listings set status='Sold',updated_at=now() where id=t.listing_id;
