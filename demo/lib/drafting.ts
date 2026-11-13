@@ -131,7 +131,7 @@ export function sourcesFor(key:string,all:Source[],budgetTokens=DEFAULT_BUDGET_T
   for(const s of [...all.filter(s=>s.id.startsWith('F')),...all.filter(s=>!s.id.startsWith('F')&&re.test(s.text))]){const t=s.text.slice(0,2400);if(size+t.length>max)continue;picked.push({...s,text:t});size+=t.length;}return picked;}
 
 // ── Comparable sales ────────────────────────────────────────────────────────────────────────
-export type Comp={id:string;businessType:string;region:string;state:string;year:number;revenue:number;sde:number;price:number;notes:string;source:string;sourceUrl?:string;recordedAt:string;recordedBy:string;status:'confirmed'|'candidate';recurringPct?:number};
+export type Comp={origin?:{kind:'Kalling brokered';transactionId:string;closeVersion:number;reviewVersion:number;metric:'SDE'|'EBITDA';priceBasis:string};id:string;businessType:string;region:string;state:string;year:number;revenue:number;sde:number;price:number;notes:string;source:string;sourceUrl?:string;recordedAt:string;recordedBy:string;status:'confirmed'|'candidate';recurringPct?:number};
 export const compMultiple=(c:Pick<Comp,'price'|'sde'>)=>c.sde>0?Math.round(c.price/c.sde*100)/100:null;
 export type CompSubject={businessType:string;region:string;state:string;revenue:number;sde:number;recurringPct?:number;year:number};
 /** Deterministic similarity: type, place, size and recency. Higher is closer. */
