@@ -25,7 +25,10 @@ create function public.kalling_execution_close(p_transaction uuid,p_revision int
  select * into t from kalling_private.execution_transactions where id=p_transaction for update;r=kalling_private.execution_role(t.id);
  if r is distinct from 'advisor' then raise exception 'Closing review access denied' using errcode='42501';end if;
  if p_action in ('close','correct_close') and coalesce(kalling_private.role_for(t.firm_id),'') not in ('owner','admin') then raise exception 'Only a firm owner or administrator can record completion.' using errcode='42501';end if;
- if p_action='close' and t.state='Closed' then if t.data->'closes'->0->>'id'=p->>'commandId' then return kalling_private.execution_projection(t.id);else raise exception 'This acquisition is already closed. Use a versioned correction.';end if;end if;
+ if p_action='close' and t.state='Closed' then
+ if t.data->'closes'->0->>'id'=p->>'commandId' then
+ if t.data->'closes'->0->>'date' is distinct from p->>'date' or t.data->'closes'->0->>'note' is distinct from p->>'note' or t.data->'closes'->0->'amounts' is distinct from p->'amounts' or t.data->'closes'->0->'evidence' is distinct from p->'evidence' or t.data->'closes'->0->'handover' is distinct from p->'handover' then raise exception 'This close command already completed with different details. Use a versioned correction.';end if;return kalling_private.execution_projection(t.id);
+ else raise exception 'This acquisition is already closed. Use a versioned correction.';end if;end if;
  if t.revision<>p_revision then raise exception 'This transaction changed. Reload before saving.';end if;d=t.data;
  if p_action='prepare_close' then
  if t.state not in ('Planning','LOI reviewed') then raise exception 'This transaction is an archive.';end if;b=kalling_private.execution_blockers(t);if cardinality(b)>0 then raise exception 'Resolve closing blockers: %',array_to_string(b,'; ');end if;
@@ -83,7 +86,7 @@ create unique index execution_file_origin_once on kalling_private.execution_file
 create function public.kalling_execution_file_reuse(p_transaction uuid,p_file uuid,p_kind text,p_content text) returns uuid language plpgsql security definer set search_path='' as $$
  declare t kalling_private.execution_transactions;f public.kalling_portal_files;i uuid=gen_random_uuid();begin
  select * into t from kalling_private.execution_transactions where id=p_transaction for update;select * into f from public.kalling_portal_files where id=p_file;
- if kalling_private.execution_role(t.id) is distinct from 'advisor' or t.state not in ('Planning','LOI reviewed') or f.portal_id is distinct from t.portal_id or f.status<>'stored' or not exists(select 1 from public.kalling_portal_requests r where r.portal_id=t.portal_id and r.status='Accepted' and f.id=any(r.file_ids)) then raise exception 'Reuse an accepted current owner upload for this transaction.';end if;
+ if kalling_private.execution_role(t.id) is distinct from 'advisor' or t.state not in ('Planning','LOI reviewed') or f.portal_id is distinct from t.portal_id or f.status<>'stored' or f.mime<>'application/pdf' or not exists(select 1 from public.kalling_portal_requests r where r.portal_id=t.portal_id and r.status='Accepted' and f.id=any(r.file_ids)) then raise exception 'Reuse an accepted current owner upload for this transaction.';end if;
  if p_kind not in ('LOI','Diligence','Closing evidence','Lease','License','Other') or p_content not in ('Confidential','Named counterparties','Restricted lender') then raise exception 'Choose the purpose and document confidentiality.';end if;
  select id into i from kalling_private.execution_files where transaction_id=t.id and portal_file_id=f.id;if i is not null then return i;end if;i=gen_random_uuid();
  insert into kalling_private.execution_files(id,transaction_id,family,version,object_path,portal_file_id,status,uploaded_by,data) values(i,t.id,gen_random_uuid(),1,f.object_path,f.id,'Stored',auth.uid(),jsonb_build_object('name',f.name,'mime',f.mime,'size',f.size,'sha256',f.sha256,'kind',p_kind,'content',p_content,'uploadedBy','advisor','portalFileId',f.id));

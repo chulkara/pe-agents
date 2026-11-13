@@ -20,9 +20,10 @@ const asDeal=(c:Company)=>c as DealCompany;
 /** Stage for a company. A stored stage wins; older records are mapped from what already exists. */
 export function dealStage(c:Company,ctx:{listing?:Pick<Listing,'status'>;portal?:Pick<Portal,'status'>}={}):SellStage{
   const d=asDeal(c);
+  if(ctx.listing?.status==='Sold')return 'Closed';
   if(d.sellStage&&sellStages.includes(d.sellStage))return d.sellStage;
   const l=ctx.listing?.status;
-  if(l==='Sold')return 'Closed';if(l==='Under LOI')return 'Under LOI';if(l==='Live')return 'Listed';if(l==='Draft')return 'Preparing';
+  if(l==='Under LOI')return 'Under LOI';if(l==='Live')return 'Listed';if(l==='Draft')return 'Preparing';
   if(ctx.portal&&ctx.portal.status!=='Closed')return 'Engaged';
   if(c.status==='Passed')return 'Lost';
   if(c.status==='Interested')return 'Qualified';
@@ -50,14 +51,14 @@ export const stageChecklist:Record<SellStage,string[]>={
   'Preparing':['Review the recast draft and apply the lines you accept','Draft the teaser and pass the anonymity check','Draft the memorandum and get the owner’s approval','Propose the data room to the owner'],
   'Listed':['Review NDA requests within one business day','Publish the data room once the owner approves it','Answer buyer questions and share serious offers'],
   'Under LOI':['Open the after-LOI documents to the buyer','Coordinate the lender and license transition','Track the closing date'],
-  'Closed':['Mark the listing sold','Record the final price as a comparable sale','Ask the owner about a short case study'],
+  'Closed':['Review the agreed post-close document access','Review private analytical authority and comparable evidence','Ask the owner whether they want to approve a case study'],
   'Lost':['Record why the deal stopped','Set a reminder to check back'],
 };
 export const primaryAction:Record<SellStage,{label:string;tab:string}>={
   'Lead':{label:'Qualify',tab:'Overview'},'Qualified':{label:'Prepare engagement letter',tab:'Owner'},
   'Engaged':{label:'Request documents',tab:'Documents'},'Preparing':{label:'Publish listing',tab:'Listing'},
-  'Listed':{label:'Review buyers',tab:'Buyers'},'Under LOI':{label:'Review offers',tab:'Offers'},
-  'Closed':{label:'See the activity',tab:'Activity'},'Lost':{label:'See the activity',tab:'Activity'},
+  'Listed':{label:'Review buyers',tab:'Buyers'},'Under LOI':{label:'Review closing steps',tab:'Closing'},
+  'Closed':{label:'Review close-out',tab:'Closing'},'Lost':{label:'See the activity',tab:'Activity'},
 };
 
 export const defaultInputs:HvacInputs={revenue:0,ownerPay:0,netProfit:0,addBacks:0,maintenancePct:40,agreements:0,commercialPct:15,newConstructionPct:5,technicians:4,ownerRole:'key-relationships',topCustomerPct:10,years:10,trend:'flat',licenseHolder:'owner-only'};

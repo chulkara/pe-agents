@@ -59,7 +59,7 @@ export function listingFor(db:BrokerDb,v:Viewer,l:Listing):Listing&{access:Acces
   need(publicStatuses.includes(l.status),'This listing is not available.');
   const buyer=v.kind==='buyer'?db.buyers.find(b=>b.email===v.email):undefined;
   const req=buyer?db.access.filter(a=>a.listingId===l.id&&a.buyerId===buyer.id).at(-1):undefined;
-  const open=req?.status==='Approved'&&buyer?.status!=='Restricted';
+  const open=['Live','Under LOI'].includes(l.status)&&req?.status==='Approved'&&buyer?.status!=='Restricted';
   return {...l,companyId:undefined,portalId:undefined,confidential:open?l.confidential:{businessName:'',city:'',website:'',details:''},access:req?.status||'None'};
 }
 export function publicListings(db:BrokerDb,v:Viewer){return db.listings.filter(l=>v.kind==='advisor'||publicStatuses.includes(l.status)).map(l=>listingFor(db,v,l)).sort((a,b)=>(a.status==='Sold'?1:0)-(b.status==='Sold'?1:0)||(b.publishedAt||b.createdAt).localeCompare(a.publishedAt||a.createdAt));}
