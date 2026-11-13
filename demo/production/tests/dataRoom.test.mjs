@@ -10,10 +10,15 @@ async function as(user,sql,args=[]){await db.exec('begin;set local role authenti
 const one=async(u,sql,a)=>{const r=await as(u,sql,a);return r[0]?Object.values(r[0])[0]:null;};
 const sup=async(sql,a)=>(await db.query(sql,a)).rows;
 const sha=c=>c.repeat(64);
-const canRead=async(user,path)=>(await as(user,"select count(*)::int n from storage.objects where bucket_id='kalling-portal' and name=$1",[path]))[0].n===1;
+const canRead=async(user,path,operation='object.get_authenticated')=>{
+  await db.exec('begin;set local role authenticated;');
+  try{await db.query("select set_config('request.jwt.claim.sub',$1,true),set_config('storage.operation',$2,true)",[user||'',operation]);
+    const r=await db.query("select count(*)::int n from storage.objects where bucket_id='kalling-portal' and name=$1",[path]);await db.exec('commit;');return r.rows[0].n===1;
+  }catch(e){await db.exec('rollback;');throw e;}
+};
 
 before(async()=>{db=new PGlite();await db.exec(await readFile(new URL('./bootstrap.sql',import.meta.url),'utf8'));
-  for(const f of ['001_foundation.sql','20261108215809_kalling_invitation_rls.sql','003_agent_workers.sql','004_owner_portal.sql','005_brokerage.sql','006_buyer_checks.sql','011_owner_reviews.sql','009_data_room.sql'])await db.exec(await readFile(new URL('../migrations/'+f,import.meta.url),'utf8'));
+  for(const f of ['001_foundation.sql','20261108215809_kalling_invitation_rls.sql','003_agent_workers.sql','004_owner_portal.sql','005_brokerage.sql','006_buyer_checks.sql','011_owner_reviews.sql','009_data_room.sql','20261113032739_kalling_dataroom_revocation.sql'])await db.exec(await readFile(new URL('../migrations/'+f,import.meta.url),'utf8'));
   for(const [id,e] of [[owner,'o@k.test'],[analyst,'a@k.test'],[seller,'pat@russohvac.test'],[alex,'alex@buyer.test'],[sam,'sam@buyer.test']])await db.query('insert into auth.users values($1,$2,now())',[id,e]);
   firm=await one(owner,'select public.kalling_create_firm($1,$2)',['Kalling',{firm:{name:'Kalling'},companies:[{id:'co-1',name:'Russo'}],deals:[],events:[]}]);
   await as(owner,'select public.kalling_brokerage_set_house($1)',[firm]);
@@ -104,4 +109,41 @@ test('a change, a removal or a restriction ends access at once',async()=>{
   await sup("update public.kalling_buyers set status='Registered' where id=$1",[b1]);
   await as(analyst,'select public.kalling_dataroom_set_status($1,$2)',[listing,'Unpublished']);
   assert.equal((await one(alex,'select public.kalling_dataroom_buyer($1)',[listing])).tier,0);
+});
+
+test('a previously issued ticket cannot override current buyer, owner, room or listing permissions',async()=>{
+  await as(analyst,'select public.kalling_dataroom_set_status($1,$2)',[listing,'Published']);
+  const r=await one(alex,'select public.kalling_dataroom_open($1)',[cim.item]);assert.ok(r.ticket);
+  assert.equal(await canRead(alex,cim.path),true);
+  for(const [off,on,args] of [
+    ["update public.kalling_buyers set status='Restricted' where id=$1","update public.kalling_buyers set status='Registered' where id=$1",[b1]],
+    ["update public.kalling_access set status='Declined' where listing_id=$1 and buyer_id=$2","update public.kalling_access set status='Approved' where listing_id=$1 and buyer_id=$2",[listing,b1]],
+    ["update public.kalling_dataroom_rooms set status='Unpublished' where listing_id=$1","update public.kalling_dataroom_rooms set status='Published' where listing_id=$1",[listing]],
+    ["update public.kalling_dataroom_items set owner_status='Pending' where id=$1","update public.kalling_dataroom_items set owner_status='Approved' where id=$1",[cim.item]],
+    ["update public.kalling_dataroom_items set owner_status='Removed' where id=$1","update public.kalling_dataroom_items set owner_status='Approved' where id=$1",[cim.item]],
+    ["update public.kalling_listings set status='Withdrawn' where id=$1","update public.kalling_listings set status='Live' where id=$1",[listing]],
+  ]){await sup(off,args);assert.equal(await canRead(alex,cim.path),false,off);await sup(on,args);assert.equal(await canRead(alex,cim.path),true,on);}
+  await sup('delete from public.kalling_dataroom_loi where listing_id=$1 and buyer_id=$2',[listing,b1]);
+  assert.equal(await canRead(alex,lease.path),false,'an existing after-LOI ticket loses access when the grant is removed');
+});
+test('storage rejects tickets without their exact successful log row or current stored file',async()=>{
+  await sup('delete from kalling_private.dataroom_tickets');
+  const r=await one(alex,'select public.kalling_dataroom_open($1)',[cim.item]);assert.equal(await canRead(alex,cim.path),true);
+  await sup("update public.kalling_dataroom_events set event='denied' where ticket=$1",[r.ticket]);
+  assert.equal(await canRead(alex,cim.path),false,'a refused log cannot authorize file bytes');
+  await sup("update public.kalling_dataroom_events set event='opened' where ticket=$1",[r.ticket]);
+  await sup('update public.kalling_dataroom_items set file_id=$1 where id=$2',[(await sup("select id from public.kalling_portal_files where name='draft.pdf'"))[0].id,cim.item]);
+  assert.equal(await canRead(alex,cim.path),false,'old file ticket does not follow a replacement');
+  await sup('update public.kalling_dataroom_items set file_id=$1 where id=$2',[cim.file,cim.item]);
+  await sup("update public.kalling_portal_files set status='reserved' where id=$1",[cim.file]);
+  assert.equal(await canRead(alex,cim.path),false,'unavailable contents cannot be served');
+  await sup("update public.kalling_portal_files set status='stored' where id=$1",[cim.file]);
+  await sup('delete from public.kalling_dataroom_events where ticket=$1',[r.ticket]);
+  assert.equal(await canRead(alex,cim.path),false,'ticket alone is insufficient');
+  await assert.rejects(as(alex,'select * from kalling_private.dataroom_tickets'),/permission denied/);
+});
+test('a buyer cannot exchange a read ticket for a signed URL or list the bucket',async()=>{
+  await one(alex,'select public.kalling_dataroom_open($1)',[cim.item]);
+  assert.equal(await canRead(alex,cim.path),true);
+  for(const op of ['object.sign','object.sign_many','object.list','object.get_authenticated_info','',null])assert.equal(await canRead(alex,cim.path,op),false,String(op));
 });

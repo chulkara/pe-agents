@@ -52,8 +52,9 @@ export function localDataRoomStore(viewer:Viewer,o:{kv?:KV;bytes?:ByteStore}={})
     async open(itemId,kind='opened'){
       const out=D.openItem(read(),viewer,itemId,kind);write(out.db);if(out.error||!out.ticket||!out.item)throw Error(out.error||'You do not have access to this document.');
       // The ticket is checked again before the bytes are read, as the storage policy does in the cloud.
-      if(!D.ticketValid(out.ticket))throw Error('This viewing session expired. Open the document again.');
+      if(!D.ticketAccess(read(),viewer,out.ticket.id))throw Error('Access changed or this viewing session expired. Open the document again.');
       const blob=await files().get(out.item.fileId);if(!blob)throw Error('This document’s contents are stored in a different browser.');
+      if(!D.ticketAccess(read(),viewer,out.ticket.id))throw Error('Access changed or this viewing session expired. Open the document again.');
       const b=D.buyerOf(read(),viewer)!;return {ticket:out.ticket.id,blob,item:out.item,watermark:D.watermarkText(b.name,b.email)};
     },
     async logPages(t,ev){await apply(db=>D.logEvents(db,viewer,t,ev));},
@@ -85,11 +86,14 @@ export function cloudDataRoomStore(client:SupabaseClient):DataRoomStore{
     async setWeeklySummary(l,on){await call('kalling_dataroom_weekly',{p_listing:l,p_on:on});},
     async buyerRoom(listingId){const r=await call<{tier:0|1|2;items:{id:string;display_name:string;folder:D.Folder;tier:D.Tier;mime:string;allow_download:boolean;note:string;open:boolean}[]}>('kalling_dataroom_buyer',{p_listing:listingId});return {tier:r.tier,items:r.items.map(x=>({id:x.id,displayName:x.display_name,folder:x.folder,tier:x.tier,mime:x.mime,allowDownload:x.allow_download,note:x.note,open:x.open}))};},
     async open(itemId,kind='opened'){
-      // The RPC writes the log row, then returns a ticket the storage policy honors for two minutes.
-      const r=await call<{ticket:string;path:string;name:string;file_name:string;mime:string;allow_download:boolean;watermark:string}>(kind==='downloaded'?'kalling_dataroom_download':'kalling_dataroom_open',{p_item:itemId});
-      const {data,error}=await client.storage.from('kalling-portal').createSignedUrl(r.path,60);if(error||!data)throw Error('Could not open the document: '+(error?.message||'no link'));
-      const res=await fetch(data.signedUrl);if(!res.ok)throw Error('Could not open the document.');
-      return {ticket:r.ticket,blob:await res.blob(),item:{id:itemId,displayName:r.name,mime:r.mime,allowDownload:r.allow_download,fileName:r.file_name},watermark:r.watermark};
+      // Log first, then use an authenticated request so storage rechecks current access.
+      // Signed URLs outlive an approval change and must not be used for buyer documents.
+      const r=await call<{ticket:string;path:string;name:string;file_name:string;mime:string;allow_download:boolean;watermark:string;error?:string}>(kind==='downloaded'?'kalling_dataroom_download':'kalling_dataroom_open',{p_item:itemId});
+      if(r.error)throw Error(r.error);
+      if(!r.ticket||!r.path)throw Error('Could not open the document.');
+      const {data,error}=await client.storage.from('kalling-portal').download(r.path);
+      if(error||!data)throw Error('Could not open the document. Access may have changed; refresh the data room and try again.');
+      return {ticket:r.ticket,blob:data,item:{id:itemId,displayName:r.name,mime:r.mime,allowDownload:r.allow_download,fileName:r.file_name},watermark:r.watermark};
     },
     async logPages(t,ev){await call('kalling_dataroom_events',{p_ticket:t,p_events:ev});},
     async ask(i,pg,body){await call('kalling_dataroom_ask',{p_item:i,p_page:pg,p_body:body});},

@@ -32,18 +32,19 @@ After NDA approval, the listing page shows the data room by folder. After-LOI do
 * **Questions** asked from the viewer are tied to the document and page. The advisor sees "About Confidential memorandum, page 3" in the buyer's thread.
 * **Documents you've opened** on the account page lists the buyer's own history.
 
-## How access is enforced (migration 009)
+## How access is enforced
 
 `production/migrations/009_data_room.sql`:
 
 * Tables for rooms, items, after-LOI grants and view events, plus a private ticket table.
 * `kalling_dataroom_open` and `kalling_dataroom_download` write the event row first, then issue a ticket. A refused open is logged too: the function returns an error instead of raising, so the log row is kept.
-* The storage policy serves a data room file only to the user holding a ticket for that exact file, less than two minutes old. The browser then asks for a signed URL valid for 60 seconds.
+* Migration `20261113032739_kalling_dataroom_revocation.sql` hardens the storage policy. A ticket must belong to the signed-in buyer, name the current stored file, be less than two minutes old, and have its matching successful open or download log. Storage rechecks the listing, room, NDA approval, buyer restriction, owner approval and after-LOI access on every request, including requests made with an existing ticket.
+* The browser uses an authenticated Storage download. The buyer storage policy permits only that operation, so a buyer cannot use a valid ticket to mint a signed link or list the bucket. A denied open stops before requesting file bytes. Previously issued signed links, if any exist in another installation, can remain valid until expiry; apply this change before using real documents.
 * Page events are accepted only with the buyer's own ticket, at most 50 per call and 400 per viewing. Opens are limited to 30 a minute per buyer.
 * A buyer's access is checked on every open: listing Live or Under LOI, room Published, NDA approved, buyer not Restricted, and for after-LOI items an accepted offer or a grant.
 * No IP address, device fingerprint or browser details are stored.
 
-The local demo store (`lib/dataRoomStore.ts`) mirrors the same rules in one browser: it logs before handing out bytes and checks the ticket age before reading the file.
+The local demo store (`lib/dataRoomStore.ts`) mirrors the same rules in one browser: it logs before handing out bytes and checks current access both before and after reading the file.
 
 ## Tests
 
@@ -53,5 +54,5 @@ The local demo store (`lib/dataRoomStore.ts`) mirrors the same rules in one brow
 
 ## Limits and open items
 
-* A watermark discourages sharing; it cannot stop someone photographing a screen.
+* Watermarking happens in the buyer's browser and discourages sharing. It is not a server-side restriction on the original bytes. Access revocation blocks subsequent authorized fetches; it cannot recall bytes already delivered or prevent screen photographs.
 * Scanned documents without a text layer still display in the viewer, but drafts skip them until OCR is added.

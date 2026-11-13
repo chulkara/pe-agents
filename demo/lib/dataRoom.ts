@@ -17,7 +17,7 @@ export type RoomStatus='Draft'|'Proposed'|'Published'|'Unpublished';
 export type Room={listingId:string;portalId:string;status:RoomStatus;proposedAt?:string;publishedAt?:string;weeklySummary?:boolean};
 export type RoomItem={id:string;listingId:string;portalId:string;fileId:string;fileName:string;mime:string;displayName:string;folder:Folder;tier:Tier;allowDownload:boolean;note:string;ownerStatus:'Pending'|'Approved'|'Removed';ownerNote:string;changedAt:string;approvedAt?:string};
 export type ViewEvent={id:string;listingId:string;itemId:string;buyerId:string;event:'opened'|'page'|'downloaded'|'denied';page?:number;seconds?:number;at:string;ticket?:string};
-export type Ticket={id:string;buyerId:string;itemId:string;at:string};
+export type Ticket={id:string;buyerId:string;itemId:string;fileId:string;at:string};
 export type LoiGrant={listingId:string;buyerId:string;note:string;by:string;at:string};
 export type RoomDb={rooms:Room[];roomItems:RoomItem[];views:ViewEvent[];tickets:Ticket[];loiGrants:LoiGrant[]};
 export const emptyRoomDb=():RoomDb=>({rooms:[],roomItems:[],views:[],tickets:[],loiGrants:[]});
@@ -80,10 +80,16 @@ export function openItem(db:FullDb,v:Viewer,itemId:string,kind:'opened'|'downloa
   const ok=visible(it,buyerTier(db,b,it.listingId))&&(kind==='opened'||it.allowDownload);
   const ev:ViewEvent={id:uid(),listingId:it.listingId,itemId:it.id,buyerId:b.id,event:ok?kind:'denied',at:now()};
   if(!ok)return {db:{...db,views:[...r.views,ev]},error:kind==='downloaded'&&visible(it,buyerTier(db,b,it.listingId))?'This document can be viewed but not downloaded.':'You do not have access to this document.'};
-  const ticket:Ticket={id:uid(),buyerId:b.id,itemId:it.id,at:now()};
+  const ticket:Ticket={id:uid(),buyerId:b.id,itemId:it.id,fileId:it.fileId,at:now()};
   return {db:{...db,views:[...r.views,{...ev,ticket:ticket.id}],tickets:[...r.tickets.filter(t=>Date.parse(t.at)>Date.now()-TICKET_SECONDS*1000*30),ticket]},ticket,item:it};
 }
-export const ticketValid=(t:Ticket|undefined,at=Date.now())=>!!t&&at-Date.parse(t.at)<TICKET_SECONDS*1000;
+export const ticketValid=(t:Ticket|undefined,at=Date.now())=>!!t&&at>=Date.parse(t.at)&&at-Date.parse(t.at)<TICKET_SECONDS*1000;
+/** A ticket is a logged request, not a grant that survives a change in permissions. */
+export function ticketAccess(db:FullDb,v:Viewer,id:string,at=Date.now()):boolean{
+  const r=R(db),t=r.tickets.find(x=>x.id===id),b=buyerOf(db,v),it=r.roomItems.find(x=>x.id===t?.itemId);
+  return !!(t&&b&&it&&t.buyerId===b.id&&t.fileId===it.fileId&&ticketValid(t,at)&&visible(it,buyerTier(db,b,it.listingId))&&
+    r.views.some(e=>e.ticket===t.id&&e.buyerId===b.id&&e.itemId===it.id&&e.listingId===it.listingId&&(e.event==='opened'||e.event==='downloaded'&&it.allowDownload)));
+}
 /** Page and time events, only for a ticket this buyer holds, and capped per ticket. */
 export function logEvents(db:FullDb,v:Viewer,ticketId:string,events:{page:number;seconds:number}[]):FullDb{
   const r=R(db),b=buyerOf(db,v),t=r.tickets.find(x=>x.id===ticketId);need(b&&t&&t.buyerId===b.id,'This viewing session is not yours.');

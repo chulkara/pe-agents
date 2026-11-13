@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as D from '../lib/dataRoom.ts';
 import {emptyBrokerDb} from '../lib/brokerage.ts';
-import {localDataRoomStore} from '../lib/dataRoomStore.ts';
+import {localDataRoomStore,cloudDataRoomStore} from '../lib/dataRoomStore.ts';
 import {memoryBytes} from '../lib/portalStore.ts';
 import {LOCAL_BROKER_KEY} from '../lib/brokerStore.ts';
 
@@ -96,4 +96,33 @@ test('documents get a starting folder, tier and readable name',()=>{
   assert.equal(D.suggestName('pl-2025.pdf'),'Profit and loss statement, 2025');
   assert.equal(D.suggestName('tax-returns.pdf'),'Business tax returns');
   assert.equal(D.suggestName('agreements.csv'),'Agreements');
+});
+
+test('local tickets require current permission, the same file, and a successful log',()=>{
+  const {db,cim}=published(),out=D.openItem(db,alex,cim),id=out.ticket.id;
+  assert.equal(D.ticketAccess(out.db,alex,id),true);assert.equal(D.ticketAccess(out.db,sam,id),false);
+  assert.equal(D.ticketAccess({...out.db,views:[]},alex,id),false);
+  assert.equal(D.ticketAccess({...out.db,roomItems:out.db.roomItems.map(i=>i.id===cim?{...i,fileId:'replacement'}:i)},alex,id),false);
+  assert.equal(D.ticketAccess(D.ownerDecide(out.db,[cim],'Removed','Do not share',['P1']),alex,id),false);
+  assert.equal(D.ticketAccess(D.setRoomStatus(out.db,adv,'L1','Unpublished'),alex,id),false);
+  assert.equal(D.ticketAccess({...out.db,access:[]},alex,id),false);
+});
+test('the local store refuses bytes if approval changes while a file is being read',async()=>{
+  const {db,cim}=published(),kv=new Map([[LOCAL_BROKER_KEY,JSON.stringify(db)]]);
+  const KV={getItem:k=>kv.get(k)??null,setItem:(k,v)=>kv.set(k,v)};
+  const bytes={async get(){const current=JSON.parse(kv.get(LOCAL_BROKER_KEY));current.buyers[0].status='Restricted';kv.set(LOCAL_BROKER_KEY,JSON.stringify(current));return new Blob(['private']);}};
+  await assert.rejects(()=>localDataRoomStore(alex,{kv:KV,bytes}).open(cim),/Access changed/);
+});
+test('the cloud store logs first and uses authenticated storage downloads, never signed links',async()=>{
+  const order=[],blob=new Blob(['private']);
+  const client={async rpc(name,args){order.push([name,args]);return {data:{ticket:'t1',path:'P1/f1',name:'Memorandum',file_name:'memo.pdf',mime:'application/pdf',allow_download:false,watermark:'Alex'},error:null};},
+    storage:{from(bucket){assert.equal(bucket,'kalling-portal');return {async download(path){order.push(['download',path]);return {data:blob,error:null};},createSignedUrl(){assert.fail('signed links must not be issued');}};}}};
+  const result=await cloudDataRoomStore(client).open('i1');assert.equal(result.blob,blob);
+  assert.deepEqual(order,[['kalling_dataroom_open',{p_item:'i1'}],['download','P1/f1']]);
+  order.length=0;await cloudDataRoomStore(client).open('i1','downloaded');assert.equal(order[0][0],'kalling_dataroom_download');
+  client.storage.from=()=>({async download(){return {data:null,error:{message:'Forbidden'}};}});
+  await assert.rejects(()=>cloudDataRoomStore(client).open('i1'),/Access may have changed/);
+  client.rpc=async()=>({data:{error:'You do not have access to this document.'},error:null});
+  client.storage.from=()=>assert.fail('a denied open must not request storage');
+  await assert.rejects(()=>cloudDataRoomStore(client).open('i1'),/do not have access/);
 });
