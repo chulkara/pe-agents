@@ -1,12 +1,10 @@
 // The Materials tab: draft history, the memorandum editor and its two approvals, names to keep private.
 import {useContext,useEffect,useMemo,useState} from 'react';
 import type {Company,Workspace} from '../../lib/domain';
-import {makePacket,cimSections,type DraftPacket,type Source,type CimParagraph as DraftParagraph} from '../../lib/drafting';
+import {makePacket,cimSections,stable,type DraftPacket,type Source,type CimParagraph as DraftParagraph} from '../../lib/drafting';
 import {materialsOf,withMaterials,latestDraft,isStale,updateDraft,useAnyway,type CimVersion,type CimSection,type DraftRecord} from '../../lib/materials';
-import {buildSources,assembleCim,releaseProblems,unresolved,reviewSections,companyContext,canShareInDataRoom} from '../../lib/cim';
-import {recastTable} from '../../lib/recastDraft';
+import {buildSources,assembleCim,releaseProblems,unresolved,reviewSections,companyContext,canShareInDataRoom,cimFinancialsCurrent,financialSection} from '../../lib/cim';
 import {recastDiff,type DealCompany} from '../../lib/deals';
-import type {ExtractedLine} from '../../lib/drafting';
 import {textPdf} from '../../lib/pdf';
 import {useDrafts,useInputs,DraftStatus,kindLabel} from './drafts';
 import {PortalContextRef} from '../OwnerPortalAdmin';
@@ -41,8 +39,6 @@ function PrivateNames({c,w,commit,readOnly}:Props){
 
 export function CimPanel({c,w,commit,actor,readOnly}:Props){
   const dc=c as DealCompany,m=materialsOf(c),ctx=useContext(PortalContextRef),{docs,bundle,portalId}=useInputs(c),D=useDrafts(c,w,commit,actor);
-  const recastLines=(m.drafts.find(d=>d.kind==='recast'&&d.status==='applied')?.result as {lines?:ExtractedLine[]}|undefined)?.lines;
-  const years=useMemo(()=>recastLines?recastTable(recastLines):undefined,[recastLines]);
   const sources=useMemo(()=>buildSources({company:dc,answers:bundle?.answers,docs:docs.map(d=>({fileId:d.fileId,name:d.name,kind:d.kind,extract:d.pages.length?{fileId:d.fileId,status:'ok',pages:d.pages,textHash:d.textHash,extractor:'',chars:0,note:'',extractedAt:''}:undefined}))}),[dc,bundle?.answers,docs.map(d=>d.textHash).join()]);// eslint-disable-line react-hooks/exhaustive-deps
   const [packet,setPacket]=useState<DraftPacket|null>(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[msg,setMsg]=useState('');
   const company={id:c.id,name:c.name,region:dc.region||'',state:c.state,industry:c.industry};
@@ -55,32 +51,36 @@ export function CimPanel({c,w,commit,actor,readOnly}:Props){
     if(review.status==='Approved'&&v.status!=='Owner approved')void commit(setVersion(w,c.id,{...v,status:'Owner approved',ownerApproval:{at:review.decidedAt||new Date().toISOString()}}));
     if(review.status==='Changes requested'&&v.status==='Ready for owner')void commit(setVersion(w,c.id,{...v,status:'Changes requested',comments:[...v.comments,...review.comments.map(x=>({section:x.section,by:dc.owner||'Owner',text:x.text,at:x.at,side:'owner' as const}))]}));
   },[review?.status]);// eslint-disable-line react-hooks/exhaustive-deps
-  const problems=v?releaseProblems(v,cimContext(c)):[];
-  async function run(only?:string[]){setBusy(true);setErr('');try{const pk=only?await makePacket('cim',company,{sources,sections:only}):packet;if(!pk)return;await D.start(pk);}catch(e){setErr((e as Error).message);}finally{setBusy(false);}}
+  const sourcesCurrent=!v||stable(v.sources)===stable(sources);
+  const problems=v?[...releaseProblems(v,cimContext(c),c),...(!sourcesCurrent?['Source records changed. Draft all sections again and obtain new approvals.']:[])]:[];
+  async function run(only?:string[]){setBusy(true);setErr('');try{if(only&&v&&(!cimFinancialsCurrent(v,c)||!sourcesCurrent))throw Error('Draft all sections again because the financials or source records changed.');const pk=only?await makePacket('cim',company,{sources,sections:only}):packet;if(!pk)return;await D.start(pk);}catch(e){setErr((e as Error).message);}finally{setBusy(false);}}
   async function use(rec:DraftRecord){const res=rec.result as {sections:Record<string,DraftParagraph[]>;model?:string};const only=Object.keys(res.sections);
-    const next=assembleCim({prev:v,draft:res.sections,draftId:rec.id,inputHash:rec.inputHash,model:res.model,sources,company:dc,years,actor,only:v?only:undefined});
+    const expected=only.length<cimSections.filter(s=>s.by==='model').length?await makePacket('cim',company,{sources,sections:only}):packet;
+    if(!expected||rec.inputHash!==expected.inputHash)throw Error('The source records changed. Request a current memorandum draft.');
+    const next=assembleCim({prev:v,draft:res.sections,draftId:rec.id,inputHash:rec.inputHash,model:res.model,sources,company:dc,actor,only:v?only:undefined});
     let nw=withMaterials(w,c.id,mm=>({...mm,cim:[next,...mm.cim].slice(0,20)}));nw=updateDraft(nw,c.id,rec.id,{status:'applied',decidedAt:new Date().toISOString(),decidedBy:actor});if(await commit(nw))setMsg(`Version ${next.version} created from the draft.`);}
-  const edit=(next:CimVersion)=>commit(setVersion(w,c.id,{...next,status:'Draft',advisorApproval:undefined,ownerApproval:undefined}));
+  const edit=(next:CimVersion)=>commit(setVersion(w,c.id,{...next,status:'Draft',advisorApproval:undefined,ownerApproval:undefined,reviewId:undefined}));
   async function sendToOwner(){if(!v||!portalId||!ctx.store)return;setBusy(true);setErr('');try{const id=await ctx.store.publishReview(portalId,{kind:'cim',version:v.version,title:`Confidential information memorandum, version ${v.version}`,sections:reviewSections(v)});if(await commit(setVersion(w,c.id,{...v,status:'Ready for owner',reviewId:id})))setMsg('Sent to the owner’s portal for review. Nothing is shared with buyers.');}catch(e){setErr((e as Error).message);}finally{setBusy(false);}}
   async function pdf(){if(!v)return;const b=await cimPdfBlob(c,v);const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`Memorandum v${v.version}.pdf`;a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);}
   return <Panel title="Confidential information memorandum" className="cim-panel" action={v&&<StatusPill tone={v.status==='Owner approved'?'green':v.status==='Changes requested'?'warn':v.status==='Draft'?'plain':'peri'}>{`Version ${v.version}: ${v.status}`}</StatusPill>}>
     <p className="adv-muted">The research computer writes each section from {sources.length} numbered sources: Kalling’s records, the owner’s answers, accepted documents and research. Every paragraph lists its sources. Anything without one needs confirmation before release.</p>
     {err&&<p className="error-banner" role="alert">{err}</p>}{D.blocked&&<p className="drf-blocked" role="status">{D.blocked}</p>}
     {!readOnly&&<div className="adv-buttons"><Button tone={v?'plain':'primary'} disabled={busy||!packet||!!D.blocked||d?.status==='queued'} onClick={()=>void run()}>{v?'Draft all sections again':'Draft memorandum'}</Button>{!bundle?.answers&&<span className="adv-muted">The owner has not answered “About your business” yet. The memorandum is better with those answers.</span>}</div>}
-    <DraftStatus d={d} job={d?D.jobs[d.id]:undefined} stale={!!stale} onRetry={()=>void run()} onUseAnyway={readOnly?undefined:n=>void commit(useAnyway(w,c.id,d!.id,n,actor))}/>
-    {pending&&!readOnly&&<div className="adv-note" role="status">A memorandum draft is ready{Object.keys((pending.result as {sections:object}).sections).length<cimSections.filter(s=>s.by==='model').length?' for '+Object.keys((pending.result as {sections:object}).sections).map(k=>cimSections.find(s=>s.key===k)?.title.toLowerCase()).join(', '):''}. <Button tone="primary" onClick={()=>void use(pending)}>Use this draft</Button> <Button tone="quiet" onClick={()=>void commit(updateDraft(w,c.id,pending.id,{status:'dismissed'}))}>Dismiss</Button></div>}
+    <DraftStatus d={d} job={d?D.jobs[d.id]:undefined} stale={!!stale} onRetry={()=>void run()} onUseAnyway={undefined}/>
+    {pending&&!readOnly&&<div className="adv-note" role="status">A memorandum draft is ready{Object.keys((pending.result as {sections:object}).sections).length<cimSections.filter(s=>s.by==='model').length?' for '+Object.keys((pending.result as {sections:object}).sections).map(k=>cimSections.find(s=>s.key===k)?.title.toLowerCase()).join(', '):''}. <Button tone="primary" disabled={!!stale} onClick={()=>void use(pending).catch(e=>setErr((e as Error).message))}>Use this draft</Button> <Button tone="quiet" onClick={()=>void commit(updateDraft(w,c.id,pending.id,{status:'dismissed'}))}>Dismiss</Button></div>}
     <p className="adv-muted" role="status" aria-live="polite">{msg}</p>
     {v&&<>
+      {!readOnly&&(!cimFinancialsCurrent(v,c)||!sourcesCurrent)&&<p className="adv-note">The recast or source records changed. Draft all sections again and obtain new advisor and owner approvals.</p>}
       <div className={'cim-checks '+(problems.length?'bad':'ok')} aria-live="polite"><h3>{problems.length?'Not ready to release':'Ready to release'}</h3>{problems.length?<ul>{problems.map(x=><li key={x}>{x}</li>)}</ul>:<p>Every sentence has a source or a confirmation, and the privacy checks found nothing.</p>}</div>
       {!readOnly&&<div className="adv-buttons">
         {['Draft','Changes requested'].includes(v.status)&&<Button tone="primary" disabled={!!problems.length} onClick={()=>void commit(setVersion(w,c.id,{...v,status:'Advisor approved',advisorApproval:{by:actor,at:new Date().toISOString()}}))}>Approve as advisor</Button>}
         {v.status==='Advisor approved'&&<Button tone="primary" disabled={busy||!portalId} onClick={()=>void sendToOwner()}>Send to owner for review</Button>}
         <Button onClick={()=>void pdf()}>Download PDF</Button>
-        {canShareInDataRoom(v)&&<StatusPill tone="green">Approved by you and the owner. Add it in the Data room tab.</StatusPill>}
+        {canShareInDataRoom(v,c)&&<StatusPill tone="green">Approved by you and the owner. Add it in the Data room tab.</StatusPill>}
       </div>}
       {v.advisorApproval&&<p className="adv-muted">Approved by {v.advisorApproval.by} {dt(v.advisorApproval.at)}.{v.ownerApproval?` Approved by the owner ${dt(v.ownerApproval.at)}.`:''}</p>}
       <div className="cim-sections">{v.sections.map(s=><CimSectionEditor key={s.key+v.version} s={s} v={v} sources={v.sources} readOnly={readOnly||!['Draft','Changes requested','Advisor approved'].includes(v.status)} actor={actor}
-        regenerate={s.by==='model'&&!readOnly?()=>void run([String(s.key)]):undefined} save={next=>void edit(next)}/>)}</div>
+        regenerate={s.by==='model'&&!readOnly&&sourcesCurrent&&cimFinancialsCurrent(v,c)?()=>void run([String(s.key)]):undefined} save={next=>void edit(next)}/>)}</div>
     </>}
   </Panel>;
 }

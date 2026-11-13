@@ -65,7 +65,9 @@ test('the memorandum assembles in order, cites sources, and will not release unc
   assert.deepEqual(v.sections.map(s=>s.key),['cover','summary','history','services','agreements','customers','team','operations','financials','growth','transaction','disclaimers']);
   assert.match(v.sections.find(s=>s.key==='financials').paragraphs[1].text,/SDE \$478,000/);
   const ctx=C.companyContext(c,{customerNames:['Brookside Apartments']});
-  assert.match(C.releaseProblems(v,ctx)[0],/1 sentence needs confirmation/);
+  assert.ok(C.releaseProblems(v,ctx).some(x=>/confirmation/.test(x)));
+  // Advisor-entered financials have no file citations and require explicit confirmation.
+  for(const p of v.sections.find(s=>s.key==='financials').paragraphs)if(p.needsConfirmation)p.confirmedNote='Advisor checked the financial year and figures with the owner.';
   v.sections.find(s=>s.key==='growth').paragraphs[0].confirmedNote='Discussed with the owner on the call.';
   assert.deepEqual(C.releaseProblems(v,ctx),[]);
   v.sections.find(s=>s.key==='history').paragraphs.push({text:'Brookside Apartments is the largest customer. Owner SSN 123-45-6789.',sources:['Q1'],needsConfirmation:false});

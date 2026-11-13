@@ -1,3 +1,4 @@
+import type {RecastReview,ReviewedLine} from './recastDraft.ts';
 // Sell-side deal logic for the advisor workspace: stages, engagement, recast and offer comparison.
 import type {Company,Workspace} from './domain.ts';
 import {estimateHvacValue,sellerDiscretionaryEarnings,type HvacInputs,type Valuation} from './hvacValuation.ts';
@@ -7,7 +8,7 @@ import {requestTemplates,type Portal} from './portal.ts';
 export const sellStages=['Lead','Qualified','Engaged','Preparing','Listed','Under LOI','Closed','Lost'] as const;
 export type SellStage=typeof sellStages[number];
 export type AddBack={id:string;item:string;amount:number;reason:string;evidence:string};
-export type Recast={inputs:HvacInputs;addBacks:AddBack[];askingPrice:number;updatedAt:string;updatedBy:string;version?:number;source?:'manual'|'draft';note?:string};
+export type Recast={inputs:HvacInputs;addBacks:AddBack[];askingPrice:number;updatedAt:string;updatedBy:string;version?:number;source?:'manual'|'draft';note?:string;review?:RecastReview};
 export type DealFields={sellStage?:SellStage;stageChangedAt?:string;recast?:Recast;recastHistory?:Recast[];leadId?:string;region?:Region};
 export type DealCompany=Company&DealFields;
 
@@ -63,13 +64,15 @@ export const defaultInputs:HvacInputs={revenue:0,ownerPay:0,netProfit:0,addBacks
 /** The add-backs table feeds SDE: the sum replaces the single add-backs input. */
 export function recastInputs(r:Pick<Recast,'inputs'|'addBacks'>):HvacInputs{return {...r.inputs,addBacks:r.addBacks.reduce((n,a)=>n+(Number.isFinite(a.amount)?a.amount:0),0)};}
 export function recastValuation(r:Pick<Recast,'inputs'|'addBacks'>):Valuation|null{try{return estimateHvacValue(recastInputs(r));}catch{return null;}}
-export const recastSde=(r:Pick<Recast,'inputs'|'addBacks'>)=>sellerDiscretionaryEarnings(recastInputs(r));
-export function saveRecast(w:Workspace,companyId:string,input:{inputs:HvacInputs;addBacks:(Partial<AddBack>&{item:string;amount:number;reason:string})[];askingPrice:number},actor:string,source:'manual'|'draft'='manual',note=''):Workspace{
+export const recastSde=(r:Pick<Recast,'inputs'|'addBacks'>)=>{const i=recastInputs(r);return (i.netProfit||0)+(i.ownerPay||0)+i.addBacks;};
+export function saveRecast(w:Workspace,companyId:string,input:{inputs:HvacInputs;addBacks:(Partial<AddBack>&{item:string;amount:number;reason:string})[];askingPrice:number;reviewedLines?:ReviewedLine[];sourceDraftId?:string},actor:string,source:'manual'|'draft'='manual',note=''):Workspace{
   const c=w.companies.find(x=>x.id===companyId);need(c,'Company not found.');
-  const addBacks:AddBack[]=input.addBacks.map(a=>({id:a.id||uid(),item:String(a.item||'').trim().slice(0,120),amount:Math.round(Number(a.amount)||0),reason:String(a.reason||'').trim().slice(0,400),evidence:String(a.evidence||'').trim().slice(0,200)})).filter(a=>a.item.length>=2);
+  const addBacks:AddBack[]=input.addBacks.map(a=>({id:a.id||uid(),item:String(a.item||'').trim().slice(0,120),amount:Math.round((Number(a.amount)||0)*100)/100,reason:String(a.reason||'').trim().slice(0,400),evidence:String(a.evidence||'').trim().slice(0,200)})).filter(a=>a.item.length>=2);
   for(const a of addBacks)need(a.reason.length>=5,`Explain why “${a.item}” is added back.`);
   const prev=asDeal(c).recast,version=(prev?.version||(prev?1:0))+1;
-  const recast:Recast={inputs:{...input.inputs},addBacks,askingPrice:Math.max(0,Math.round(Number(input.askingPrice)||0)),updatedAt:now(),updatedBy:actor,version,source,...(note?{note:note.slice(0,300)}:{})};
+  const review=input.reviewedLines?.length&&input.sourceDraftId?{draftId:input.sourceDraftId,year:input.reviewedLines[0].year,by:actor,at:now(),lines:structuredClone(input.reviewedLines)}:undefined;
+  if(review&&review.lines.some(l=>l.year!==review.year))throw Error('Review one financial year at a time.');
+  const recast:Recast={...(review?{review}:{}),inputs:{...input.inputs},addBacks,askingPrice:Math.max(0,Math.round(Number(input.askingPrice)||0)),updatedAt:now(),updatedBy:actor,version,source,...(note?{note:note.slice(0,300)}:{})};
   const history=prev?[{...prev,version:prev.version||1},...(asDeal(c).recastHistory||[])].slice(0,20):asDeal(c).recastHistory;
   return {...w,companies:w.companies.map(x=>x.id===companyId?{...x,recast,...(history?{recastHistory:history}:{})} as DealCompany:x),events:[{id:uid(),text:source==='draft'?`${actor} applied reviewed lines from the document draft to the recast for ${c.name}.`:`${actor} saved the recast for ${c.name}.`,date:now()},...w.events]};
 }

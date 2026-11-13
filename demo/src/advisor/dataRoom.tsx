@@ -29,7 +29,7 @@ export default function DataRoomTab(p:P){
   const b=p.pe.bundle,listing=p.listing,items=r?.items.filter(i=>i.ownerStatus!=='Removed')||[],removed=r?.items.filter(i=>i.ownerStatus==='Removed')||[],status=r?.room?.status||'Draft';
   const inRoom=new Set(items.map(i=>i.fileId));
   const choices:Choice[]=acceptedInputs(b).filter(f=>!inRoom.has(f.fileId)).map(f=>({fileId:f.fileId,fileName:f.name,mime:f.mime,requests:f.requests}));
-  const cim=materialsOf(p.c).cim[0],cimReady=canShareInDataRoom(cim),cimName=cim?`Confidential memorandum, version ${cim.version}`:'';
+  const cim=materialsOf(p.c).cim[0],cimReady=canShareInDataRoom(cim,p.c),cimName=cim?`Confidential memorandum, version ${cim.version}`:'';
   const cimIn=items.some(i=>i.displayName===cimName);
   async function act(fn:()=>Promise<unknown>,done=''){setBusy(true);setErr('');setMsg('');try{await fn();await load();if(done)setMsg(done);}catch(e){setErr((e as Error).message);}finally{setBusy(false);}}
   async function addCim(){const s=portalCtx?.store;if(!s||!cim)throw Error('The owner portal is not connected.');

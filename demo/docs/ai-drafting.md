@@ -4,7 +4,7 @@ The research computer (the Mac worker running a local Qwen model through Ollama)
 
 Ground rules that apply to all four:
 
-* **Every figure has a source.** The model must cite the file, the page and a short excerpt. The excerpt has to appear on that page and contain the amount, or the line is rejected. Anything without a source is shown as "Needs confirmation".
+* **Every figure has a source.** The model must cite the file, the page and a short excerpt. The excerpt has to appear on that page and contain the exact signed amount, matched to cents. The cited year must appear in the excerpt or be unambiguous on the page or file name. Near amounts, reversed signs, missing years and ambiguous year columns are rejected. The browser checks returned recast lines again, including results from older workers. Anything without a source is shown as "Needs confirmation".
 * **Arithmetic happens in code.** The model extracts numbers; `lib/recastDraft.ts` and `lib/cim.ts` do every sum, trend and comparison.
 * **Stale drafts are flagged.** Each draft records a fingerprint of its inputs. If a document, answer or recast changes later, the draft shows "Inputs changed since this draft" with **Run a fresh draft** or **Use anyway** (which needs a note).
 * **Nothing is sent automatically** and no paid service is used.
@@ -33,7 +33,7 @@ When an advisor accepts a document request, the browser reads each file page by 
 
 The table also flags any year where profit and loss differs from the tax return by more than 2%, with both citations. Add-backs with weak support (no document, round numbers, personal items such as family payroll) are marked "Ask the owner" and skipped by **Accept supported, skip the rest**.
 
-**Apply accepted lines** saves a new recast version. Earlier versions stay in the history on the Materials tab with a diff. If the firm has entered a baseline in Firm settings ("Minutes a recast takes by hand"), the confirmation says roughly how much time the draft saved. With no baseline, it says nothing.
+**Apply accepted lines** saves a new recast version with the full accept/skip decisions, the original reported amounts and excerpts, and the applied advisor amounts. Skipped lines remain in review history. The memorandum uses this saved recast, never the raw extraction table. Its financial sources show each file, page and excerpt and distinguish advisor adjustments from reported amounts. Historical extraction rows stay in the proposal table until separately reviewed; they are not released as reviewed financial statements. Losses retain their sign. Manual or legacy recasts without document citations need explicit confirmation before release. An older memorandum, or one whose recast changes, needs a fresh memorandum draft and new advisor and owner approvals. Partial section regeneration is available only while its source snapshot is current. Earlier versions stay in the history on the Materials tab with a diff. If the firm has entered a baseline in Firm settings ("Minutes a recast takes by hand"), the confirmation says roughly how much time the draft saved. With no baseline, it says nothing.
 
 ## Anonymous teaser
 

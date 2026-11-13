@@ -1,7 +1,7 @@
 // Drafting on the research computer: start a draft, follow its progress, review what comes back.
 import {useContext,useEffect,useMemo,useRef,useState} from 'react';
 import type {Company,Workspace} from '../../lib/domain';
-import {makePacket,classifyDoc,supportsDrafting,workerUpdateCommand,validateTeaser,type DraftKind,type DraftPacket,type DocInput,type ExtractedLine} from '../../lib/drafting';
+import {makePacket,checkedRecastLines,classifyDoc,supportsDrafting,workerUpdateCommand,validateTeaser,type DraftKind,type DraftPacket,type DocInput,type ExtractedLine} from '../../lib/drafting';
 import {materialsOf,recordDraft,updateDraft,latestDraft,isStale,useAnyway,type DraftRecord} from '../../lib/materials';
 import {recastTable,mismatches,proposals,applyProposals,trend,type Proposal,type Decision} from '../../lib/recastDraft';
 import {saveRecast,type DealCompany} from '../../lib/deals';
@@ -66,14 +66,15 @@ export function RecastDraftPanel({c,w,commit,actor,readOnly}:{c:Company;w:Worksp
   const [packet,setPacket]=useState<DraftPacket|null>(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[dec,setDec]=useState<Record<string,{decision:Decision;amount?:number}>>({}),[msg,setMsg]=useState('');
   const years=lastFullYears(new Date());
   useEffect(()=>{let live=true;if(!usable.length){setPacket(null);return;}void makePacket('recast',{id:c.id,name:c.name,region:dc.region||'',state:c.state,industry:c.industry},{documents:usable.map(({status:_s,note:_n,...d})=>d),years}).then(p=>{if(live)setPacket(p);});return()=>{live=false;};},[usable.map(d=>d.textHash).join()]);// eslint-disable-line react-hooks/exhaustive-deps
-  const d=latestDraft(D.m,'recast'),res=d?.result as {lines:ExtractedLine[];rejected:number}|undefined,stale=isStale(d,packet?.inputHash);
+  const d=latestDraft(D.m,'recast'),rawResult=d?.result as {lines:ExtractedLine[];rejected:number}|undefined,stale=isStale(d,packet?.inputHash);
+  const res=useMemo(()=>{if(!rawResult)return;const checked=checkedRecastLines(rawResult.lines,usable,years);return {...rawResult,lines:checked.lines,rejected:(Number(rawResult.rejected)||0)+checked.rejected};},[rawResult,usable.map(d=>d.textHash).join()]);// eslint-disable-line react-hooks/exhaustive-deps
   const table=useMemo(()=>res?recastTable(res.lines,years):[],[res]);// eslint-disable-line react-hooks/exhaustive-deps
   const mis=useMemo(()=>res?mismatches(res.lines):[],[res]);
   const props=useMemo(()=>res?proposals(res.lines,docs):[],[res]);// eslint-disable-line react-hooks/exhaustive-deps
   const tr=trend(table);const baseline=w.firm.draftBaselines?.recast;
   async function start(){if(!packet)return;setBusy(true);setErr('');try{await D.start(packet);setDec({});}catch(e){setErr((e as Error).message);}finally{setBusy(false);}}
   async function apply(){if(!d)return;setBusy(true);setErr('');try{const cur=dc.recast||{inputs:{...(await import('../../lib/deals')).defaultInputs},addBacks:[],askingPrice:0,updatedAt:'',updatedBy:''};
-    const next=applyProposals(cur,props,dec);let nw=saveRecast(w,c.id,next,actor,'draft',`From draft ${d.id.slice(-8)}`);nw=updateDraft(nw,c.id,d.id,{status:'applied',decidedAt:new Date().toISOString(),decidedBy:actor});
+    const next=applyProposals(cur,props,dec);let nw=saveRecast(w,c.id,{...next,sourceDraftId:d.id},actor,'draft',`From draft ${d.id.slice(-8)}`);nw=updateDraft(nw,c.id,d.id,{status:'applied',decidedAt:new Date().toISOString(),decidedBy:actor});
     if(await commit(nw))setMsg(`Applied ${Object.values(dec).filter(x=>x.decision==='accept').length} lines to the recast.${baseline?` This draft saved you about ${baseline} minutes.`:''}`);}catch(e){setErr((e as Error).message);}finally{setBusy(false);}}
   const decided=props.filter(p=>dec[p.id]);
   return <Panel title="Draft from documents" className="drf-panel" action={d&&<StatusPill tone={d.status==='ready'?'purple':d.status==='applied'?'green':d.status==='failed'?'warn':'peri'}>{d.status==='ready'?'Ready for review':d.status==='queued'?'Drafting':d.status[0].toUpperCase()+d.status.slice(1)}</StatusPill>}>
@@ -83,7 +84,7 @@ export function RecastDraftPanel({c,w,commit,actor,readOnly}:{c:Company;w:Worksp
     {!readOnly&&<div className="adv-buttons"><Button tone={d?'plain':'primary'} disabled={busy||!packet||!!D.blocked||d?.status==='queued'} onClick={()=>void start()}>{d?'Draft again':'Draft recast'}</Button>{!usable.length&&docs.length>0&&<span className="adv-muted">No readable statements yet.</span>}</div>}
     <DraftStatus d={d} job={d?D.jobs[d.id]:undefined} stale={stale} onRetry={()=>void start()} onUseAnyway={readOnly?undefined:n=>void commit(useAnyway(w,c.id,d!.id,n,actor))}/>
     {res&&d?.status!=='queued'&&<>
-      <h3 className="deal-sub">Recast by year</h3>
+      <h3 className="deal-sub">Extracted figures by year · proposals</h3><p className="adv-muted">This table retains the extraction before your decisions. The memorandum uses the saved recast after your edits and skips.</p>
       <div className="adv-table-wrap"><table className="adv-table"><thead><tr><th>Year</th><th>Revenue</th><th>Net income</th><th>Owner pay</th><th>D, A and I</th><th>Add-backs</th><th>SDE</th><th>Adjusted EBITDA</th></tr></thead><tbody>{table.map(r=><tr key={r.year}><td>{r.year}</td><td className="adv-num">{r.revenue===null?'Not found':money(r.revenue)}</td><td className="adv-num">{r.netIncome===null?'Not found':money(r.netIncome)}</td><td className="adv-num">{money(r.ownerPay)}</td><td className="adv-num">{money(r.depreciation+r.amortization+r.interest)}</td><td className="adv-num">{money(r.addBacks)}</td><td className="adv-num adv-price">{r.sde===null?'Not found':money(r.sde)}</td><td className="adv-num">{r.ebitda===null?'':money(r.ebitda)}</td></tr>)}</tbody></table></div>
       <p className="adv-muted">Three-year trend: revenue {tr.revenuePct===null?'not enough years':`${tr.revenuePct>0?'+':''}${tr.revenuePct}% a year`}, SDE {tr.sdePct===null?'not enough years':`${tr.sdePct>0?'+':''}${tr.sdePct}% a year`}. {res.rejected>0&&`${res.rejected} proposed figure${res.rejected===1?' was':'s were'} dropped because the amount was not on the cited page.`}</p>
       {mis.length>0&&<div className="drf-mismatch" role="note"><strong>Check with the owner</strong><ul>{mis.map(x=><li key={x.year+x.what}>{x.year}: {x.what} differ by {x.diffPct}% ({money(x.pl)} against {money(x.tax)}). <button type="button" className="text-link" onClick={()=>void openCitation(store,bundle?.files||[],x.plCite.fileId,x.plCite.page)}>{x.plCite.name}, page {x.plCite.page}</button> and <button type="button" className="text-link" onClick={()=>void openCitation(store,bundle?.files||[],x.taxCite.fileId,x.taxCite.page)}>{x.taxCite.name}, page {x.taxCite.page}</button></li>)}</ul></div>}
@@ -91,7 +92,7 @@ export function RecastDraftPanel({c,w,commit,actor,readOnly}:{c:Company;w:Worksp
       <div className="adv-table-wrap"><table className="adv-table drf-props"><thead><tr><th>Line</th><th>Amount</th><th>Reason</th><th>Source</th><th>Confidence</th><th><span className="sr-only">Decision</span></th></tr></thead><tbody>
         {props.map(p=><PropRow key={p.id} p={p} dec={dec[p.id]} readOnly={readOnly||d?.status!=='ready'} set={v=>setDec(s=>({...s,[p.id]:v}))} open={()=>void openCitation(store,bundle?.files||[],p.citation.fileId,p.citation.page)}/>)}
       </tbody></table></div>
-      {!readOnly&&d?.status==='ready'&&<div className="adv-buttons"><Button onClick={()=>setDec(Object.fromEntries(props.map(p=>[p.id,{decision:p.support==='Supported'?'accept':'skip' as Decision}])))}>Accept supported, skip the rest</Button><Button tone="primary" disabled={busy||decided.length<props.length||stale} onClick={()=>void apply()}>Apply accepted lines</Button><span className="adv-muted">{decided.length} of {props.length} decided{stale?'. Inputs changed: run a fresh draft or use this one anyway.':''}</span></div>}
+      {!readOnly&&d?.status==='ready'&&<div className="adv-buttons"><Button onClick={()=>setDec(Object.fromEntries(props.map(p=>[p.id,{decision:p.support==='Supported'?'accept':'skip' as Decision}])))}>Accept supported, skip the rest</Button><Button tone="primary" disabled={busy||!props.length||decided.length<props.length||stale} onClick={()=>void apply()}>Apply accepted lines</Button><span className="adv-muted">{decided.length} of {props.length} decided{stale?'. Inputs changed: run a fresh draft or use this one anyway.':''}</span></div>}
       <p className="adv-muted" role="status" aria-live="polite">{msg}</p>
     </>}
   </Panel>;

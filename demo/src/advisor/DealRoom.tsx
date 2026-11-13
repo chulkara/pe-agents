@@ -43,7 +43,7 @@ export default function DealRoom(p:Props){
     const won=to==='Closed'&&listing&&x.d?x.d.offers.find(o=>o.listingId===listing.id&&o.status==='Accepted'):undefined;if(won){const comp=closedDealComp(c,won.price,p.actor);if(!validateComp(comp).length)next=saveComp(next,comp,p.actor);}
    if(await p.commit(next))setMsg(note||`Moved to ${to}.`);}catch(e){setMsg((e as Error).message);}}
   const before=(s:SellStage)=>sellStages.indexOf(stage)<sellStages.indexOf(s)&&stage!=='Lost';
-  const accepted=pe?.bundle?acceptedInputs(pe.bundle).length:0,recastDone=mat.drafts.some(d=>d.kind==='recast'&&d.status==='applied'),teaserDone=mat.drafts.some(d=>d.kind==='teaser'&&d.status==='applied')||!!listing,cimOk=canShareInDataRoom(mat.cim[0]);
+  const accepted=pe?.bundle?acceptedInputs(pe.bundle).length:0,recastDone=mat.drafts.some(d=>d.kind==='recast'&&d.status==='applied'),teaserDone=mat.drafts.some(d=>d.kind==='teaser'&&d.status==='applied')||!!listing,cimOk=canShareInDataRoom(mat.cim[0],c);
   const action=(()=>{const a=primaryAction[stage];
     const letter=currentLetter(pe?.bundle?.letters||[]);
     if(stage==='Lead')return {label:'Qualify',run:()=>{p.setTab('Overview');requestAnimationFrame(()=>document.querySelector('.eng-qualify')?.scrollIntoView({block:'start'}));}};

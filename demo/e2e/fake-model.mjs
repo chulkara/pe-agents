@@ -18,7 +18,7 @@ function recast(input){
     const parts=p.text.split(/(?=Tax year 20\d\d)/);
     for(const part of parts){year=Number((part.match(/(?:December|Tax year)\s+(20\d\d)/)||[])[1])||year;
       for(const [re,field,category,reason] of rules){const m=part.match(new RegExp(re.source+'\\s+([\\d,]+)'));if(!m)continue;
-        lines.push({year,field,label:m[0].replace(/\s+[\d,]+$/,''),amount:Number(m[1].replace(/,/g,'')),page:p.page,excerpt:m[0],...(category?{category,reason}:{})});}
+        lines.push({year,field,label:m[0].replace(/\s+[\d,]+$/,''),amount:Number(m[1].replace(/,/g,'')),page:p.page,excerpt:parts.length>1?part.slice(0,m.index+m[0].length).trim():m[0],...(category?{category,reason}:{})});}
       const legal=part.match(/Legal and professional fees\s+([\d,]+) \(40,000 one-time settlement\)/);
       if(legal)lines.push({year,field:'addBack',label:'Legal and professional fees',amount:40000,page:p.page,excerpt:legal[0],category:'one-time legal',reason:'One-time lawsuit settlement included in legal fees.'});
     }

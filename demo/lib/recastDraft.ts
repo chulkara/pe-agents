@@ -64,9 +64,14 @@ export function proposals(lines:ExtractedLine[],docs:{kind:string}[],year?:numbe
   return out;
 }
 export type Decision='accept'|'skip';
+export type ReviewedLine=Proposal&{decision:Decision;reportedAmount:number};
+export type RecastReview={draftId:string;year:number;by:string;at:string;lines:ReviewedLine[]};
 /** Apply only the accepted lines. Skipped lines never reach the recast. Edited amounts replace the proposal. */
-export function applyProposals(current:Pick<Recast,'inputs'|'addBacks'|'askingPrice'>,props:Proposal[],decisions:Record<string,{decision:Decision;amount?:number}>):{inputs:Recast['inputs'];addBacks:(Omit<AddBack,'id'>&{id?:string})[];askingPrice:number}{
-  const take=props.filter(p=>decisions[p.id]?.decision==='accept').map(p=>({...p,amount:Number.isFinite(decisions[p.id]?.amount)?Math.round(decisions[p.id]!.amount!):p.amount}));
+export function applyProposals(current:Pick<Recast,'inputs'|'addBacks'|'askingPrice'>,props:Proposal[],decisions:Record<string,{decision:Decision;amount?:number}>):{inputs:Recast['inputs'];addBacks:(Omit<AddBack,'id'>&{id?:string})[];askingPrice:number;reviewedLines:ReviewedLine[]}{
+  if(props.some(p=>!decisions[p.id]||!['accept','skip'].includes(decisions[p.id].decision)))throw Error('Review every proposed line before applying the recast.');
+  if(props.some(p=>decisions[p.id].amount!==undefined&&!Number.isFinite(decisions[p.id].amount)))throw Error('Enter a finite amount for every edited line.');
+  const reviewedLines:ReviewedLine[]=props.map(p=>({...p,decision:decisions[p.id].decision,reportedAmount:p.amount,amount:decisions[p.id].amount===undefined?p.amount:Math.round(decisions[p.id].amount!*100)/100}));
+  const take=props.filter(p=>decisions[p.id]?.decision==='accept').map(p=>({...p,amount:Number.isFinite(decisions[p.id]?.amount)?Math.round(decisions[p.id]!.amount!*100)/100:p.amount}));
   const inputs={...current.inputs};
   const rev=take.find(p=>p.target==='revenue');if(rev)inputs.revenue=rev.amount;
   const net=take.find(p=>p.target==='netProfit');if(net)inputs.netProfit=net.amount;
@@ -74,5 +79,5 @@ export function applyProposals(current:Pick<Recast,'inputs'|'addBacks'|'askingPr
   const ev=(p:Proposal)=>`${p.citation.name}, page ${p.citation.page}`;
   const fromDraft=take.filter(p=>p.target==='addBack').map(p=>({item:p.item,amount:p.amount,reason:p.reason.length>=5?p.reason:p.reason+' (from the documents)',evidence:ev(p)}));
   const kept=current.addBacks.filter(a=>!fromDraft.some(d=>d.item===a.item&&d.evidence===a.evidence));
-  return {inputs,addBacks:[...kept,...fromDraft],askingPrice:current.askingPrice};
+  return {inputs,addBacks:[...kept,...fromDraft],askingPrice:current.askingPrice,reviewedLines};
 }
