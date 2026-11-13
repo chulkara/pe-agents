@@ -70,3 +70,9 @@ Without a cloud account, the portal works entirely in one browser. Records are k
 Buyer financing evidence is covered in [buyer verification](buyer-verification.md). Seller badges use the current reviewed version and never include proof documents or buyer identities. NDA access remains a separate advisor decision.
 
 The [offer comparison](offer-comparison.md) shows only exact terms versions shared by an advisor, with current anonymous verification badges. The owner can ask questions or record a preference against that version. Revised offers require fresh sharing and a new owner decision; a preference does not sign or accept an LOI.
+
+## Shared execution and completion
+
+The portal's [execution workspace](deal-execution.md) follows the exact selected offer, externally reviewed LOI, authorized diligence items and closing next steps. Responses, documents and unresolved questions have a responsible person and next action. Uploading a document never resolves a request by itself. Buyer identities stay anonymous unless separately permitted; specialist assignments do not grant document access.
+
+After a reviewed close the owner sees the actual fixed, cash and maximum contingent components separately, the agreed document handover and remaining obligations. The sale stays closed while a later receipt or correction is reviewed. A private case-study draft is optional: the owner decides the exact copy and channels, can request changes or withdraw permission, and receives the same service after declining. Internal comparable analysis needs its own authority. Sellers need neither Terminal nor Ollama.

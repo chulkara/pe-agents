@@ -7,14 +7,14 @@ Buyers who signed a listing's NDA and were approved can read documents the owner
 1. **Add documents.** Choose from the owner's accepted documents, or **Add memorandum** once both the advisor and the owner approved it (this saves a PDF to the owner portal). Each document gets:
    * a name buyers see (suggested from the file name, for example "Profit and loss statement, 2025");
    * a folder: Overview, Financials, Operations, Customers, Team, Legal and licenses, Other;
-   * who can open it: **After NDA**, or **After LOI** (an accepted offer, or an advisor grant with a note);
+   * who can open it: **After NDA**, or **After LOI** (the selected buyer's current externally signed LOI must be reviewed in the canonical execution transaction);
    * **Allow download**, off by default.
 2. **Send to owner for approval.** The owner sees "What buyers will see" in their portal.
 3. **Publish data room.** Possible only when the owner approved every document.
 
 Any change to a document's file, folder, tier or download setting sends it back to the owner. Until they approve again, buyers cannot see it. **Remove** or **Unpublish** ends access at once.
 
-The tab also shows **Most engaged buyers** (documents opened, time reading, last opened, and refused attempts), after-LOI grants, and a weekly summary the advisor can send as a portal message. Nothing is sent automatically, even when the owner asked for weekly summaries.
+The tab also shows **Most engaged buyers** (documents opened, time reading, last opened, and refused attempts), historical after-LOI grants, and a weekly summary the advisor can prepare as a portal message. Historical manual grants no longer unlock the After LOI tier. Nothing is sent automatically, even when the owner asked for weekly summaries.
 
 ## Owner: portal
 
@@ -41,10 +41,12 @@ After NDA approval, the listing page shows the data room by folder. After-LOI do
 * Migration `20261113032739_kalling_dataroom_revocation.sql` hardens the storage policy. A ticket must belong to the signed-in buyer, name the current stored file, be less than two minutes old, and have its matching successful open or download log. Storage rechecks the listing, room, NDA approval, buyer restriction, owner approval and after-LOI access on every request, including requests made with an existing ticket.
 * The browser uses an authenticated Storage download. The buyer storage policy permits only that operation, so a buyer cannot use a valid ticket to mint a signed link or list the bucket. A denied open stops before requesting file bytes. Previously issued signed links, if any exist in another installation, can remain valid until expiry; apply this change before using real documents.
 * Page events are accepted only with the buyer's own ticket, at most 50 per call and 400 per viewing. Opens are limited to 30 a minute per buyer.
-* A buyer's access is checked on every open: listing Live or Under LOI, room Published, NDA approved, buyer not Restricted, and for after-LOI items an accepted offer or a grant.
+* A buyer's access is checked on every open: listing Live or Under LOI, room Published, NDA approved, buyer not Restricted, and for After LOI items the current selected execution transaction and reviewed signed LOI. Phase 5 guards retire the historical accepted-offer/manual-grant shortcut.
 * No IP address, device fingerprint or browser details are stored.
 
 The local demo store (`lib/dataRoomStore.ts`) mirrors the same rules in one browser: it logs before handing out bytes and checks current access both before and after reading the file.
+
+After completion, the original listing/data room no longer supplies broad access. The [execution handover](deal-execution.md) names exact reviewed documents and recipients. Private later receipts can be attached to the closed archive; they are not automatically shared. Hosted behavior requires the ordered Phase 5 migrations, which remain pending activation.
 
 ## Tests
 

@@ -43,15 +43,17 @@ To use a different model, run `install --model qwen3:8b`. Remove the login item 
 
 After pulling repository updates, run `install` again so launchd restarts the new code.
 
-### Updating for drafting (worker 2)
+### Updating for drafting and execution (worker 3)
 
-Drafting the recast, teaser, memorandum and comparable sales needs worker version `kalling-worker-2`. The database refuses drafting work from older workers, and Kalling shows an update notice with this command:
+The current worker is `kalling-worker-3`. It supports the existing research, introduction and sale-material drafts, plus optional execution proposals. The database refuses execution work from older workers. Update the administrator's Mac with:
 
 ```sh
 cd ~/pe-agents/demo && git pull && node --experimental-strip-types scripts/kalling-worker.mjs install
 ```
 
 `status` lists the model used for each kind. The default is the install model. A larger model can be set per kind in `~/.kalling-agent/worker.json`, for example `{"models":{"cim":"qwen3:14b"}}`; allowed models are `qwen3:4b`, `qwen3:8b` and `qwen3:14b`. Pull the model with `ollama pull qwen3:14b` first. See `docs/ai-drafting.md` for what each kind does.
+
+The M1 pilot can retain `qwen3:4b`; the larger model is optional. Execution proposals use reviewed cited passages, not whole original files or restricted lender material. A changed transaction cancels stale work. The model cannot sign, send, change permissions, clear a condition or record completion. Coordination still works while the Mac is offline. See [deal execution](deal-execution.md).
 
 ## Database
 

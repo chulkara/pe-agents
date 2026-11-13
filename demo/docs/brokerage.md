@@ -37,7 +37,7 @@ Stages move on their own at three points: saving a first listing draft moves a d
 * **Confidential details** (name, city, website, company link, details) are kept in a separate table. A buyer can read them only after an advisor approves that buyer's NDA request. Restricted buyers lose access immediately.
 * **Publishing** is blocked if the public text mentions the business name, its city or its website domain, or if required fields are missing.
 * **The NDA** is a per-listing agreement. The buyer signs by typing their exact profile name. The request records the agreement version, the date, and a SHA-256 hash of the exact text.
-* **Offers** must add up: cash at close plus seller note plus earnout must equal the price. Accepting a letter of intent moves the listing to "Under LOI". Buyers can withdraw only their own open offers.
+* **Offers** must add up: cash at close plus seller note plus earnout must equal the indicated total. Share exact versions before recording an owner instruction. That instruction opens Planning; only reviewed external signature evidence moves the listing Under LOI. Buyers can withdraw only their own open offers. Actual closing consideration is separately reconciled in integer cents, with contingent amounts and buyer borrowing kept distinct.
 * **Owner portal link.** When an advisor approves a buyer, or shares an offer with the seller, the linked owner portal is updated. The buyer appears there anonymously, for example "Buyer 1, owner-operator".
 * **Lead limits.** A seller inquiry requires consent and a valid email, and is rate-limited to 3 per email per day and 60 per hour overall.
 

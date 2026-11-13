@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "test:foundation": "node --test production/tests/*.test.mjs",
     "e2e": "node e2e/deal-flow.cjs",
-    "e2e:seller": "node e2e/seller-flow.cjs"
+    "e2e:seller": "node e2e/seller-flow.cjs",
+    "e2e:execution": "node e2e/execution-flow.cjs"
   },
   "dependencies": {
     "@fontsource-variable/zalando-sans": "^5.3.0",
@@ -32,6 +33,7 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
+    "playwright": "1.62.1",
     "typescript": "5.9.3",
     "vite": "8.0.13"
   }

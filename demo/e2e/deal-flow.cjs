@@ -75,17 +75,17 @@ const step=(n,t)=>console.log(`${n}. ${t}`);
   // 9. The buyer makes an offer.
   await site.goto(listingUrl);await site.reload();await site.waitForTimeout(600);await site.locator('.ks-offer select[name=kind]').selectOption('Letter of intent');await site.fill('.ks-offer input[name=price]','1900000');await site.fill('.ks-offer input[name=cashAtClose]','1900000');await site.getByRole('button',{name:'Submit offer'}).click();await site.waitForTimeout(500);step(9,'offer submitted');
 
-  // 10. The advisor shares it, 11. the seller accepts and the stage moves to Under LOI.
+  // 10. The advisor shares the exact offer; 11. the recorded owner instruction opens unconfirmed execution.
   await adv.reload();await adv.waitForSelector('.deal-head h1');await adv.getByRole('button',{name:'Share offer with seller'}).first().click();await adv.waitForTimeout(300);
   assert.match(adv.url(),/\/Offers$/);await shot(adv,'deal-offers-1440');
   await adv.locator('textarea[name=ownerNote]').fill('Fictional offer terms prepared for the seller to discuss.');await adv.getByRole('button',{name:'Share version 1 with seller',exact:true}).click();await adv.waitForSelector('text=Shared with seller');step(10,'offer shared');
-  await adv.locator('textarea[name=instruction]').fill('Fictional owner confirmed version 1 by telephone for this software test.');await adv.getByRole('button',{name:'Record owner instruction for version 1',exact:true}).click();await adv.waitForSelector('text=The deal is now Under LOI');
-  assert.equal(await adv.inputValue('.deal-stage select'),'Under LOI');step(11,'accepted; stage is Under LOI');
+  await adv.locator('textarea[name=instruction]').fill('Fictional owner confirmed version 1 by telephone for this software test.');await adv.getByRole('button',{name:'Record owner instruction for version 1',exact:true}).click();await adv.waitForSelector('text=Owner instruction recorded.');
+  assert.notEqual(await adv.inputValue('.deal-stage select'),'Under LOI');await adv.waitForSelector('text=No execution transaction yet');step(11,'owner instruction recorded; signed LOI remains unconfirmed');
   await owner.reload();await owner.waitForSelector('text=Document requests');assert.match(await owner.locator('body').innerText(),/Offer made/);
 
   // Back button returns to the same Deal Room tab.
   await adv.getByRole('button',{name:'Deals',exact:true}).click();await adv.waitForSelector('.adv-board, .adv-table');await adv.goBack();await adv.waitForSelector('.deal-head h1');
-  assert.match(adv.url(),/\/Offers$/);assert.equal(await adv.getByRole('tab',{selected:true}).innerText(),'Offers');console.log('back button keeps the tab');
+  assert.match(adv.url(),/\/LOI$/);assert.equal(await adv.getByRole('tab',{selected:true}).innerText(),'LOI');console.log('back button keeps the execution tab');
 
   if(OUT){
     await adv.goto(U+'#advisor/deals');await adv.waitForSelector('.adv-board');await shot(adv,'deals-1440',false);
