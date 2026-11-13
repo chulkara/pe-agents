@@ -29,6 +29,15 @@ Changing the owner's email, or closing the portal, removes the earlier owner's a
 
 ## Owner side
 
+What the owner sees depends on where the engagement is:
+
+* **Before signing:** only the engagement letter, to read and sign (`docs/engagement.md`).
+* **After both sides sign:** document requests, next steps, buyers and messages.
+* **Your memorandum:** the confidential memorandum to approve, or to send back with notes on specific sections.
+* **About your business:** five plain questions (history, services, strengths, team, after the sale) that feed the memorandum. Answers save as the owner types.
+* **What buyers will see** and **Who opened what:** the data room documents to approve or keep private, and which anonymous buyers opened each one (`docs/data-room.md`).
+
+
 The portal uses the same design as the public site: the business name at display size with "Prepared by Kalling for" the owner, a purple help panel with the contact, progress figures with a bar (green for complete, periwinkle for sent), requests as an accordion sorted needs a change, in progress, to do, sent, complete, buyer cards with their stage explained, and a message thread where the owner's messages are purple and Kalling's are periwinkle. On a phone it is one column with a bar at the bottom for **Messages** and **Upload**; every control is at least 44px tall.
 
 

@@ -43,6 +43,16 @@ To use a different model, run `install --model qwen3:8b`. Remove the login item 
 
 After pulling repository updates, run `install` again so launchd restarts the new code.
 
+### Updating for drafting (worker 2)
+
+Drafting the recast, teaser, memorandum and comparable sales needs worker version `kalling-worker-2`. The database refuses drafting work from older workers, and Kalling shows an update notice with this command:
+
+```sh
+cd ~/pe-agents/demo && git pull && node --experimental-strip-types scripts/kalling-worker.mjs install
+```
+
+`status` lists the model used for each kind. The default is the install model. A larger model can be set per kind in `~/.kalling-agent/worker.json`, for example `{"models":{"cim":"qwen3:14b"}}`; allowed models are `qwen3:4b`, `qwen3:8b` and `qwen3:14b`. Pull the model with `ollama pull qwen3:14b` first. See `docs/ai-drafting.md` for what each kind does.
+
 ## Database
 
 `production/migrations/003_agent_workers.sql` adds `kalling_agent_jobs`, `kalling_agent_workers` and private token and pairing tables. It has RLS read access for firm members. It also adds bounded RPCs: 10 waiting assignments, 40 per day, 5 computers and 5 open codes per firm, a 120 KB packet limit, and 30-day retention of finished rows. Apply it once, after 001/002. The migration is tested in `production/tests/agentWorkers.test.mjs` with real PostgreSQL (PGlite) under the `anon`/`authenticated` roles. `tests/worker.test.mjs` runs the actual worker against that SQL and a simulated local-only Ollama.
