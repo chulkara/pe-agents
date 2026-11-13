@@ -27,7 +27,7 @@ export const fundsChecks=['Not checked','Requested','Proof of funds received','L
 export type FundsCheck=typeof fundsChecks[number];
 /** Advisor-only record of whether a buyer showed they can pay. Buyers never see it. */
 export type BuyerCheck={buyerId:string;funds:FundsCheck;note:string;checkedAt:string;checkedBy:string};
-export type BrokerDb={listings:Listing[];buyers:Buyer[];access:AccessRequest[];offers:Offer[];questions:Question[];leads:Lead[];checks?:BuyerCheck[]}&import('./buyerVerification.ts').VerificationData&import('./listingAlerts.ts').AlertData&import('./offerVersions.ts').OfferVersionData&import('./lenderPreparation.ts').LenderData;
+export type BrokerDb={listings:Listing[];buyers:Buyer[];access:AccessRequest[];offers:Offer[];questions:Question[];leads:Lead[];checks?:BuyerCheck[]}&import('./buyerVerification.ts').VerificationData&import('./listingAlerts.ts').AlertData&import('./offerVersions.ts').OfferVersionData&import('./lenderPreparation.ts').LenderData&import('./transactions.ts').ExecutionData;
 export type Viewer={kind:'public'}|{kind:'buyer';email:string}|{kind:'advisor';name:string;canWrite:boolean};
 
 export const ndaVersion='kalling-listing-nda-2026-11';
