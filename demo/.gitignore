@@ -4,3 +4,5 @@ dist/
 *.tsbuildinfo
 .DS_Store
 public/pdf.worker.min.mjs
+
+production/supabase/.temp/

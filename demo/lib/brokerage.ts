@@ -1,3 +1,4 @@
+import {validateTerms,shareOffer,acceptOffer,type OfferTerms} from './offerVersions.ts';
 import {checkTeaser,blocking} from './anonymity.ts';
 // Kalling brokerage: sell-side marketplace for NJ/NY HVAC companies.
 // Public visitors see anonymized teasers. Registered buyers sign a listing NDA and request
@@ -17,8 +18,8 @@ export const buyerTypes:BuyerType[]=['Owner-operator','Search fund','Strategic H
 export type Funds='Under $250K'|'$250K to $500K'|'$500K to $1M'|'$1M to $5M'|'Over $5M';
 export const fundBands:Funds[]=['Under $250K','$250K to $500K','$500K to $1M','$1M to $5M','Over $5M'];
 export type Buyer={id:string;email:string;name:string;phone:string;type:BuyerType;company:string;funds:Funds;financing:string[];experience:string;regions:Region[];maxPrice:number;status:'Registered'|'Verified'|'Restricted';advisorNote:string;saved:string[];alerts:boolean;createdAt:string};
-export type AccessRequest={id:string;listingId:string;buyerId:string;status:'Pending'|'Approved'|'Declined'|'Withdrawn';nda:{version:string;textHash:string;signedName:string;signedAt:string};message:string;decisionNote:string;decidedAt?:string;createdAt:string};
-export type Offer={id:string;listingId:string;buyerId:string;kind:'Indication of interest'|'Letter of intent';price:number;cashAtClose:number;sellerNote:number;earnout:number;financing:string;closeDays:number;conditions:string;status:'Submitted'|'Shared with seller'|'Countered'|'Accepted'|'Declined'|'Withdrawn';advisorNote:string;createdAt:string;updatedAt:string};
+export type AccessRequest={id:string;listingId:string;buyerId:string;labelNo?:number;status:'Pending'|'Approved'|'Declined'|'Withdrawn';nda:{version:string;textHash:string;signedName:string;signedAt:string};message:string;decisionNote:string;decidedAt?:string;createdAt:string};
+export type Offer={id:string;listingId:string;buyerId:string;kind:'Indication of interest'|'Letter of intent';price:number;cashAtClose:number;sellerNote:number;earnout:number;financing:string;closeDays:number;conditions:string;status:'Submitted'|'Shared with seller'|'Countered'|'Accepted'|'Declined'|'Withdrawn';advisorNote:string;createdAt:string;updatedAt:string;currentVersion?:number};
 export type Question={id:string;listingId:string;buyerId:string;side:'buyer'|'advisor';author:string;body:string;createdAt:string;itemId?:string;page?:number};
 export type LeadStatus='New'|'Contacted'|'Qualified'|'Engaged'|'Not a fit';
 export type Lead={id:string;createdAt:string;name:string;email:string;phone:string;businessName:string;region:Region;timing:string;message:string;valuation?:Pick<Valuation,'sde'|'low'|'high'|'mid'>&{revenue:number};status:LeadStatus;notes:string;source:'valuation'|'contact'};
@@ -26,7 +27,7 @@ export const fundsChecks=['Not checked','Requested','Proof of funds received','L
 export type FundsCheck=typeof fundsChecks[number];
 /** Advisor-only record of whether a buyer showed they can pay. Buyers never see it. */
 export type BuyerCheck={buyerId:string;funds:FundsCheck;note:string;checkedAt:string;checkedBy:string};
-export type BrokerDb={listings:Listing[];buyers:Buyer[];access:AccessRequest[];offers:Offer[];questions:Question[];leads:Lead[];checks?:BuyerCheck[]};
+export type BrokerDb={listings:Listing[];buyers:Buyer[];access:AccessRequest[];offers:Offer[];questions:Question[];leads:Lead[];checks?:BuyerCheck[]}&import('./buyerVerification.ts').VerificationData&import('./listingAlerts.ts').AlertData&import('./offerVersions.ts').OfferVersionData&import('./lenderPreparation.ts').LenderData;
 export type Viewer={kind:'public'}|{kind:'buyer';email:string}|{kind:'advisor';name:string;canWrite:boolean};
 
 export const ndaVersion='kalling-listing-nda-2026-11';
@@ -112,13 +113,13 @@ export function registerBuyer(db:BrokerDb,email:string,input:Omit<Buyer,'id'|'em
   need(buyerTypes.includes(input.type),'Choose what kind of buyer you are.');need(fundBands.includes(input.funds),'Choose your available funds.');
   need(clean(input.experience,1500).length>=30,'Tell us briefly about your background (at least 30 characters).');
   const old=db.buyers.find(b=>b.email===e);
-  const b:Buyer={id:old?.id||uid(),email:e,name,phone:clean(input.phone,40),type:input.type,company:clean(input.company,160),funds:input.funds,financing:input.financing.map(f=>clean(f,40)).slice(0,5),experience:clean(input.experience,1500),regions:input.regions.filter(r=>regions.includes(r)),maxPrice:Math.max(0,Number(input.maxPrice)||0),status:old?.status||'Registered',advisorNote:old?.advisorNote||'',saved:old?.saved||[],alerts:input.alerts??old?.alerts??true,createdAt:old?.createdAt||now()};
+  const b:Buyer={id:old?.id||uid(),email:e,name,phone:clean(input.phone,40),type:input.type,company:clean(input.company,160),funds:input.funds,financing:input.financing.map(f=>clean(f,40)).slice(0,5),experience:clean(input.experience,1500),regions:input.regions.filter(r=>regions.includes(r)),maxPrice:Math.max(0,Number(input.maxPrice)||0),status:old?.status||'Registered',advisorNote:old?.advisorNote||'',saved:old?.saved||[],alerts:input.alerts??old?.alerts??false,createdAt:old?.createdAt||now()};
   return {...db,buyers:old?db.buyers.map(x=>x===old?b:x):[...db.buyers,b]};
 }
 export const buyerOf=(db:BrokerDb,v:Viewer)=>v.kind==='buyer'?db.buyers.find(b=>b.email===v.email):undefined;
 export function toggleSaved(db:BrokerDb,v:Viewer,listingId:string):BrokerDb{const b=buyerOf(db,v);need(b,'Create a buyer profile to save listings.');return {...db,buyers:db.buyers.map(x=>x===b?{...b,saved:b.saved.includes(listingId)?b.saved.filter(i=>i!==listingId):[...b.saved,listingId]}:x)};}
 export function checkBuyer(db:BrokerDb,v:Viewer,buyerId:string,funds:FundsCheck,note:string):BrokerDb{advisor(v);if(!fundsChecks.includes(funds))throw Error('Choose a verification status.');if(!db.buyers.some(b=>b.id===buyerId))throw Error('Buyer not found.');const c:BuyerCheck={buyerId,funds,note:clean(note,2000),checkedAt:new Date().toISOString(),checkedBy:v.kind==='advisor'?v.name:''};return {...db,checks:[...(db.checks||[]).filter(x=>x.buyerId!==buyerId),c]};}
-export function vetBuyer(db:BrokerDb,v:Viewer,id:string,status:Buyer['status'],note:string):BrokerDb{advisor(v);return {...db,buyers:db.buyers.map(b=>b.id===id?{...b,status,advisorNote:clean(note,2000)}:b)};}
+export function vetBuyer(db:BrokerDb,v:Viewer,id:string,status:Buyer['status'],note:string):BrokerDb{advisor(v);need(status!=='Verified','Review uploaded financing evidence to verify a buyer.');return {...db,buyers:db.buyers.map(b=>b.id===id?{...b,status,advisorNote:clean(note,2000)}:b)};}
 
 export function requestAccess(db:BrokerDb,v:Viewer,listingId:string,signedName:string,agreed:boolean,message:string,textHash:string):BrokerDb{
   const b=buyerOf(db,v);need(b,'Create a buyer profile before requesting details.');need(b.status!=='Restricted','Your account cannot request new listings. Contact Kalling.');
@@ -129,28 +130,32 @@ export function requestAccess(db:BrokerDb,v:Viewer,listingId:string,signedName:s
   const open=db.access.find(a=>a.listingId===listingId&&a.buyerId===b.id&&['Pending','Approved'].includes(a.status));if(open)return db;
   return {...db,access:[...db.access,{id:uid(),listingId,buyerId:b.id,status:'Pending',nda:{version:ndaVersion,textHash,signedName:b.name,signedAt:now()},message:clean(message,1500),decisionNote:'',createdAt:now()}]};
 }
-export function decideAccess(db:BrokerDb,v:Viewer,id:string,status:'Approved'|'Declined',note:string):BrokerDb{advisor(v);const a=db.access.find(x=>x.id===id);need(a,'Request not found.');return {...db,access:db.access.map(x=>x===a?{...a,status,decisionNote:clean(note,1000),decidedAt:now()}:x)};}
+export function stableBuyerLabels(db:BrokerDb):BrokerDb{
+  const rows=db.access.map(a=>({...a}));for(const listing of db.listings){const used=rows.filter(a=>a.listingId===listing.id&&a.labelNo);let n=Math.max(0,...used.map(a=>a.labelNo!));for(const a of rows.filter(a=>a.listingId===listing.id&&a.status==='Approved'&&!a.labelNo))a.labelNo=rows.find(x=>x.listingId===a.listingId&&x.buyerId===a.buyerId&&x.labelNo)?.labelNo||++n;}return {...db,access:rows};
+}
+export function decideAccess(db:BrokerDb,v:Viewer,id:string,status:'Approved'|'Declined',note:string):BrokerDb{advisor(v);db=stableBuyerLabels(db);const a=db.access.find(x=>x.id===id);need(a,'Request not found.');return stableBuyerLabels({...db,access:db.access.map(x=>x===a?{...a,status,decisionNote:clean(note,1000),decidedAt:now()}:x)});}
 function approved(db:BrokerDb,v:Viewer,listingId:string){const b=buyerOf(db,v);need(b&&b.status!=='Restricted','Sign in as an approved buyer.');need(db.access.some(a=>a.listingId===listingId&&a.buyerId===b.id&&a.status==='Approved'),'Sign the NDA and wait for approval before asking questions or making an offer.');return b;}
 export function askQuestion(db:BrokerDb,v:Viewer,listingId:string,body:string,buyerId?:string):BrokerDb{
   const text=clean(body,3000);need(text.length>=2,'Write your question.');
   if(v.kind==='advisor'){advisor(v);need(buyerId,'Choose the buyer.');return {...db,questions:[...db.questions,{id:uid(),listingId,buyerId,side:'advisor',author:v.name,body:text,createdAt:now()}]};}
   const b=approved(db,v,listingId);return {...db,questions:[...db.questions,{id:uid(),listingId,buyerId:b.id,side:'buyer',author:b.name,body:text,createdAt:now()}]};
 }
-export function submitOffer(db:BrokerDb,v:Viewer,listingId:string,o:Pick<Offer,'kind'|'price'|'cashAtClose'|'sellerNote'|'earnout'|'financing'|'closeDays'|'conditions'>):BrokerDb{
+export function submitOffer(db:BrokerDb,v:Viewer,listingId:string,o:OfferTerms):BrokerDb{
   const b=approved(db,v,listingId);const l=db.listings.find(x=>x.id===listingId)!;need(['Live','Under LOI'].includes(l.status),'This listing is not accepting offers.');
-  need(o.price>0,'Enter an offer price.');need(Math.abs(o.cashAtClose+o.sellerNote+o.earnout-o.price)<=1,'Cash at close, seller note and earnout should add up to the offer price.');
+  o=validateTerms(o);
   need(o.closeDays>=14&&o.closeDays<=365,'Choose a closing timeline between 14 and 365 days.');
-  return {...db,offers:[...db.offers,{id:uid(),listingId,buyerId:b.id,kind:o.kind,price:o.price,cashAtClose:o.cashAtClose,sellerNote:o.sellerNote,earnout:o.earnout,financing:clean(o.financing,200),closeDays:o.closeDays,conditions:clean(o.conditions,2000),status:'Submitted',advisorNote:'',createdAt:now(),updatedAt:now()}]};
+  const id=uid(),at=now();return {...db,offers:[...db.offers,{id,listingId,buyerId:b.id,...o,status:'Submitted',advisorNote:'',createdAt:at,updatedAt:at,currentVersion:1}],offerVersions:[...(db.offerVersions||[]),{id:uid(),offerId:id,version:1,terms:o,createdAt:at,legacy:false}]};
 }
 export function updateOffer(db:BrokerDb,v:Viewer,id:string,status:Offer['status'],note:string):BrokerDb{
   const o=db.offers.find(x=>x.id===id);need(o,'Offer not found.');
   if(v.kind==='buyer'){const b=buyerOf(db,v);need(b?.id===o.buyerId&&status==='Withdrawn'&&!['Accepted','Declined'].includes(o.status),'You can only withdraw your own open offer.');}else advisor(v);
+  if(status==='Shared with seller')return shareOffer(db,v,id,o.currentVersion||1,'');
+  if(status==='Accepted')return acceptOffer(db,v,id,o.currentVersion||1,note);
   let next={...db,offers:db.offers.map(x=>x===o?{...o,status,advisorNote:v.kind==='advisor'?clean(note,1500):o.advisorNote,updatedAt:now()}:x)};
-  if(status==='Accepted'&&o.kind==='Letter of intent')next={...next,listings:next.listings.map(l=>l.id===o.listingId&&l.status==='Live'?{...l,status:'Under LOI' as const,updatedAt:now()}:l)};
   return next;
 }
 /** Buyers see only their own activity; advisors see everything. */
-export function buyerActivity(db:BrokerDb,v:Viewer){const b=buyerOf(db,v);if(!b)return null;return {buyer:b,access:db.access.filter(a=>a.buyerId===b.id),offers:db.offers.filter(o=>o.buyerId===b.id),questions:db.questions.filter(q=>q.buyerId===b.id)};}
+export function buyerActivity(db:BrokerDb,v:Viewer){const b=buyerOf(db,v);if(!b)return null;return {buyer:b,access:db.access.filter(a=>a.buyerId===b.id),offers:db.offers.filter(o=>o.buyerId===b.id).map(o=>({...o,advisorNote:''})),questions:db.questions.filter(q=>q.buyerId===b.id)};}
 /** Anonymous label used when an approved buyer appears in the owner's portal. */
-export const anonymousBuyerLabel=(db:BrokerDb,b:Buyer,listingId:string)=>{const n=db.access.filter(a=>a.listingId===listingId&&a.status==='Approved').findIndex(a=>a.buyerId===b.id)+1;return `Buyer ${n||"?"}, ${b.type.toLowerCase()}`;};
-export function matchesBuyBox(b:Buyer,l:Listing){return (!b.regions.length||b.regions.includes(l.region))&&(!b.maxPrice||l.askingPrice<=b.maxPrice*1.1);}
+export const anonymousBuyerLabel=(db:BrokerDb,b:Buyer,listingId:string)=>{const n=stableBuyerLabels(db).access.find(a=>a.listingId===listingId&&a.buyerId===b.id&&a.labelNo)?.labelNo;return `Buyer ${n||"?"}, ${b.type.toLowerCase()}`;};
+export function matchesBuyBox(b:Buyer,l:Listing){return b.regions.length>0&&b.regions.includes(l.region)&&b.maxPrice>0&&l.askingPrice>0&&l.askingPrice<=b.maxPrice&&l.status==='Live';}

@@ -1,6 +1,10 @@
+import {localAlertStore,type AlertStore} from './alertStore.ts';
+import {localOfferVersionStore,type OfferVersionStore} from './offerVersionStore.ts';
+import {localLenderStore,type LenderStore} from './lenderStore.ts';
 import * as B from './brokerage.ts';
 import {sampleListings} from './brokerageSamples.ts';
 import {sha256Hex} from './portal.ts';
+import {localVerificationStore,type VerificationStore} from './verificationStore.ts';
 import type {BrokerDb,Viewer,Listing,Lead,Buyer,BuyerCheck,FundsCheck,AccessRequest,Offer,Question,ListingStatus,LeadStatus} from './brokerage.ts';
 
 export type ViewListing=ReturnType<typeof B.listingFor>;
@@ -9,6 +13,7 @@ export type OfferInput=Parameters<typeof B.submitOffer>[3];
 export type LeadInput=Parameters<typeof B.submitLead>[1];
 export interface BrokerStore{
   mode:'local'|'cloud';viewer:Viewer;
+  lenders:LenderStore;offerDesk:OfferVersionStore;verification:VerificationStore;alerts:AlertStore;
   listings():Promise<ViewListing[]>;
   listing(idOrNumber:string):Promise<ViewListing>;
   submitLead(input:LeadInput):Promise<void>;
@@ -46,7 +51,7 @@ export function localBrokerStore(viewer:Viewer,kv:KV=localStorage):BrokerStore{
   const find=(db:BrokerDb,key:string)=>{const l=db.listings.find(x=>x.id===key||x.number.toLowerCase()===key.toLowerCase());if(!l)throw Error('This listing is not available.');return l;};
   const adv=()=>{if(viewer.kind!=='advisor')throw Error('Only a Kalling advisor can do this.');};
   return {
-    mode:'local',viewer,
+    mode:'local',viewer,lenders:localLenderStore(viewer,kv),offerDesk:localOfferVersionStore(viewer,kv),alerts:localAlertStore(viewer,kv),verification:localVerificationStore(viewer,{kv}),
     async listings(){return B.publicListings(read(),viewer);},
     async listing(key){const db=read();return B.listingFor(db,viewer,find(db,key));},
     async submitLead(input){await apply(db=>B.submitLead(db,input));},

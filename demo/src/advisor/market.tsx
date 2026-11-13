@@ -7,6 +7,8 @@ import {compareOffers,cashShare,recastSde,type DealCompany} from '../../lib/deal
 import type {Company} from '../../lib/domain';
 import {useAdvisor,openOffer} from './data';
 import {Button,StatusPill,EmptyState,Field,Avatar} from '../design/ui';
+import {AdvisorOfferDesk} from '../buyer/Offers';
+import {AdvisorVerification} from '../buyer/Verification';
 
 const dt=(s?:string)=>s?new Date(s).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'';
 export const site=(path:string)=>location.pathname+'#'+path;
@@ -40,10 +42,10 @@ export function BuyerDirectory(){
     {d.buyers.map(b=>{const c=d.checks.find(x=>x.buyerId===b.id),reqs=d.requests.filter(r=>r.buyerId===b.id);return [<tr key={b.id}>
       <td><strong>{b.name}</strong><small>{b.type}{b.company?', '+b.company:''}</small></td><td>{b.funds}</td><td className="adv-num">{b.maxPrice?money(b.maxPrice):'Not set'}</td>
       <td>{reqs.map(r=>d.listings.find(l=>l.id===r.listingId)?.number+' '+r.status.toLowerCase()).join(', ')||'None'}</td>
-      <td><select aria-label={'Status for '+b.name} value={b.status} disabled={busy||!canWrite} onChange={e=>void act(()=>store.vet(b.id,e.target.value as Buyer['status'],b.advisorNote))}><option>Registered</option><option>Verified</option><option>Restricted</option></select></td>
+      <td><select aria-label={'Status for '+b.name} value={b.status} disabled={busy||!canWrite} onChange={e=>void act(()=>store.vet(b.id,e.target.value as Buyer['status'],b.advisorNote))}><option>Registered</option>{b.status==='Verified'&&<option disabled value="Verified">Legacy status, evidence review needed</option>}<option>Restricted</option></select></td>
       <td><StatusPill tone={c?.funds==='Lender pre-qualified'||c?.funds==='Proof of funds received'?'green':c?.funds==='Not sufficient'?'warn':'plain'}>{c?.funds||'Not checked'}</StatusPill></td>
       <td><Button tone="quiet" aria-expanded={open===b.id} onClick={()=>setOpen(open===b.id?'':b.id)}>{open===b.id?'Close':'Verify'}</Button></td></tr>,
-      open===b.id&&<tr key={b.id+'-v'} className="adv-expand"><td colSpan={7}><Verification buyer={b} funds={c?.funds||'Not checked'} note={c?.note||''} checked={c?`Last checked by ${c.checkedBy||'an advisor'} on ${dt(c.checkedAt)}`:'Not checked yet'} disabled={busy||!canWrite} save={(f,n)=>void act(()=>store.check(b.id,f,n))}/></td></tr>];})}
+      open===b.id&&<tr key={b.id+'-v'} className="adv-expand"><td colSpan={7}><AdvisorVerification store={store.verification} buyerId={b.id} readOnly={!canWrite}/>{c&&<details><summary>Historical funds note</summary><p>{c.funds}. {c.note}. This note is not evidence-backed verification.</p></details>}</td></tr>];})}
   </tbody></table></div>;
 }
 function Verification({buyer,funds,note,checked,disabled,save}:{buyer:Buyer;funds:FundsCheck;note:string;checked:string;disabled:boolean;save:(f:FundsCheck,n:string)=>void}){
@@ -57,18 +59,7 @@ function Verification({buyer,funds,note,checked,disabled,save}:{buyer:Buyer;fund
 
 /** Offers for one listing side by side. */
 export function OfferComparison({listing,onAccepted}:{listing:Listing;onAccepted?:(l:Listing)=>void}){
-  const {d,act,busy,canWrite,store,syncPortal}=useAdvisor();const [sel,setSel]=useState('');if(!d)return null;
-  const offers=compareOffers(d.offers.filter(o=>o.listingId===listing.id));
-  if(!offers.length)return <EmptyState title={'No offers on '+listing.number+' yet'}>Approved buyers can make an offer from the listing page. It appears here before the owner sees it.</EmptyState>;
-  const buyer=(id:string)=>d.buyers.find(b=>b.id===id),o=offers.find(x=>x.id===sel)||offers.find(openOffer)||offers[0],b=buyer(o.buyerId);
-  const rows:[string,(o:Offer)=>string][]=[['Price',o=>money(o.price)],['Cash at close',o=>`${money(o.cashAtClose)} (${cashShare(o)}%)`],['Seller note',o=>o.sellerNote?money(o.sellerNote):'None'],['Earnout',o=>o.earnout?money(o.earnout):'None'],['Financing',o=>o.financing||'Not stated'],['Close timeline',o=>o.closeDays+' days'],['Conditions',o=>o.conditions||'None stated'],['Type',o=>o.kind]];
-  return <div className="adv-compare">
-    <div className="adv-table-wrap"><table className="adv-table adv-compare-table"><thead><tr><th scope="col"><span className="sr-only">Term</span></th>{offers.map(x=><th scope="col" key={x.id}><button type="button" className={'adv-offer-head'+(x.id===o.id?' on':'')} aria-pressed={x.id===o.id} onClick={()=>setSel(x.id)}><strong>{buyer(x.buyerId)?.name||'Buyer'}</strong><StatusPill tone={offerTone(x.status)}>{x.status}</StatusPill></button></th>)}</tr></thead>
-      <tbody>{rows.map(([label,f])=><tr key={label}><th scope="row">{label}</th>{offers.map(x=><td key={x.id} className={label==='Price'?'adv-price':''}>{f(x)}</td>)}</tr>)}<tr><th scope="row">Received</th>{offers.map(x=><td key={x.id}>{dt(x.createdAt)}</td>)}</tr></tbody></table></div>
-    {canWrite&&!['Accepted','Declined','Withdrawn'].includes(o.status)?<div className="adv-offer-actions"><h3>{money(o.price)} from {b?.name}</h3>
-      <Decision key={o.id} busy={busy} note={o.advisorNote} buttons={[...(o.status==='Submitted'?[['Share offer with seller','primary','Shared with seller'] as [string,'primary',string]]:[]),['Counter','plain','Countered'],['Seller accepts',o.status==='Submitted'?'plain':'primary','Accepted'],['Decline','quiet','Declined']]} onDecide={(s,note)=>void act(async()=>{await store.setOffer(o.id,s as Offer['status'],note);if(s==='Shared with seller')await syncPortal(listing,b,'Offer made');if(s==='Accepted'){await store.setStatus(listing.id,'Under LOI');onAccepted?.(listing);}})}/>
-      <p className="adv-muted">Sharing adds the offer, without the buyer’s name, to the owner’s portal. Accepting marks the listing under LOI.</p></div>:o.advisorNote?<p className="adv-muted">Note to buyer: {o.advisorNote}</p>:null}
-  </div>;
+  const x=useAdvisor();if(!x.d)return null;return <AdvisorOfferDesk store={x.store} offers={x.d.offers.filter(o=>o.listingId===listing.id)} buyers={x.d.buyers} canWrite={x.canWrite} changed={async(action,id)=>{const o=x.d?.offers.find(o=>o.id===id),b=x.d?.buyers.find(b=>b.id===o?.buyerId);if(action==='share')await x.syncPortal(listing,b,'Offer made');await x.reload();if(action==='accept'&&onAccepted){const l=await x.store.listing(listing.id);if(l.status==='Under LOI')onAccepted(l);}}}/>;
 }
 
 /** Buyer question threads, newest first, with a reply box. */

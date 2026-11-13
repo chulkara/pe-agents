@@ -4,6 +4,11 @@ import {ndaText,regions,focuses,buyerTypes,fundBands,filterListings,regionState,
 import type {ViewListing} from '../../lib/brokerStore';
 import {href,go,useAsync,useSession,Arrow,type Route} from './BrokerSite';
 import {BuyerDataRoom,OpenedHistory} from './DataRoom';
+import {TermsEditor,BuyerOffers} from '../buyer/Offers';
+import {verificationBadge} from '../../lib/buyerVerification';
+import {BuyerLenderPreparation} from '../buyer/LenderPreparation';
+import {BuyerAlerts} from '../buyer/Alerts';
+import {BuyerVerification} from '../buyer/Verification';
 
 /** Listing card: where and what, then the asking price as the headline number. */
 export function Nameplate({l}:{l:ViewListing}){
@@ -108,21 +113,7 @@ function NdaForm({l,name,busy,submit,onCancel}:{l:ViewListing;name:string;busy:b
   </form>;
 }
 function OfferForm({l,busy,submit}:{l:ViewListing;busy:boolean;submit:(o:Parameters<ReturnType<typeof useSession>['store']['offer']>[1])=>void}){
-  const [price,setPrice]=useState(l.askingPrice),[note,setNote]=useState(Math.round(l.askingPrice*0.1)),[earn,setEarn]=useState(0);
-  return <form className="ks-offer" onSubmit={e=>{e.preventDefault();const d=new FormData(e.currentTarget);submit({kind:String(d.get('kind')) as 'Indication of interest',price,cashAtClose:price-note-earn,sellerNote:note,earnout:earn,financing:String(d.get('financing')),closeDays:Number(d.get('closeDays')),conditions:String(d.get('conditions'))});}}>
-    <h2>Make an offer</h2><p className="ks-fine">Start with an indication of interest. Your advisor helps turn it into a letter of intent. Nothing here is binding.</p>
-    <div className="ks-offer-grid">
-      <label className="ks-field"><span>Type</span><select name="kind"><option>Indication of interest</option><option>Letter of intent</option></select></label>
-      <label className="ks-field"><span>Total price</span><input inputMode="numeric" value={price.toLocaleString()} onChange={e=>setPrice(Number(e.target.value.replace(/\D/g,''))||0)}/></label>
-      <label className="ks-field"><span>Seller note</span><input inputMode="numeric" value={note.toLocaleString()} onChange={e=>setNote(Number(e.target.value.replace(/\D/g,''))||0)}/></label>
-      <label className="ks-field"><span>Earnout</span><input inputMode="numeric" value={earn.toLocaleString()} onChange={e=>setEarn(Number(e.target.value.replace(/\D/g,''))||0)}/></label>
-      <p className="ks-offer-cash">Cash at closing: <b>{money(Math.max(0,price-note-earn))}</b></p>
-      <label className="ks-field"><span>Financing</span><select name="financing"><option>SBA 7(a) loan</option><option>Cash</option><option>Conventional bank loan</option><option>Investor capital</option></select></label>
-      <label className="ks-field"><span>Close within</span><select name="closeDays" defaultValue="90"><option value="45">45 days</option><option value="60">60 days</option><option value="90">90 days</option><option value="120">120 days</option></select></label>
-      <label className="ks-field ks-wide"><span>Conditions and transition request</span><textarea name="conditions" rows={2} maxLength={2000} placeholder="Subject to diligence and financing; seller stays 6 months"/></label>
-    </div>
-    <button className="ks-btn ks-btn-primary" disabled={busy||price<=0||note+earn>price}>Submit offer</button>
-  </form>;
+  return <div className="ks-offer"><h2>Make an offer</h2><TermsEditor busy={busy} initial={{kind:'Indication of interest',price:l.askingPrice,cashAtClose:l.askingPrice,sellerNote:0,earnout:0,financing:'',closeDays:90,conditions:''}} submit={submit}/></div>;
 }
 
 export function BuyPage(){
@@ -146,6 +137,7 @@ export function AccountPage({route}:{route:Route}){
   const s=useSession();const res=useAsync(()=>s.store.me(),[s.store]);const next=route.query.get('next')||'';
   const [error,setError]=useState(''),[saved,setSaved]=useState(false);
   const listings=useAsync(()=>s.store.listings(),[s.store]);
+  const proofs=useAsync(()=>s.buyerEmail?s.store.verification.list():Promise.resolve([]),[s.store,s.buyerEmail]);
   if(!s.buyerEmail)return s.client?<CloudSignIn/>:<section className="ks-wrap ks-auth"><h1>Buyer sign in</h1><p>Use your email to save listings, sign NDAs and follow your requests.</p>
     <form onSubmit={e=>{e.preventDefault();s.signIn(String(new FormData(e.currentTarget).get('email')).trim().toLowerCase());}}><label className="ks-field"><span>Email</span><input name="email" type="email" required autoComplete="email" autoFocus/></label><button className="ks-btn ks-btn-primary">Continue</button></form>
     <p className="ks-fine">Demo marketplace: there’s no password and records stay in this browser.</p></section>;
@@ -167,16 +159,16 @@ export function AccountPage({route}:{route:Route}){
       <fieldset className="ks-chips"><legend>How you’d pay</legend>{['SBA 7(a) loan','Cash','Seller note','Investor capital','Conventional bank loan'].map(f=><label key={f}><input type="checkbox" name="financing" value={f} defaultChecked={me?.buyer.financing.includes(f)}/>{f}</label>)}</fieldset>
       <fieldset className="ks-chips"><legend>Regions you’d consider</legend>{regions.map(r=><label key={r}><input type="checkbox" name="regions" value={r} defaultChecked={me?.buyer.regions.includes(r)}/>{r}</label>)}</fieldset>
       <label className="ks-field"><span>Your background</span><textarea name="experience" rows={4} required minLength={30} maxLength={1500} defaultValue={me?.buyer.experience} placeholder="Trade experience, businesses you’ve run, licenses you hold, and who would run the company day to day."/></label>
-      <label className="ks-check"><input type="checkbox" name="alerts" defaultChecked={me?.buyer.alerts??true}/>Tell me about new listings that match</label>
+      <p className="ks-fine">After saving your profile, set explicit email preferences in Listing alerts. Email subscriptions start off.</p>
       {error&&<p className="ks-error" role="alert">{error}</p>}{saved&&<p className="ks-ok" role="status">Profile saved.</p>}
       <div className="ks-actions"><button className="ks-btn ks-btn-primary">Save profile</button>{me&&<a className="ks-link" href={href('/account')}>Cancel</a>}</div>
     </form>:<>
       <div className="ks-account-grid">
         <section><h2>Your requests</h2>{me.access.length?<ul className="ks-offers">{me.access.map(a=>{const l=all.find(x=>x.id===a.listingId);return <li key={a.id}><a href={href('/listings/'+(l?.number||a.listingId))}>{l?.headline||'Listing'}</a><b>{a.status}</b><small>NDA signed {new Date(a.nda.signedAt).toLocaleDateString()}</small></li>;})}</ul>:<p className="ks-empty">No requests yet. Open a listing and sign its NDA to see the details.</p>}</section>
         <section><h2>Saved listings</h2>{me.buyer.saved.length?<div className="ks-plates ks-plates-tight">{all.filter(l=>me.buyer.saved.includes(l.id)).map(l=><Nameplate key={l.id} l={l}/>)}</div>:<p className="ks-empty">Save listings to compare them here.</p>}</section>
-        <section><h2>Matches for you</h2><div className="ks-plates ks-plates-tight">{all.filter(l=>l.status==='Live'&&(!me.buyer.regions.length||me.buyer.regions.includes(l.region))&&(!me.buyer.maxPrice||l.askingPrice<=me.buyer.maxPrice*1.1)).slice(0,4).map(l=><Nameplate key={l.id} l={l}/>)}</div></section>
-        <section><h2>Your profile</h2><p>{me.buyer.type} · {me.buyer.funds} available · {me.buyer.regions.join(', ')||'any region'}</p><p className="ks-fine">Status: {me.buyer.status==='Verified'?'Verified by an advisor':me.buyer.status==='Restricted'?'Restricted. Contact Kalling.':'Profile complete'}</p><a className="ks-btn" href={href('/account?next=profile')}>Edit profile</a></section>
-      </div><OpenedHistory room={s.room}/></>}
+
+        <section><h2>Your profile</h2><p>{me.buyer.type} · {me.buyer.funds} available · {me.buyer.regions.join(', ')||'any region'}</p><p className="ks-fine">Status: {me.buyer.status==='Verified'?'Legacy status. Review financing evidence below.':me.buyer.status==='Restricted'?'Restricted. Contact Kalling.':'Profile complete'}</p><a className="ks-btn" href={href('/account?next=profile')}>Edit profile</a></section>
+      </div><BuyerOffers store={s.store} offers={me.offers} refresh={res.reload}/><BuyerAlerts store={s.store.alerts} listings={all}/><BuyerVerification store={s.store.verification} name={me.buyer.company||me.buyer.name}/><BuyerLenderPreparation store={s.store.lenders} listings={all} verificationRef={verificationBadge(proofs.data?.[0]).status==='Verified'?proofs.data?.[0]?.id:undefined}/><OpenedHistory room={s.room}/></>}
   </section>;
 }
 

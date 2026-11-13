@@ -7,6 +7,8 @@ import {ProgressBar} from './design/ui';
 import OwnerLetter,{SignedLetterLink} from './LetterView';
 import {AboutBusiness,MemorandumReview} from './OwnerReview';
 import OwnerDataRoom from './OwnerDataRoom';
+import {OwnerOfferComparison} from './buyer/Offers';
+import {VerificationPill} from './buyer/Verification';
 import type {DataRoomStore} from '../lib/dataRoomStore';
 
 // In-page links must not change the URL hash, which selects the app.
@@ -64,9 +66,10 @@ export default function SellerPortal({store,portalId,preview=false,top,room}:{st
         </section>}
         {!gated&&<MemorandumReview b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
         {!gated&&<OwnerDataRoom room={room} portalId={portalId} readOnly={readOnly} firm={p.firmName}/>}
+        {!gated&&<OwnerOfferComparison store={store} portalId={portalId} readOnly={readOnly}/>}
         {!gated&&<AboutBusiness b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
         <section id="portal-buyers" className="portal-section"><h2>Interested buyers</h2>
-          {b.buyers.length?<div className="portal-buyers">{b.buyers.map(x=><article key={x.id}><div className="portal-buyer-head"><h3>{x.name}</h3><span className={'k-pill '+(x.stage==='Offer made'?'k-pill-green':x.stage==='Under NDA'||x.stage==='Reviewing information'?'k-pill-peri':'')}>{x.stage}</span></div>{x.summary&&<p>{x.summary}</p>}<small>{stageHelp[x.stage]} Updated {fmtDate(x.updatedAt)}.</small></article>)}</div>:<p className="portal-empty">No buyers are listed yet. {p.firmName} adds buyers here as conversations begin.</p>}
+          {b.buyers.length?<div className="portal-buyers">{b.buyers.map(x=><article key={x.id}><div className="portal-buyer-head"><h3>{x.name}</h3><VerificationPill badge={x.verification}/><span className={'k-pill '+(x.stage==='Offer made'?'k-pill-green':x.stage==='Under NDA'||x.stage==='Reviewing information'?'k-pill-peri':'')}>{x.stage}</span></div>{x.summary&&<p>{x.summary}</p>}<small>{stageHelp[x.stage]} Updated {fmtDate(x.updatedAt)}.</small></article>)}</div>:<p className="portal-empty">No buyers are listed yet. {p.firmName} adds buyers here as conversations begin.</p>}
         </section>
       </main>
       <aside className="portal-side">

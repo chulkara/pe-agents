@@ -67,7 +67,9 @@ test('buyer journey: profile, NDA signature, approval, questions and offers',asy
   await assert.rejects(()=>buyer.offer(l.id,{kind:'Letter of intent',price:3e6,cashAtClose:2e6,sellerNote:5e5,earnout:0,financing:'SBA',closeDays:90,conditions:''}),/add up/);
   await buyer.offer(l.id,{kind:'Letter of intent',price:3e6,cashAtClose:2.5e6,sellerNote:5e5,earnout:0,financing:'SBA 7(a)',closeDays:90,conditions:'Subject to diligence'});
   const [o]=await adv.offers();await assert.rejects(()=>localBrokerStore({kind:'buyer',email:'other@x.co'},k).setOffer(o.id,'Withdrawn',''),/your own/);
-  await adv.setOffer(o.id,'Accepted','Seller accepted.');
+  await assert.rejects(()=>adv.setOffer(o.id,'Accepted','Seller accepted.'),/Share and review/);
+  await adv.offerDesk.share(o.id,1,'Owner-facing terms prepared for review.');
+  await adv.setOffer(o.id,'Accepted','Seller accepted this exact version by telephone.');
   assert.equal((await adv.listing(l.id)).status,'Under LOI');
   const me=await buyer.me();assert.equal(me.offers[0].status,'Accepted');assert.equal(me.access[0].status,'Approved');
   await buyer.toggleSaved(l.id);assert.deepEqual((await buyer.me()).buyer.saved,[l.id]);

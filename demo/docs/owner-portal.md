@@ -66,3 +66,7 @@ The owner opens the link, signs in or creates an account with the invited email,
 ## Local demo
 
 Without a cloud account, the portal works entirely in one browser. Records are kept in local storage and file contents in IndexedDB. **Open as the owner** opens the invitation in a new tab, where the owner enters the invited email instead of a password. This is for demonstration only. Use a cloud firm for real owners.
+
+Buyer financing evidence is covered in [buyer verification](buyer-verification.md). Seller badges use the current reviewed version and never include proof documents or buyer identities. NDA access remains a separate advisor decision.
+
+The [offer comparison](offer-comparison.md) shows only exact terms versions shared by an advisor, with current anonymous verification badges. The owner can ask questions or record a preference against that version. Revised offers require fresh sharing and a new owner decision; a preference does not sign or accept an LOI.

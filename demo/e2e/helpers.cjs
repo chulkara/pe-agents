@@ -2,6 +2,8 @@
 const assert=require('node:assert/strict');
 
 async function submitLead(site,U,o={}){
+  if(!['127.0.0.1','localhost'].includes(new URL(U).hostname))throw Error('Fictional browser tests require a loopback preview.');
+  await site.context().addInitScript(()=>{localStorage.setItem('kalling-marketplace-demo-v1','true');localStorage.setItem('kalling-cloud-disconnected-v1','true');localStorage.removeItem('kalling-cloud-public-config-v1');});
   await site.goto(U+'#/value');await site.waitForTimeout(500);
   await site.fill('input[name=name]',o.name||'Pat Russo');await site.fill('input[name=email]',o.email||'pat@russohvac.test');await site.fill('input[name=businessName]',o.business||'Russo Heating & Air');
   await site.selectOption('select[name=region]',o.region||'Central Jersey');await site.check('input[name=consent]');

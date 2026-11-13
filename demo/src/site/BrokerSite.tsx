@@ -7,6 +7,7 @@ import {cloudBrokerStore,brokerageReady} from '../../lib/brokerCloud';
 import {localDataRoomStore,cloudDataRoomStore,type DataRoomStore} from '../../lib/dataRoomStore';
 import {CONFIG_KEY,DISCONNECTED_KEY,deviceConnection,clientFor} from '../../lib/cloud';
 import type {SupabaseClient} from '@supabase/supabase-js';
+import {UnsubscribeAlerts} from '../buyer/Alerts';
 import {HomePage,SellPage} from './Pages';
 import {ValuePage} from './Valuation';
 import {ListingsPage,ListingPage,BuyPage,AccountPage} from './Market';
@@ -25,15 +26,18 @@ export default function BrokerSite(){
   const [route,setRoute]=useState(parse),[buyerEmail,setBuyer]=useState(getEmail);
   useEffect(()=>{const on=()=>{setRoute(parse());window.scrollTo({top:0});};addEventListener('hashchange',on);return()=>removeEventListener('hashchange',on);},[]);
   // Use the live marketplace when the cloud project has the brokerage tables; otherwise a one-browser demo.
+  const [connectionError,setConnectionError]=useState('');
   const [client,setClient]=useState<SupabaseClient|null>(null),[checked,setChecked]=useState(false),[cloudEmail,setCloudEmail]=useState('');
-  useEffect(()=>{let live=true;void (async()=>{try{const cfg=deviceConnection(localStorage.getItem(CONFIG_KEY),localStorage.getItem(DISCONNECTED_KEY)==='true');if(!cfg)return;const c=await clientFor(cfg);if(!(await brokerageReady(c)))return;const {data}=await c.auth.getUser();if(!live)return;setCloudEmail(data.user?.email_confirmed_at?data.user.email||'':'');c.auth.onAuthStateChange((_e,sess)=>setCloudEmail(sess?.user?.email_confirmed_at?sess.user.email||'':''));setClient(c);}catch{/* demo */}finally{if(live)setChecked(true);}})();return()=>{live=false;};},[]);
+  useEffect(()=>{let live=true;void (async()=>{try{if(localStorage.getItem('kalling-marketplace-demo-v1')==='true')return;const cfg=deviceConnection(localStorage.getItem(CONFIG_KEY),localStorage.getItem(DISCONNECTED_KEY)==='true');if(!cfg)return;const c=await clientFor(cfg);if(!(await brokerageReady(c)))throw Error('The online marketplace has not been activated.');const {data}=await c.auth.getUser();if(!live)return;setCloudEmail(data.user?.email_confirmed_at?data.user.email||'':'');c.auth.onAuthStateChange((_e,sess)=>setCloudEmail(sess?.user?.email_confirmed_at?sess.user.email||'':''));setClient(c);}catch(e){if(live)setConnectionError((e as Error).message||'The online marketplace is unavailable.');}finally{if(live)setChecked(true);}})();return()=>{live=false;};},[]);
   const email=client?cloudEmail:buyerEmail;
   const store=useMemo(()=>client?cloudBrokerStore(client,email?{kind:'buyer',email}:{kind:'public'}):localBrokerStore(email?{kind:'buyer',email}:{kind:'public'}),[client,email]);
   const room=useMemo(()=>client?cloudDataRoomStore(client):localDataRoomStore(email?{kind:'buyer',email}:{kind:'public'}),[client,email]);
   const session:Session={store,room,buyerEmail:email,demo:!client,client,signIn:e=>{try{localStorage.setItem(BUYER_KEY,e);}catch{/* private mode */}setBuyer(e);},signOut:()=>{if(client){void client.auth.signOut();return;}try{localStorage.removeItem(BUYER_KEY);}catch{/* */}setBuyer('');}};
   const [a,b]=route.parts;
+  const chooseDemo=()=>{localStorage.setItem('kalling-marketplace-demo-v1','true');location.reload();};
   let page:ReactNode;
   if(!a)page=<HomePage/>;
+  else if(a==='unsubscribe')page=<UnsubscribeAlerts store={store.alerts} token={route.query.get('token')||''}/>;
   else if(a==='sell')page=<SellPage/>;
   else if(a==='value')page=<ValuePage/>;
   else if(a==='listings'&&b)page=<ListingPage id={b}/>;
@@ -42,11 +46,11 @@ export default function BrokerSite(){
   else if(a==='account')page=<AccountPage route={route}/>;
   else page=<section className="ks-wrap ks-notfound"><h1>That page isn’t here.</h1><p><a href={href('/')}>Go to the home page</a> or <a href={href('/listings')}>browse listings</a>.</p></section>;
   useEffect(()=>{document.title=({'':'Kalling: sell or buy an HVAC company in New Jersey and New York',sell:'Sell your HVAC company | Kalling',value:'What is my HVAC company worth? | Kalling',listings:'HVAC companies for sale in NJ and NY | Kalling',buy:'Buy an HVAC company | Kalling',account:'Your buyer account | Kalling'} as Record<string,string>)[a||'']||'Kalling';},[a]);
+  if(checked&&connectionError&&['account','listings','value','unsubscribe'].includes(a))page=<section className="ks-wrap ks-page-head"><h1>Online marketplace unavailable</h1><p role="alert">{connectionError} Contact Kalling before submitting real information.</p><button className="ks-btn ks-btn-primary" onClick={chooseDemo}>Explore fictional demo</button></section>;
   return <Ctx.Provider value={session}><div className="ks">
     <a className="ks-skip" href="#ks-main" onClick={e=>{e.preventDefault();document.getElementById('ks-main')?.focus();}}>Skip to content</a>
-    {checked&&!client&&<p className="ks-demo-bar">Demo marketplace: listings are samples and anything you enter stays in this browser.</p>}
-    <Header active={a||''}/>
-    <main id="ks-main" tabIndex={-1}>{page}</main>
+    <Header active={a||''}/>{checked&&!client&&<div className="ks-wrap buyer-demo" role="status">{connectionError?<>{connectionError} <button className="ks-link" onClick={chooseDemo}>Explore fictional demo</button></>:<>Fictional local demo. Records stay in this browser. Do not enter real documents or contact information. <button className="ks-link" onClick={()=>{localStorage.removeItem('kalling-marketplace-demo-v1');localStorage.removeItem(DISCONNECTED_KEY);location.reload();}}>Check online marketplace</button></>}</div>}
+    <main id="ks-main" tabIndex={-1}>{checked?page:<section className="ks-wrap ks-page-head"><p role="status">Checking the marketplace connection…</p></section>}</main>
     <Footer/>
   </div></Ctx.Provider>;
 }

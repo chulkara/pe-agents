@@ -21,6 +21,8 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
     async firmPortals(){if(o.side!=='firm'||!o.firmId)return [];return (await rows<PortalRow>(client.from('kalling_portals').select('*').eq('firm_id',o.firmId).order('created_at',{ascending:false}))).map(portal);},
     async myPortals(){return (await rows<PortalRow>(client.from('kalling_portals').select('*').eq('status','Active').order('accepted_at',{ascending:false}))).map(portal);},
     async create(i:CreatePortalInput){return call<string>('kalling_portal_create',{p_firm:o.firmId,p_company:i.companyId,p_business:i.businessName,p_owner_name:i.ownerName,p_owner_email:i.ownerEmail,p_help:i.help,p_welcome:i.welcome||''});},
+    sharedOffers:p_portal=>call('kalling_owner_offers',{p_portal}),
+    offerAction:(p_portal,p_offer,p_version,p_kind,p_message)=>call('kalling_owner_offer_action',{p_portal,p_offer,p_version,p_kind,p_message}),
     async load(id){
       const [p]=await rows<PortalRow>(client.from('kalling_portals').select('*').eq('id',id));if(!p)throw Error('This portal is not available to this account.');
       const [buyers,steps,files,requests,messages,access]=await Promise.all([
@@ -36,8 +38,9 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
       const answers=ansRows[0]?{portalId:id,history:ansRows[0].history,services:ansRows[0].services,strengths:ansRows[0].strengths,team:ansRows[0].team,afterSale:ansRows[0].after_sale,updatedAt:ansRows[0].updated_at}:undefined;
       const reviews=revRows.map((r):OwnerReview=>({id:r.id,portalId:r.portal_id,kind:r.kind,version:r.version,title:r.title,sections:r.sections,status:r.status,comments:r.comments||[],createdAt:r.created_at,decidedAt:r.decided_at||undefined}));
       const letters=await client.from('kalling_portal_letters').select('*').eq('portal_id',id).order('version',{ascending:false}).then(r=>r.error?[]:(r.data as LetterRow[]).map(letter));
+      const badges=await call<Record<string,import('./buyerVerification.ts').VerificationBadge>>('kalling_portal_buyer_badges',{p_portal:id}).catch(()=>({} as Record<string,import('./buyerVerification.ts').VerificationBadge>));
       return {answers,reviews,letters,portal:portal(p),side:o.side,canEdit:o.side==='seller'?p.status==='Active':true,access,
-        buyers:buyers.map(b=>({id:b.id,portalId:b.portal_id,name:b.name,summary:b.summary,stage:b.stage,updatedAt:b.updated_at})),
+        buyers:buyers.map(b=>({id:b.id,portalId:b.portal_id,name:b.name,summary:b.summary,stage:b.stage,updatedAt:b.updated_at,verification:badges[b.name]})),
         steps:steps.map((s):NextStep=>({id:s.id,portalId:s.portal_id,text:s.text,owner:s.owner,due:s.due,done:s.done})),
         files:files.map(file),
         requests:requests.map((r):DocRequest=>({id:r.id,portalId:r.portal_id,title:r.title,needed:r.needed,why:r.why,sharing:r.sharing,contact:r.contact,due:r.due,status:r.status,sellerNote:r.seller_note,reviewNote:r.review_note,fileIds:r.file_ids||[],createdAt:r.created_at,updatedAt:r.updated_at,submittedAt:r.submitted_at||undefined})),

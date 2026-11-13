@@ -1,4 +1,7 @@
+import {sharedOffers,ownerOfferAction,type SharedOffer,type OwnerOfferAction} from './offerVersions.ts';
 import * as P from './portal.ts';
+import {anonymousBuyerLabel,type BrokerDb} from './brokerage.ts';
+import {currentVerification,verificationBadge} from './buyerVerification.ts';
 import type {Extract} from './extract.ts';
 import type {Actor,Contact,Portal,PortalBundle,PortalDb,PortalFile,BuyerStage,Side,Letter,OwnerAnswers} from './portal.ts';
 
@@ -7,6 +10,8 @@ export type RequestInput={id?:string;title:string;needed:string;why:string;shari
 export type UploadResult={file:PortalFile;duplicate:boolean};
 export interface PortalStore{
   mode:'local'|'cloud';side:Side;
+  sharedOffers(portalId:string):Promise<SharedOffer[]>;
+  offerAction(portalId:string,id:string,version:number,kind:OwnerOfferAction['kind'],message:string):Promise<void>;
   listForCompany(companyId:string):Promise<Portal[]>;
   myPortals():Promise<Portal[]>;
   /** Every portal this firm runs, for the workspace's Today and Deals pages. */
@@ -68,12 +73,15 @@ export function localPortalStore(o:{actor:Actor;firmId:string;firmName:string;te
   const apply=async(fn:(db:PortalDb)=>PortalDb)=>{write(fn(read()));};
   const a=o.actor;
   const store={
+    async sharedOffers(id:string){const b=P.bundle(read(),a,id,o.team);let d:BrokerDb;try{d=JSON.parse(kv.getItem('kalling-broker-demo-v1')||'null');}catch{return [];}if(!d)return [];return d.listings.filter(l=>l.companyId===b.portal.companyId).flatMap(l=>sharedOffers(d,l.id));},
+    async offerAction(portalId:string,id:string,version:number,kind:OwnerOfferAction['kind'],message:string){const b=P.bundle(read(),a,portalId,o.team);if(a.side!=='seller')throw Error('Only the owner can record an offer response.');const d=JSON.parse(kv.getItem('kalling-broker-demo-v1')||'null') as BrokerDb;const offer=d?.offers.find(o=>o.id===id),listing=d?.listings.find(l=>l.id===offer?.listingId);if(!listing||listing.companyId!==b.portal.companyId)throw Error('Offer access denied.');const next=ownerOfferAction(d,listing.id,id,version,kind,message);const portalDb=P.postMessage(read(),a,portalId,kind+' for offer version '+version+': '+message+' (Discussion only; not legal acceptance.)');kv.setItem('kalling-broker-demo-v1',JSON.stringify(next));write(portalDb);},
     mode:'local' as const,side:a.side,
     async listForCompany(companyId:string){return read().portals.filter(p=>p.companyId===companyId&&p.firmId===o.firmId).sort((x,y)=>y.createdAt.localeCompare(x.createdAt));},
     async myPortals(){return read().portals.filter(p=>p.ownerEmail===a.email.toLowerCase()&&p.status==='Active');},
     async firmPortals(){if(a.side!=='firm')return [];return read().portals.filter(p=>p.firmId===o.firmId).sort((x,y)=>y.createdAt.localeCompare(x.createdAt));},
     async create(input:CreatePortalInput){const out=P.createPortal(read(),a,{...input,firmId:o.firmId,firmName:o.firmName});write(out.db);return out.id;},
-    async load(id:string){return P.bundle(read(),a,id,o.team);},
+    async load(id:string){const bundle=P.bundle(read(),a,id,o.team);let market:BrokerDb|undefined;try{market=JSON.parse(kv.getItem('kalling-broker-demo-v1')||'null') as BrokerDb;}catch{/* no marketplace yet */}
+      return {...bundle,buyers:bundle.buyers.map(b=>{const listing=market?.listings.find(l=>l.companyId===bundle.portal.companyId);const buyer=listing&&market?.buyers.find(x=>anonymousBuyerLabel(market!,x,listing.id)===b.name);return {...b,verification:buyer?verificationBadge(currentVerification(market!,buyer.id)):{status:'Not reviewed' as const}};})};},
     async update(id:string,patch:Parameters<PortalStore['update']>[1]){await apply(db=>P.updatePortal(db,a,id,patch));},
     async invite(id:string){const out=P.invite(read(),a,id);write(out.db);return out.token;},
     async saveBuyer(portalId:string,b:Parameters<PortalStore['saveBuyer']>[1]){await apply(db=>P.saveBuyer(db,a,portalId,b));},

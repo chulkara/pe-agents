@@ -73,13 +73,13 @@ const step=(n,t)=>console.log(`${n}. ${t}`);
   await shot(owner,'owner-home-1440');
 
   // 9. The buyer makes an offer.
-  await site.goto(listingUrl);await site.reload();await site.waitForTimeout(600);await site.fill('.ks-offer input >> nth=0','1,900,000');await site.getByRole('button',{name:'Submit offer'}).click();await site.waitForTimeout(500);step(9,'offer submitted');
+  await site.goto(listingUrl);await site.reload();await site.waitForTimeout(600);await site.locator('.ks-offer select[name=kind]').selectOption('Letter of intent');await site.fill('.ks-offer input[name=price]','1900000');await site.fill('.ks-offer input[name=cashAtClose]','1900000');await site.getByRole('button',{name:'Submit offer'}).click();await site.waitForTimeout(500);step(9,'offer submitted');
 
   // 10. The advisor shares it, 11. the seller accepts and the stage moves to Under LOI.
   await adv.reload();await adv.waitForSelector('.deal-head h1');await adv.getByRole('button',{name:'Share offer with seller'}).first().click();await adv.waitForTimeout(300);
   assert.match(adv.url(),/\/Offers$/);await shot(adv,'deal-offers-1440');
-  await adv.locator('.adv-offer-actions').getByRole('button',{name:'Share offer with seller'}).click();await adv.waitForSelector('text=Shared with seller');step(10,'offer shared');
-  await adv.getByRole('button',{name:'Seller accepts'}).click();await adv.waitForSelector('text=The deal is now Under LOI');
+  await adv.locator('textarea[name=ownerNote]').fill('Fictional offer terms prepared for the seller to discuss.');await adv.getByRole('button',{name:'Share version 1 with seller',exact:true}).click();await adv.waitForSelector('text=Shared with seller');step(10,'offer shared');
+  await adv.locator('textarea[name=instruction]').fill('Fictional owner confirmed version 1 by telephone for this software test.');await adv.getByRole('button',{name:'Record owner instruction for version 1',exact:true}).click();await adv.waitForSelector('text=The deal is now Under LOI');
   assert.equal(await adv.inputValue('.deal-stage select'),'Under LOI');step(11,'accepted; stage is Under LOI');
   await owner.reload();await owner.waitForSelector('text=Document requests');assert.match(await owner.locator('body').innerText(),/Offer made/);
 
@@ -96,7 +96,7 @@ const step=(n,t)=>console.log(`${n}. ${t}`);
     const m=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});const state=await adv.evaluate(()=>({...localStorage}));
     const mp=await m.newPage();watch(mp,'mobile');await mp.addInitScript(s=>{for(const [k,v] of Object.entries(s))localStorage.setItem(k,v);sessionStorage.setItem('kalling-portal-local-owner','pat@russohvac.test');},state);
     const pages=[['today','#advisor/today'],['deals','#advisor/deals'],['deal-overview','#advisor/deal/'+id+'/Overview'],['deal-recast','#advisor/deal/'+id+'/Valuation%20and%20recast'],['deal-offers','#advisor/deal/'+id+'/Offers'],['owner-home','#owner']];
-    for(const [name,h] of pages){await mp.goto(U+h);await mp.waitForTimeout(900);const over=await mp.evaluate(()=>document.documentElement.scrollWidth>innerWidth);console.log('390px',name,over?'OVERFLOWS':'fits');await shot(mp,name+'-390');}
+    for(const [name,h] of pages){await mp.goto(U+h);await mp.waitForTimeout(900);const over=await mp.evaluate(()=>document.documentElement.scrollWidth>innerWidth);assert.equal(over,false,'Page-wide overflow on '+name+' at 390px');await shot(mp,name+'-390');}
   }
   console.log('errors:',errs.join(' | ')||'none');await b.close();if(errs.length)process.exitCode=1;
 })().catch(e=>{console.error(e);process.exit(1);});

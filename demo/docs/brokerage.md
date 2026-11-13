@@ -78,3 +78,11 @@ Before launch:
 `npm run build`, start `npx vite preview --port 4173`, then `npm run e2e -- <screenshot folder>`. The script runs a sale in the local demo: lead, engagement, recast, a listing blocked by the anonymity check and then published, a buyer NDA, approval in the Deal Room, the anonymous buyer in the owner portal, an offer, sharing it and acceptance moving the deal to Under LOI. It also checks that the back button keeps the Deal Room tab and that key pages fit at 390px.
 
 `npm run e2e:seller -- <screenshot folder>` runs the seller side in 15 steps with a scripted local model: qualify, letter, owner signature and countersignature, uploads, documents read in the browser, recast and teaser drafts with planted mistakes caught, the memorandum blocked until an unsourced sentence is resolved and both approvals are given, publishing, the data room approved by the owner, a buyer viewing with a watermark, the owner's anonymous log, and a restricted buyer refused. It checks for horizontal scrolling at 1024 and 390 pixels. See `docs/ai-drafting.md` and `docs/data-room.md`.
+
+Buyer financing evidence is covered in [buyer verification](buyer-verification.md). Seller badges use the current reviewed version and never include proof documents or buyer identities. NDA access remains a separate advisor decision.
+
+## Phase 4 buyer marketplace
+
+The account includes [buyer verification](buyer-verification.md), [explicit listing alerts](listing-alerts.md), [versioned offer comparison](offer-comparison.md) and [lender preparation](lender-preparation.md). The advisor Buyers page has focused evidence, alert and lender-request queues. Outstanding items also appear in Today. All external communications remain disabled pending SMTP; simulations are labeled and never imply delivery.
+
+Apply existing migrations 003 through 011 in order, then the timestamped data-room revocation migration and the four Phase 4 migrations in timestamp order. The trusted evidence-file function is a separate deployment dependency. Do not rerun foundation migrations or the scheduler on an existing foundation-only project.
