@@ -4,6 +4,8 @@ Mission: Kalling helps a small acquisition team find, evaluate, acquire, and ope
 
 ## Activation state
 
+**November 14, 2026:** all remaining migrations are applied. Hosted PostgreSQL rollback checks and eight unauthenticated HTTPS checks passed. Real authenticated file transport is still pending confirmed fictional accounts; the brokerage house remains unset and public intake is unavailable. See [the current validation report](../docs/hosted-validation.md) and [migration ledger](activation/2026-11-14.json). This supersedes the earlier activation notes below.
+
 This folder contains executable PostgreSQL migrations and isolation/queue tests. The frontend exposes **Accounts & cloud** in the sidebar. The Kalling Free project is now provisioned and the foundation tables, private bucket and database scheduler are active. The hosted app includes only its public connection settings. Account creation, original-file transport and a nonempty background job still need an authenticated end-to-end acceptance test. The GitHub Pages demo continues working locally without any project or credentials. Never describe publishing the frontend as activating the backend.
 
 ## Zero-cost architecture

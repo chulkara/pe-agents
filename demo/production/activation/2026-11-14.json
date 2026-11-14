@@ -1,0 +1,294 @@
+{
+  "date": "2026-11-14",
+  "project": "ymbciapnzdmymtthevjp",
+  "source_commit": "1d1ad93195d974483aa2694518ef15898cc2fd81",
+  "migrations": [
+    {
+      "version": "20261113154556",
+      "name": "kalling_agent_workers"
+    },
+    {
+      "version": "20261114175840",
+      "name": "kalling_owner_portal_004"
+    },
+    {
+      "version": "20261114180133",
+      "name": "kalling_brokerage_005"
+    },
+    {
+      "version": "20261114180139",
+      "name": "kalling_buyer_checks_006"
+    },
+    {
+      "version": "20261114180332",
+      "name": "kalling_drafting_jobs_007"
+    },
+    {
+      "version": "20261114181009",
+      "name": "kalling_listing_anonymity_008"
+    },
+    {
+      "version": "20261114181027",
+      "name": "kalling_data_room_009"
+    },
+    {
+      "version": "20261114181048",
+      "name": "kalling_engagement_letters_010"
+    },
+    {
+      "version": "20261114181057",
+      "name": "kalling_owner_reviews_011"
+    },
+    {
+      "version": "20261114181148",
+      "name": "kalling_invitation_rls"
+    },
+    {
+      "version": "20261114181154",
+      "name": "kalling_dataroom_revocation"
+    },
+    {
+      "version": "20261114181202",
+      "name": "kalling_buyer_verification"
+    },
+    {
+      "version": "20261114181931",
+      "name": "kalling_listing_alerts"
+    },
+    {
+      "version": "20261114181937",
+      "name": "kalling_offer_versions"
+    },
+    {
+      "version": "20261114182110",
+      "name": "kalling_lender_preparation"
+    },
+    {
+      "version": "20261114182121",
+      "name": "kalling_execution_transactions"
+    },
+    {
+      "version": "20261114182127",
+      "name": "kalling_shared_diligence"
+    },
+    {
+      "version": "20261114182133",
+      "name": "kalling_closing_timeline"
+    },
+    {
+      "version": "20261114182139",
+      "name": "kalling_controlled_close"
+    },
+    {
+      "version": "20261114182145",
+      "name": "kalling_case_study_permissions"
+    },
+    {
+      "version": "20261114182152",
+      "name": "kalling_internal_comparables"
+    },
+    {
+      "version": "20261114182200",
+      "name": "kalling_execution_handover_and_guards"
+    },
+    {
+      "version": "20261114182205",
+      "name": "kalling_execution_draft_jobs"
+    }
+  ],
+  "edge_function": {
+    "id": "3095df4f-bb41-4f66-9f93-6ed1b82086c0",
+    "name": "kalling-verification-file",
+    "status": "ACTIVE",
+    "version": 1,
+    "verify_jwt": true,
+    "ezbr_sha256": "893655d3605a7b3794c36a8221b2a13109808eb05022785411ae58e3c62822ac"
+  },
+  "checks": {
+    "hosted_database_policy_smoke": "passed",
+    "retained_test_fixtures": false,
+    "doctor_http_checks": 8,
+    "actual_authenticated_transport": "pending",
+    "reason": "Confirmed fictional Auth accounts are not yet provisioned; dashboard sign-in requires approval for the selected identity-provider transition."
+  },
+  "launch_holds": [
+    "Attorney review",
+    "Brokerage licensing",
+    "Fee decision",
+    "SMTP",
+    "Real contact details and public launch setup"
+  ],
+  "no_brokerage_house_configured": true,
+  "new_firm_count": 0,
+  "migration_sources": [
+    {
+      "file": "003_agent_workers.sql",
+      "migration_name": "kalling_agent_workers",
+      "sha256": "9c029979a305e8bf98afe91f1d1f208af1d7b4bd5813f660670af7f508be9753"
+    },
+    {
+      "file": "004_owner_portal.sql",
+      "migration_name": "kalling_owner_portal_004",
+      "sha256": "de4667821f2794edbeada91c5e76aef48b7fae77af629d9b74a87806cf4191fc"
+    },
+    {
+      "file": "005_brokerage.sql",
+      "migration_name": "kalling_brokerage_005",
+      "sha256": "99a46a467746389e5aa5c74552eda6948723eb5b31b45a9714c47b93c93508d2"
+    },
+    {
+      "file": "006_buyer_checks.sql",
+      "migration_name": "kalling_buyer_checks_006",
+      "sha256": "265bf085be89b457fdb3eec4108a4e6fd886ca18c796c290ac68e66f4ae52bb2"
+    },
+    {
+      "file": "007_drafting_jobs.sql",
+      "migration_name": "kalling_drafting_jobs_007",
+      "sha256": "6b10d8a56ef1c3b5885c38caf58ffd577c85d1ccb280b3c2109073d528979ec6"
+    },
+    {
+      "file": "008_listing_anonymity.sql",
+      "migration_name": "kalling_listing_anonymity_008",
+      "sha256": "c3280ea6942d4e4e12b0d77f3b2639e078beb7726a0754fade066e0c8b8d3474"
+    },
+    {
+      "file": "009_data_room.sql",
+      "migration_name": "kalling_data_room_009",
+      "sha256": "967e291027997ecea162ceb06396f936b48e74b55d596aa43db28195620d1876"
+    },
+    {
+      "file": "010_engagement_letters.sql",
+      "migration_name": "kalling_engagement_letters_010",
+      "sha256": "14d7475b438171a3d0d6618decf466e9995851beb3d7dd16c8302760fea939d0"
+    },
+    {
+      "file": "011_owner_reviews.sql",
+      "migration_name": "kalling_owner_reviews_011",
+      "sha256": "a8e1afcad5e431de51312e66a8e44a44fc0cb94ef93e2a2152cc133d66157766"
+    },
+    {
+      "file": "20261108215809_kalling_invitation_rls.sql",
+      "migration_name": "kalling_invitation_rls",
+      "sha256": "c2833c8456f38c0f7f9081fb3f0cdda28d4d6c88e39b32fec88efcda91b6c368"
+    },
+    {
+      "file": "20261113032739_kalling_dataroom_revocation.sql",
+      "migration_name": "kalling_dataroom_revocation",
+      "sha256": "76545236331105348ed3890f6dae72081d6024aa6f0ccc54e9fd8fe20c691d0b"
+    },
+    {
+      "file": "20261113054256_kalling_buyer_verification.sql",
+      "migration_name": "kalling_buyer_verification",
+      "sha256": "81ba58d6e1d46b41a51737adcacb49c05b9a2205bd04883e4081027aa06df5c8"
+    },
+    {
+      "file": "20261113060811_kalling_listing_alerts.sql",
+      "migration_name": "kalling_listing_alerts",
+      "sha256": "4709900c809751b119977fb67b17f450c5d860c39c09b6a8505e277669a4e4f4"
+    },
+    {
+      "file": "20261113062023_kalling_offer_versions.sql",
+      "migration_name": "kalling_offer_versions",
+      "sha256": "41745317e033768777c10d8c6d74340e60fd801e6ded588365ea7949dcbdac23"
+    },
+    {
+      "file": "20261113062807_kalling_lender_preparation.sql",
+      "migration_name": "kalling_lender_preparation",
+      "sha256": "fe90c835779f7e94eb2bbfef73277fac141e7120f92c16779649627bf554f49e"
+    },
+    {
+      "file": "20261113142234_kalling_execution_transactions.sql",
+      "migration_name": "kalling_execution_transactions",
+      "sha256": "b8c39e454ab62fd2b8d14e0308fe73bd6c6b33fb2535f601c10cd6ec247e9ea7"
+    },
+    {
+      "file": "20261113143731_kalling_shared_diligence.sql",
+      "migration_name": "kalling_shared_diligence",
+      "sha256": "20f515beb72f596f39fd784dba61dc6712c4ea1004afc8739619159300d36371"
+    },
+    {
+      "file": "20261113144114_kalling_closing_timeline.sql",
+      "migration_name": "kalling_closing_timeline",
+      "sha256": "af81aeac33f88323196f7e11160ae497493ec976cd6c7852c0be734dba15da20"
+    },
+    {
+      "file": "20261113144506_kalling_controlled_close.sql",
+      "migration_name": "kalling_controlled_close",
+      "sha256": "385b8d20ec6741678ee8940b28943224ef8ccdf802855739b52f043d7f805c2e"
+    },
+    {
+      "file": "20261113145020_kalling_case_study_permissions.sql",
+      "migration_name": "kalling_case_study_permissions",
+      "sha256": "22b0c03f7ed49abd8308a1afaaa0d4ebfcb49c72f2ee4047082df82f61f14cad"
+    },
+    {
+      "file": "20261113145207_kalling_internal_comparables.sql",
+      "migration_name": "kalling_internal_comparables",
+      "sha256": "039337eaf4f8f21964f73831dbd8ade835b741cbf58f149d921d51582c694017"
+    },
+    {
+      "file": "20261113151704_kalling_execution_handover_and_guards.sql",
+      "migration_name": "kalling_execution_handover_and_guards",
+      "sha256": "e9464133e3d442164bd40236eb38b8d04e3d749fa16378f2ae5a2940912fd169"
+    },
+    {
+      "file": "20261113153010_kalling_execution_draft_jobs.sql",
+      "migration_name": "kalling_execution_draft_jobs",
+      "sha256": "60174d9400e77aa6f55c78d5b82c21aa13474bc54eba122980c89bf468134b7d"
+    }
+  ],
+  "http_doctor": {
+    "project": "https://ymbciapnzdmymtthevjp.supabase.co",
+    "at": "2026-11-14T18:34:49.143Z",
+    "mode": "doctor",
+    "checks": [
+      {
+        "name": "Hosted Auth health responds over HTTPS",
+        "status": "passed"
+      },
+      {
+        "name": "Hosted Auth refuses an invalid token",
+        "status": "passed"
+      },
+      {
+        "name": "Anonymous callers receive no firm records",
+        "status": "passed"
+      },
+      {
+        "name": "kalling_execution_rows refuses an anonymous caller",
+        "status": "passed"
+      },
+      {
+        "name": "kalling_execution_calibration refuses an anonymous caller",
+        "status": "passed"
+      },
+      {
+        "name": "The private execution schema is unavailable to the public client",
+        "status": "passed"
+      },
+      {
+        "name": "Proof-file validator refuses a request without a user token",
+        "status": "passed"
+      },
+      {
+        "name": "The deployed validator accepts the GitHub Pages CORS preflight",
+        "status": "passed"
+      }
+    ],
+    "fixtureManifest": {},
+    "transport": {
+      "actualAuthenticatedTransport": false,
+      "reason": "Doctor uses no accounts, uploads or retained fixtures."
+    },
+    "status": "passed"
+  },
+  "after_rollback": {
+    "firms": 0,
+    "portals": 0,
+    "agent_jobs": 0,
+    "agent_workers": 0,
+    "house_settings": 0,
+    "kalling_objects": 0
+  },
+  "existing_auth_accounts_unchanged": true
+}
