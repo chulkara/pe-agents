@@ -94,6 +94,10 @@
     {
       "version": "20261114182205",
       "name": "kalling_execution_draft_jobs"
+    },
+    {
+      "version": "20261114202229",
+      "name": "kalling_owner_upload_guards"
     }
   ],
   "edge_function": {
@@ -110,7 +114,8 @@
     "doctor_http_checks": 8,
     "actual_authenticated_transport": "passed_for_firm_private_files",
     "authenticated_checks_passed": 24,
-    "reason": "Karan supplied the completed 24-check terminal result. A separate read-only hosted query corroborated the retained state. Other portal, marketplace and execution-file HTTP workflows remain unverified."
+    "reason": "Karan supplied the completed 24-check terminal result. A separate read-only hosted query corroborated the retained state. Other portal, marketplace and execution-file HTTP workflows remain unverified.",
+    "hosted_database_policy_checks": 16
   },
   "authenticated_acceptance": {
     "reported_on": "2026-11-14",
@@ -281,6 +286,11 @@
       "file": "20261113153010_kalling_execution_draft_jobs.sql",
       "migration_name": "kalling_execution_draft_jobs",
       "sha256": "60174d9400e77aa6f55c78d5b82c21aa13474bc54eba122980c89bf468134b7d"
+    },
+    {
+      "file": "20261114195645_kalling_owner_upload_guards.sql",
+      "migration_name": "kalling_owner_upload_guards",
+      "sha256": "6844b8a9508e4239db18233a4c2d7e7df2a1f1e6763e9b06363e0f9bb2d542ff"
     }
   ],
   "http_doctor": {
@@ -337,5 +347,43 @@
     "house_settings": 0,
     "kalling_objects": 0
   },
-  "existing_auth_accounts_unchanged": true
+  "existing_auth_accounts_unchanged": true,
+  "owner_upload_hardening": {
+    "source_commit": "00ced1aa5df22ed2002bbe40ff35f182715a0148",
+    "migration": {
+      "version": "20261114202229",
+      "name": "kalling_owner_upload_guards"
+    },
+    "status": "applied",
+    "local_tests_passed": 503,
+    "build": "passed",
+    "hosted_rollback_policy_checks": 16,
+    "actual_owner_portal_http_acceptance": "pending_local_password_prompt_run",
+    "post_smoke": {
+      "fictional_firms": 2,
+      "portals": 0,
+      "portal_files": 0,
+      "all_kalling_objects": 1,
+      "house_settings": 0,
+      "confirmed_fictional_accounts": 6,
+      "rls_missing": 0,
+      "anon_can_reserve": false,
+      "anon_can_call_private_gate": false
+    },
+    "health_findings": 0,
+    "security_advisor_categories": [
+      "rls_enabled_no_policy",
+      "anon_security_definer_function_executable",
+      "authenticated_security_definer_function_executable",
+      "auth_leaked_password_protection"
+    ],
+    "source_ci_run": 43637123846,
+    "local_browser": "Unavailable: browser archive download was invalid; repository CI validates browser flows separately.",
+    "source_ci_result": "success",
+    "browser_flows": [
+      "deal-flow",
+      "seller-flow",
+      "execution-flow"
+    ]
+  }
 }

@@ -2,7 +2,7 @@
 
 ## Verified on November 14, 2026
 
-Project `ymbciapnzdmymtthevjp` remains on the Free plan. All 22 remaining migrations were applied individually in order. The hosted ledger has 23 entries, including the previously applied worker migration. Foundation 001 and scheduler 002 were already active and were not rerun. Exact source checksums and recorded versions are in [the activation record](../production/activation/2026-11-14.json).
+Project `ymbciapnzdmymtthevjp` remains on the Free plan. All 22 remaining migrations were applied individually in order. The initial hosted ledger had 23 entries including the previously applied worker migration; the subsequent owner-upload guard migration brings it to 24. Foundation 001 and scheduler 002 were already active and were not rerun. Exact source checksums and recorded versions are in [the activation record](../production/activation/2026-11-14.json).
 
 All 57 Kalling tables have RLS enabled. The four buckets, `kalling-private`, `kalling-portal`, `kalling-buyer-proof` and `kalling-execution`, are nonpublic. The byte-validation Edge Function is deployed with platform JWT verification enabled and an additional confirmed-user check in its handler. Its server-provided administrative credential stays inside Supabase; no secret key was retrieved or added to the app, worker or repository.
 
@@ -53,6 +53,8 @@ The runner verifies password grants, confirmed user lookups, two private firms, 
 The completed run covers the firm workspace and `kalling-private` bucket. Authenticated owner-portal uploads, buyer proof-file upload and validator attestation, buyer data-room reads, execution diligence files and post-close handover over HTTP remain unverified. The hosted SQL smoke checks the data-room ticket policy separately. SMTP delivery, a connected nonempty background job and public launch also remain outside this acceptance result. Do not extend the 24-check result to those workflows.
 
 ## Owner-portal upload acceptance
+
+The upload-guard migration is applied as hosted version `20261114202229`. All 503 local tests and the build pass. [Source CI run 43637123846](https://github.com/chulkara/pe-agents/actions/runs/43637123846) passed all three local-demo browser flows, including the three screen widths. The updated hosted rollback smoke passed 16 checks, including known-ID upload refusal, seller signed-link refusal and replacement-file reapproval with old-ticket invalidation. Post-smoke queries confirmed two original fictional firms, zero portals or portal files, one original private object, six confirmed fictional accounts, no missing RLS, no anonymous upload/private-gate grants and no brokerage house. The health advisor has no findings; the existing security advisory categories remain open. CI uses simulated local model responses and does not prove hosted browser transport or real model quality.
 
 The next runner is `scripts/hosted-owner-uploads.mjs`. It requires the successful foundation report already saved in Karan's Downloads folder. Before any test writes, it verifies all six confirmed identities, the exact fictional firm names and owners, and that every company in the reused workspace is marked as a sample. It reuses those two firms, adds one fictional company and portal, and records the retained fixtures in a separate report. It never configures a brokerage house, emails a recipient or calls a model.
 
