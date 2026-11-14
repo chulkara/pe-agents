@@ -50,7 +50,9 @@ test('owner-upload acceptance protocol completes against real SQL permissions wi
             if(options.upsert){const r=await query(uid,'update storage.objects set metadata=$1 where bucket_id=$2 and name=$3 returning id',[{size:content.length,mimetype:options.contentType},bucket,path]);if(r.data?.length)bytes.set(path,Buffer.from(content));return r.data?.length?r:{error:{statusCode:403}};}
             const r=await query(uid,'insert into storage.objects(bucket_id,name,metadata) values($1,$2,$3)',[bucket,path,{size:content.length,mimetype:options.contentType}]);if(!r.error)bytes.set(path,Buffer.from(content));return r;
           },
-          download:async path=>{const r=await query(uid,'select id from storage.objects where bucket_id=$1 and name=$2',[bucket,path],'object.get_authenticated');return r.data?.length&&bytes.has(path)?{data:new Blob([bytes.get(path)]),error:null}:{data:null,error:{statusCode:r.error?.statusCode||404}};},
+          // The hosted failing request used the metadata operation before bytes.
+          // Exercise both contexts so a read-only SQL simulation cannot mask it.
+          download:async path=>{for(const operation of ['object.get_authenticated_info','object.get_authenticated']){const r=await query(uid,'select id from storage.objects where bucket_id=$1 and name=$2',[bucket,path],operation);if(!r.data?.length)return {data:null,error:{statusCode:r.error?.statusCode||404}};}return bytes.has(path)?{data:new Blob([bytes.get(path)]),error:null}:{data:null,error:{statusCode:404}};},
           createSignedUrl:async path=>{const r=await query(uid,'select id from storage.objects where bucket_id=$1 and name=$2',[bucket,path],'object.sign');return r.data?.length?{data:{signedUrl:'fictional-signed-link'},error:null}:{error:{statusCode:r.error?.statusCode||404}};},
         })},
       };

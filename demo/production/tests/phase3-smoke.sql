@@ -45,6 +45,9 @@ begin
   file_id=(f#>>'{file,id}')::uuid; path=f#>>'{file,object_path}';
   insert into storage.objects(bucket_id,name,metadata) values('kalling-portal',path,'{"size":10,"mimetype":"application/pdf"}');
   perform public.kalling_portal_finish_file(file_id);
+  perform set_config('storage.operation','object.get_authenticated_info',true);
+  select count(*) into n from storage.objects where bucket_id='kalling-portal' and name=path;
+  if n<>1 then raise exception 'Signed seller cannot read authenticated file metadata.'; end if;
   perform set_config('storage.operation','object.sign',true);
   select count(*) into n from storage.objects where bucket_id='kalling-portal' and name=path;
   if n<>0 then raise exception 'Seller can mint a reusable original-file URL.'; end if;
@@ -145,4 +148,4 @@ begin
  exception when sqlstate 'PZ001' then null;
  end;
 end $audit$;
-select jsonb_build_object('status','passed','fixtures_retained',false,'checks',jsonb_build_array('seller engagement gate','unsigned known-ID upload denial','file reservation and RLS upload','seller signed URL denial','document acceptance and private source text','owner memorandum approval','anonymous listing','NDA approval','logged authenticated download','replacement file reapproval and old-ticket refusal','signed URL denial','buyer and owner revocation','unrelated account isolation','worker version gate','interrupted lease recovery','local-only result contract')) as phase3_validation;
+select jsonb_build_object('status','passed','fixtures_retained',false,'checks',jsonb_build_array('seller engagement gate','unsigned known-ID upload denial','file reservation and RLS upload','signed seller authenticated metadata read','seller signed URL denial','document acceptance and private source text','owner memorandum approval','anonymous listing','NDA approval','logged authenticated download','replacement file reapproval and old-ticket refusal','signed URL denial','buyer and owner revocation','unrelated account isolation','worker version gate','interrupted lease recovery','local-only result contract')) as phase3_validation;

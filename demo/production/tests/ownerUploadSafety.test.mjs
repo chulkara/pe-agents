@@ -39,6 +39,7 @@ test('an unsigned seller cannot reserve, link, discover or read known original f
   assert.equal((await s.as(s.seller,'select id from public.kalling_portal_files where portal_id=$1',[p.id])).length,0);
   await assert.rejects(s.one(s.seller,'select public.kalling_portal_file_path($1)',[f.file.id]),/engagement|signed|denied/i);
   assert.equal(await reads(s.seller,f.file.object_path),0);
+  assert.equal(await reads(s.seller,f.file.object_path,'object.get_authenticated_info'),0);
   assert.equal(await reads(s.owner,f.file.object_path),1,'firm can prepare files while the gate is closed');
 });
 test('closing the engagement gate blocks an existing reservation and finalisation until it reopens',async()=>{
@@ -81,9 +82,11 @@ test('original downloads require current access and cannot mint reusable signed 
   const p=await portal(),f=await reserve(s.seller,p.r);await bytes(s.seller,f);await finish(s.seller,f);
   for(const who of [s.owner,s.seller,s.viewer]){
     assert.equal(await reads(who,f.file.object_path),1);
-    for(const op of ['object.sign','object.sign_many','object.list','object.get_authenticated_info',''])assert.equal(await reads(who,f.file.object_path,op),0);
+    assert.equal(await reads(who,f.file.object_path,'object.get_authenticated_info'),1,'authorised metadata lookup is part of downloading');
+    assert.equal(await reads(who,f.file.object_path,'storage.object.get_authenticated_info'),1,'normalised hosted operation');
+    for(const op of ['object.sign','object.sign_many','object.list','object.get_authenticated_info_extra','object.get',''])assert.equal(await reads(who,f.file.object_path,op),0);
   }
-  for(const who of [s.buyer,s.other,s.outsider])assert.equal(await reads(who,f.file.object_path),0);
+  for(const who of [s.buyer,s.other,s.outsider])for(const operation of ['object.get_authenticated','object.get_authenticated_info'])assert.equal(await reads(who,f.file.object_path,operation),0);
 });
 test('firm PDF retries reuse the reservation and recognise bytes that arrived before acknowledgement',async()=>{
   const p=await portal();

@@ -65,7 +65,13 @@ export async function ownerUploadRun(config,accounts,foundation,check,manifest,{
     const remember=f=>{if(!manifest.files.some(x=>x.id===f.id))manifest.files.push({id:f.id,bucket:'kalling-portal',path:f.object_path,sha256:f.sha256});};
     const upload=async(c,f,content)=>{remember(f);const up=await c.storage.from('kalling-portal').upload(f.object_path,content,{contentType:f.mime,upsert:false});ok(!up.error,'Actual owner-portal byte upload failed.');};
     const finish=(c,f)=>rpc(c,'kalling_portal_finish_file',{p_file:f.id});
-    const matches=async(c,f,content)=>{const path=await rpc(c,'kalling_portal_file_path',{p_file:f.id});const got=await c.storage.from('kalling-portal').download(path);return !got.error&&sha(Buffer.from(await got.data.arrayBuffer()))===sha(content);};
+    const matches=async(c,f,content)=>{
+      const path=await rpc(c,'kalling_portal_file_path',{p_file:f.id}),got=await c.storage.from('kalling-portal').download(path);
+      if(got.error||!got.data){const status=Number(got.error?.statusCode||got.error?.status)||null;manifest.lastDownloadFailure={fileId:f.id,kind:'read_refused',httpStatus:status};throw Error('Authenticated file download was refused'+(status?' (Storage HTTP '+status+')':'')+'.');}
+      const received=Buffer.from(await got.data.arrayBuffer()),actual=sha(received);
+      if(actual!==sha(content)){manifest.lastDownloadFailure={fileId:f.id,kind:'bytes_differ',expectedSize:content.length,receivedSize:received.length};throw Error('Downloaded bytes differ from the expected original; the comparison was not accepted.');}
+      return true;
+    };
     const preBytes=bytes('Fictional advisor preparation'),pre=await reserve(a,r1,preBytes);await upload(a,pre.file,preBytes);await finish(a,pre.file);
     const hidden=await seller.from('kalling_portal_requests').select('id').eq('portal_id',p),hiddenFiles=await seller.from('kalling_portal_files').select('id').eq('portal_id',p);
     check(!hidden.error&&hidden.data.length===0&&!hiddenFiles.error&&hiddenFiles.data.length===0,'Unsigned requests and file metadata stay hidden');

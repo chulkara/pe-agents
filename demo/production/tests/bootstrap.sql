@@ -10,8 +10,12 @@ grant usage on schema auth to authenticated;
 grant execute on function auth.uid() to authenticated;
 create schema storage;
 -- Supabase sets this request-local operation before it evaluates Storage RLS.
+create function storage.operation() returns text language sql stable as $$ select current_setting('storage.operation',true) $$;
 create function storage.allow_only_operation(expected_operation text) returns boolean language sql stable as $$
- select coalesce(regexp_replace(current_setting('storage.operation',true),'^storage[.]','')=regexp_replace(expected_operation,'^storage[.]',''),false)
+ select coalesce(nullif(regexp_replace(expected_operation,'^storage[.]',''),'') is not null and regexp_replace(storage.operation(),'^storage[.]','')=regexp_replace(expected_operation,'^storage[.]',''),false)
+$$;
+create function storage.allow_any_operation(expected_operations text[]) returns boolean language sql stable as $$
+ select exists(select 1 from unnest(expected_operations) op where storage.allow_only_operation(op))
 $$;
 create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
 create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text,metadata jsonb,unique(bucket_id,name));

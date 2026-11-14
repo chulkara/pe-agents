@@ -54,7 +54,7 @@ The owner opens the link, signs in or creates an account with the invited email,
   * The owner gets access only after accepting an invitation, with a confirmed account whose email matches the invited address.
 * **Invitation tokens.** Tokens are random and stored only as SHA-256 hashes.
 * **Uploads.** Files can only go to a path the uploader reserved, and are checked against the reserved size and type before they count as stored.
-* **Downloads.** Downloads re-check portal access every time.
+* **Downloads.** Both authenticated metadata lookups and original-byte downloads re-check the same current portal access. Listing and reusable signed links remain refused. Migration `20261114222455_kalling_authenticated_file_metadata.sql` adds the metadata operation required by the observed hosted download request.
 * **Engagement and file access.** The upload-guard migration `20261114195645_kalling_owner_upload_guards.sql` enforces the unsigned engagement gate in file reservations, attachments, finalisation, file metadata and Storage reads. A known request or object path does not bypass the gate. Private originals use authenticated downloads; signed URLs and bucket listing are denied.
 * **Retry recovery.** A reservation is reused for the same fingerprint, size and type. If bytes arrived before the connection stopped, retrying finishes the existing upload. Firm PDF uploads use the same recovery rule. The app confirms attachment to the requested question before showing Saved.
 * **Fresh review.** A changed attachment set reopens a submitted or accepted request and clears its old acceptance note and submission time. Linking the same file again preserves the review. Replacing a data-room file separately resets its owner approval and invalidates old buyer tickets.
