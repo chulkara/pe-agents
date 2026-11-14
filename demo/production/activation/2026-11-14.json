@@ -367,7 +367,7 @@
     "local_tests_passed": 503,
     "build": "passed",
     "hosted_rollback_policy_checks": 16,
-    "actual_owner_portal_http_acceptance": "first_attempt_blocked_pending_metadata_fix_retry",
+    "actual_owner_portal_http_acceptance": "retry_passed_48_pending_focused_owner_revocation_recheck",
     "post_smoke": {
       "fictional_firms": 2,
       "portals": 0,
@@ -436,7 +436,43 @@
       "house_settings": 0,
       "test_sessions": 0
     },
-    "actual_owner_portal_http_acceptance": "awaiting_local_retry",
+    "actual_owner_portal_http_acceptance": "retry_passed_48_pending_focused_owner_revocation_recheck",
     "follow_up": "Verify the metadata contract separately for ticketed buyer, verification-reviewer and execution reads; this fix changes owner-file access only."
+  },
+  "owner_upload_revocation_recheck": {
+    "source_commit": "752b9947115b9e47503a4618417a26f266588159",
+    "status": "awaiting_focused_mac_recheck",
+    "reported_retry": {
+      "result_source": "User-supplied terminal outcome; full local report not imported",
+      "passed_checks": 48,
+      "blocked_check": "Changing the invited owner removes the earlier seller byte access immediately"
+    },
+    "read_only_hosted_policy_diagnostic": {
+      "earlier_seller_role": null,
+      "portal_rows": 0,
+      "file_rows": 0,
+      "authenticated_byte_rows": 0,
+      "authenticated_metadata_rows": 0,
+      "http_transport_verified_by_this_diagnostic": false
+    },
+    "reproduced_checker_defect": "Pinned Storage SDK can return status=400 and statusCode=NoSuchKey; the former checker converted the semantic code to NaN. The exact response from the failed Mac check was not preserved.",
+    "corrections": [
+      "Classify the actual HTTP status; reject network/server errors and responses containing bytes as revocation proof",
+      "Fresh cache nonce and no-store for private portal reads with the existing Authorization header",
+      "Zero cache lifetime for new portal uploads",
+      "Focused two-account recheck restricted to the exact retained fictional portal and original file, followed by fixture closure"
+    ],
+    "database_policy_changed": false,
+    "local_tests_passed": 509,
+    "build": "passed",
+    "source_ci_run": 43652999090,
+    "source_ci_result": "success",
+    "browser_flows": [
+      "deal-flow",
+      "seller-flow",
+      "execution-flow"
+    ],
+    "actual_hosted_recheck": "pending",
+    "public_frontend_deployment": "unchanged; review branch remains draft"
   }
 }

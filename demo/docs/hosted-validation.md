@@ -76,7 +76,32 @@ After the metadata fix, the existing runner can be retried without another downl
 node --experimental-strip-types scripts/hosted-owner-uploads.mjs run --confirm-fictional --prompt --foundation-report "$HOME/Downloads/kalling-hosted-acceptance.json" --output "$HOME/Downloads/kalling-owner-upload-retry.json"
 ```
 
-An interrupted or failed run may leave private partial fixtures. Its report records known fixture IDs, and a subsequent run first revokes the same fictional viewer before creating another sample company. Retain the reports for reviewed cleanup; do not rerun the foundation runner merely to repeat portal checks. All logins must succeed before any fixture changes. The complete owner-upload protocol is exercised locally against PostgreSQL with simulated Auth/byte transport; that local test is not hosted HTTP evidence. Actual hosted owner-portal transport remains pending a successful retry.
+An interrupted or failed run may leave private partial fixtures. Its report records known fixture IDs, and a subsequent run first revokes the same fictional viewer before creating another sample company. Retain the reports for reviewed cleanup; do not rerun the foundation runner merely to repeat portal checks. All logins must succeed before any fixture changes. The complete owner-upload protocol is exercised locally against PostgreSQL with simulated Auth/byte transport; that local test is not hosted HTTP evidence.
+
+### Focused owner-revocation recheck
+
+The second Mac run progressed through the first 48 checks and stopped at `Changing the invited owner removes the earlier seller byte access immediately`. Karan supplied that terminal outcome; the full JSON report has not been imported. A read-only hosted check on the retained fictional portal confirmed its invitation had changed, its earlier seller binding was cleared, and that seller's portal, file, authenticated-metadata and byte-read policy queries returned zero rows. This is evidence of server-side revocation, not a completed HTTP acceptance result.
+
+The checker had a separate reproducible defect with the pinned Storage SDK: `StorageApiError.status` contains the HTTP status, while `statusCode` can contain the semantic string `NoSuchKey`. Converting the latter to a number made a refused HTTP 400 response look like a failed refusal test. The corrected classifier reads the actual HTTP status first and refuses to count a network error, server error or response containing data as proof of access revocation. The exact response from Karan's failed check was not preserved, so the diagnostic does not establish that classifier defect as the sole cause of that run's failure.
+
+Private portal downloads now use a fresh cache nonce and `cache: 'no-store'`, while preserving the existing Authorization header. New portal uploads use zero cache lifetime. The frontend still checks the current file-path RPC before any byte request. These changes force a fresh permission check; they cannot remove copies someone already downloaded. No database policy was widened for this follow-up.
+
+Runner source commit `752b9947115b9e47503a4618417a26f266588159` adds `recheck-revocation`. It accepts only the foundation report and the specific failed report with 48 passes followed by this owner-change failure. Before restoring any access, it checks the two confirmed fictional identities, exact firm and portal, fictional engagement signatures, original stored-file identity and expected bytes. It then temporarily restores that one fictional seller, confirms matching original bytes, changes the invitation again, checks a fresh byte refusal with the same unrefreshed JWT, checks RPC and row refusal, and archives the verified fictional portal. Both sessions are signed out. A failed guard leaves the fixture unchanged; a later failure attempts to archive only the verified fixture.
+
+The focused run prompts only for `owner_a` and `seller`. Keep all previous reports. From the existing `demo/` folder, download both runner dependencies:
+
+```sh
+curl -fL https://raw.githubusercontent.com/chulkara/pe-agents/752b9947115b9e47503a4618417a26f266588159/demo/lib/privateStorage.ts -o lib/privateStorage.ts
+curl -fL https://raw.githubusercontent.com/chulkara/pe-agents/752b9947115b9e47503a4618417a26f266588159/demo/scripts/hosted-owner-uploads.mjs -o scripts/hosted-owner-uploads.mjs
+```
+
+Then run:
+
+```sh
+node --experimental-strip-types scripts/hosted-owner-uploads.mjs recheck-revocation --confirm-fictional --prompt --foundation-report "$HOME/Downloads/kalling-hosted-acceptance.json" --resume-report "$HOME/Downloads/kalling-owner-upload-retry.json" --output "$HOME/Downloads/kalling-owner-revocation-acceptance.json"
+```
+
+Local verification passed 509 tests and the build, including the complete protocol against PostgreSQL policies, the focused same-file recheck, rejection of a mismatched fixture, the real SDK's semantic-code response, unchanged authorization headers and fresh private reads. [Source CI run 43652999090](https://github.com/chulkara/pe-agents/actions/runs/43652999090) also passed all three browser flows, including the three screen widths. Auth and byte transport in those tests are simulated. Actual hosted acceptance remains incomplete until this focused Mac run passes. A successful result reports nine focused checks and links them to the previous 48 passes; it does not describe those as 50 checks in a single run. The review branch remains a draft and these frontend changes are not deployed to Pages yet.
 
 Before later buyer and execution HTTP acceptance, check the same metadata-before-bytes contract in their ticketed Storage policies. They remain separately scoped and unverified; this owner-file fix grants no buyer or specialist access.
 
