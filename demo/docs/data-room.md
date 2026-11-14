@@ -46,7 +46,7 @@ After NDA approval, the listing page shows the data room by folder. After-LOI do
 
 The local demo store (`lib/dataRoomStore.ts`) mirrors the same rules in one browser: it logs before handing out bytes and checks current access both before and after reading the file.
 
-After completion, the original listing/data room no longer supplies broad access. The [execution handover](deal-execution.md) names exact reviewed documents and recipients. Private later receipts can be attached to the closed archive; they are not automatically shared. The ordered Phase 5 migrations were activated on November 14. Hosted SQL ticket/revocation checks passed; actual authenticated file transport remains pending. See [hosted validation](hosted-validation.md).
+After completion, the original listing/data room no longer supplies broad access. The [execution handover](deal-execution.md) names exact reviewed documents and recipients. Private later receipts can be attached to the closed archive; they are not automatically shared. The ordered Phase 5 migrations were activated on November 14. Hosted SQL ticket/revocation checks passed. The separate 24-check authenticated run passed for firm original files; buyer data-room and execution-handover HTTP transport remain pending. See [hosted validation](hosted-validation.md).
 
 ## Tests
 

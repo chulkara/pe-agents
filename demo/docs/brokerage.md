@@ -1,6 +1,6 @@
 # Kalling brokerage (HVAC, New Jersey and New York)
 
-Current hosted activation and acceptance status is recorded in [hosted validation](hosted-validation.md). Migrations are applied; authenticated transport tests and launch prerequisites remain open. Do not rerun source migrations or configure a real house firm from the setup instructions until those prerequisites are reviewed.
+Current hosted activation and acceptance status is recorded in [hosted validation](hosted-validation.md). Migrations are applied and 24 authenticated firm/private-file checks passed. Portal, buyer-proof, data-room and execution-file HTTP acceptance and launch prerequisites remain open. Do not rerun source migrations or configure a real house firm from the setup instructions until those prerequisites are reviewed.
 
 The public site is now Kalling's sell-side marketplace, modeled on how QuietLight runs a brokerage, but built only for HVAC and refrigeration companies in NJ and NY.
 

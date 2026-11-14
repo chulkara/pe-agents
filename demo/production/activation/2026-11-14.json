@@ -106,10 +106,56 @@
   },
   "checks": {
     "hosted_database_policy_smoke": "passed",
-    "retained_test_fixtures": false,
+    "retained_test_fixtures": true,
     "doctor_http_checks": 8,
-    "actual_authenticated_transport": "pending",
-    "reason": "Confirmed fictional Auth accounts are not yet provisioned; dashboard sign-in requires approval for the selected identity-provider transition."
+    "actual_authenticated_transport": "passed_for_firm_private_files",
+    "authenticated_checks_passed": 24,
+    "reason": "Karan supplied the completed 24-check terminal result. A separate read-only hosted query corroborated the retained state. Other portal, marketplace and execution-file HTTP workflows remain unverified."
+  },
+  "authenticated_acceptance": {
+    "reported_on": "2026-11-14",
+    "runner_commit": "75ba1d3711cb6bdd5914b3ca734ad72c555caccf",
+    "result_source": "Karan's Mac terminal output supplied in chat; the complete local JSON report has not been imported.",
+    "checks_passed": 24,
+    "coverage": [
+      "Six password grants and confirmed-user lookups",
+      "Known workspace isolation across unrelated accounts",
+      "Email-bound analyst invitation acceptance",
+      "Actual private original-file upload and matching SHA-256 downloads for owner and analyst",
+      "Original-file overwrite refusal",
+      "Known-object refusal for other firm, seller, buyer, uninvited specialist and anonymous caller",
+      "Role downgrade and revocation enforced with the existing JWT",
+      "Hosted Auth refresh"
+    ],
+    "independent_hosted_confirmation": {
+      "checked_at": "2026-11-14T19:30:16.063829+00:00",
+      "method": "Read-only SQL metadata and audit checks; no passwords, tokens or stored file bytes retrieved.",
+      "confirmed_test_accounts": 6,
+      "test_accounts_with_sign_in": 6,
+      "fictional_firms": 2,
+      "fictional_documents": 1,
+      "stored_fictional_objects": 1,
+      "object_metadata_matches_reservation": true,
+      "revoked_member_is_inactive_viewer": true,
+      "active_test_member_memberships": 0,
+      "remaining_test_auth_sessions": 0,
+      "brokerage_house_settings": 0,
+      "audit_events": {
+        "firm.created": 2,
+        "member.joined": 1,
+        "member.changed": 2,
+        "member.invited": 1,
+        "document.stored": 1,
+        "document.reserved": 1
+      }
+    },
+    "remaining_authenticated_workflows": [
+      "Owner-portal original uploads",
+      "Buyer proof-file upload and validator attestation",
+      "Buyer data-room reads",
+      "Execution diligence files and post-close handover",
+      "Connected nonempty background worker job"
+    ]
   },
   "launch_holds": [
     "Attorney review",
@@ -119,7 +165,7 @@
     "Real contact details and public launch setup"
   ],
   "no_brokerage_house_configured": true,
-  "new_firm_count": 0,
+  "new_firm_count": 2,
   "migration_sources": [
     {
       "file": "003_agent_workers.sql",
@@ -283,6 +329,7 @@
     "status": "passed"
   },
   "after_rollback": {
+    "phase": "Before the subsequent authenticated acceptance run",
     "firms": 0,
     "portals": 0,
     "agent_jobs": 0,

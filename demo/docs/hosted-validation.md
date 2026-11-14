@@ -8,19 +8,29 @@ All 57 Kalling tables have RLS enabled. The four buckets, `kalling-private`, `ka
 
 The rollback-only database smoke test passed 13 checks against hosted PostgreSQL: the engagement gate, reservation and storage policies, accepted source documents, owner memorandum approval, anonymous listing, NDA approval, logged reads, signed-link refusal, owner/buyer revocation, account isolation, worker versions, interrupted lease recovery and the local-only result contract. These tests exercise hosted SQL policies using explicitly assigned test identities and Storage metadata. They do not issue Auth sessions or transfer object bytes.
 
-After rollback there are still zero firms, portals, jobs, paired workers and Kalling storage objects. Existing Auth accounts are unchanged. The brokerage house remains unset, so the public brokerage cannot accept real intake. Nothing was emailed or sent to a model. Attorney review, licensing, fees, SMTP, contact information and public launch setup remain open.
+Immediately after the rollback-only smoke check there were zero firms, portals, jobs, paired workers and Kalling storage objects. The subsequent authenticated run retained two private fictional firms and one small test file. The brokerage house remains unset, so the public brokerage cannot accept real intake. Nothing was emailed or sent to a model. Attorney review, licensing, fees, SMTP, contact information and public launch setup remain open.
 
 Eight direct HTTPS checks passed: Auth health, invalid-token refusal, anonymous firm isolation, anonymous execution/calibration denial, private-schema refusal, unauthenticated validator refusal, and the GitHub Pages CORS preflight. These are negative access checks, not authenticated file-transport acceptance.
 
-## Remaining authenticated checks
+## Authenticated firm and private-file acceptance
 
-Karan created the six fictional test accounts manually. A read-only check confirmed that each account has a confirmed email and a password set. Successful password grants, refresh and actual file upload/download are still pending the local test run. Their passwords stay on Karan's Mac.
+Karan created the six fictional test accounts manually and ran the checked script on his Mac. His terminal output reports all **24 authenticated checks passed**, using runner commit `75ba1d3711cb6bdd5914b3ca734ad72c555caccf`. This includes all six password grants and verified user lookups, cross-account workspace isolation, invitation acceptance, actual original-file upload/download with matching SHA-256 for the owner and analyst, overwrite refusal, known-object refusal for unrelated parties, immediate role downgrade and revocation with the existing JWT, and Auth refresh. Credentials were entered through the hidden prompt; they were not shared in chat or committed.
+
+A separate read-only hosted check at `2026-11-14T19:30:16Z` confirmed all six test users had signed in, exactly two matching fictional firms, one stored test file whose byte count and MIME metadata match its reservation, the member inactive with role `viewer`, no active membership for that member in the test firms, zero remaining test Auth sessions, and zero brokerage-house settings. Audit totals match two firm creations, one invitation and acceptance, one file reservation and storage, and two membership changes. This corroborates the retained state; the SHA-256 and HTTP denials were checked by the local runner, not re-derived from SQL metadata.
+
+The local JSON report remains in Karan's Downloads folder. Only the supplied terminal outcome and sanitized hosted confirmation are recorded here; the complete local report has not been imported.
 
 The six role names are owner_a, owner_b, member, seller, buyer and specialist. Their emails use `owner-a-20261114`, `owner-b-20261114`, `member-20261114`, `seller-20261114`, `buyer-20261114` and `specialist-20261114` at `kalling-validation.invalid`. Confirm only these fictional users through administrative controls. Do not disable email confirmation, configure SMTP, send email invitations, use a real person's address or change an existing account. Keep credentials out of chat and version control.
 
 The runner uses the existing publishable key only. It refuses other projects, privileged keys, real email domains, repeated identities, short credentials, files inside the repository and credentials files readable by other users. HTTP calls have a 20-second limit. It prints check names, never passwords or tokens.
 
-From `demo/`, run the read-only checks with:
+From `demo/`, install the locked dependencies before running the script:
+
+```sh
+npm ci
+```
+
+Then run the read-only checks with:
 
 ```sh
 node --experimental-strip-types scripts/hosted-validation.mjs doctor --output /tmp/kalling-hosted-doctor.json
@@ -40,7 +50,7 @@ node --experimental-strip-types scripts/hosted-validation.mjs run --confirm-fict
 
 The runner verifies password grants, confirmed user lookups, two private firms, known workspace isolation, an accepted analyst invitation, actual immutable original-file upload/download with matching SHA-256, refusal for unrelated parties, role downgrade and revocation using the existing JWT, and Auth refresh. It signs out the fictional sessions afterward. It never configures the brokerage house or sends email. Private fictional fixtures remain for inspection; the report records IDs and object paths for a separately reviewed cleanup. A failed run is reported as failed, not repaired by bypassing policies.
 
-This runner does not validate SMTP delivery, public launch or buyer/seller execution handover over HTTP. The hosted SQL smoke checks the data-room ticket policy separately. The authenticated runner has not been executed; its configuration guards and the read-only doctor have been tested.
+The completed run covers the firm workspace and `kalling-private` bucket. Authenticated owner-portal uploads, buyer proof-file upload and validator attestation, buyer data-room reads, execution diligence files and post-close handover over HTTP remain unverified. The hosted SQL smoke checks the data-room ticket policy separately. SMTP delivery, a connected nonempty background job and public launch also remain outside this acceptance result. Do not extend the 24-check result to those workflows.
 
 ## Advisory findings
 
