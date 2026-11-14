@@ -14,9 +14,9 @@ Eight direct HTTPS checks passed: Auth health, invalid-token refusal, anonymous 
 
 ## Remaining authenticated checks
 
-Dashboard authentication is paused pending approval of the selected identity-provider transition. No fictional Auth accounts were created and no successful user login, refresh or real file upload/download is claimed yet.
+Karan created the six fictional test accounts manually. A read-only check confirmed that each account has a confirmed email and a password set. Successful password grants, refresh and actual file upload/download are still pending the local test run. Their passwords stay on Karan's Mac.
 
-Once dashboard access is authorized, an administrator creates six distinct confirmed test users under `kalling-validation.invalid`: owner_a, owner_b, member, seller, buyer and specialist, each with a unique suffix. Confirm only these fictional users through administrative controls. Do not disable email confirmation, configure SMTP, send email invitations, use a real person's address or change an existing account. Keep initial credentials out of chat and version control.
+The six role names are owner_a, owner_b, member, seller, buyer and specialist. Their emails use `owner-a-20261114`, `owner-b-20261114`, `member-20261114`, `seller-20261114`, `buyer-20261114` and `specialist-20261114` at `kalling-validation.invalid`. Confirm only these fictional users through administrative controls. Do not disable email confirmation, configure SMTP, send email invitations, use a real person's address or change an existing account. Keep credentials out of chat and version control.
 
 The runner uses the existing publishable key only. It refuses other projects, privileged keys, real email domains, repeated identities, short credentials, files inside the repository and credentials files readable by other users. HTTP calls have a 20-second limit. It prints check names, never passwords or tokens.
 
@@ -26,7 +26,13 @@ From `demo/`, run the read-only checks with:
 node --experimental-strip-types scripts/hosted-validation.mjs doctor --output /tmp/kalling-hosted-doctor.json
 ```
 
-For the authenticated run, prepare a private JSON file outside the repository. Its six keys match the role names above; each value has an `email` and `password` for that newly confirmed fictional user. Restrict the file with `chmod 600` on the Mac. Explicitly opt into the test writes:
+For the authenticated run, use the hidden Terminal prompts. Type or paste the password that you created for each named account, then press Return. No characters or stars appear while you type. Passwords stay in memory for this run; they are not written to a file, printed or included in the report. Ctrl+C cancels. All six credentials are collected before any login or test writes. All six logins must then succeed before any firms or files are created. Explicitly opt into the fictional test writes:
+
+```sh
+node --experimental-strip-types scripts/hosted-validation.mjs run --confirm-fictional --prompt --output "$HOME/Downloads/kalling-hosted-acceptance.json"
+```
+
+Alternatively, prepare a private JSON file outside the repository. Its six keys match the role names above; each value has an `email` and `password` for that newly confirmed fictional user. Restrict the file with `chmod 600` on the Mac. Choose one credential method per run:
 
 ```sh
 node --experimental-strip-types scripts/hosted-validation.mjs run --confirm-fictional --accounts /absolute/private/path/accounts.json --output /tmp/kalling-hosted-acceptance.json

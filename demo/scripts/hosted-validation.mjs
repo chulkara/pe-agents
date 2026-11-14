@@ -4,10 +4,13 @@ import {readFile,writeFile,stat,realpath} from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
 import {resolve,dirname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createInterface} from 'node:readline';
+import {Writable} from 'node:stream';
 import {deployedCloudProject} from '../lib/cloudProject.ts';
 
 const REPOSITORY=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
 export const roles=['owner_a','owner_b','member','seller','buyer','specialist'];
+export const fictionalEmails=Object.fromEntries(roles.map(role=>[role,role.replace('_','-')+'-20261114@kalling-validation.invalid']));
 export function validateTarget(config){
   if(config.url!==deployedCloudProject.url||!/^sb_publishable_[\w-]{25,}$/.test(config.publishableKey||''))throw Error('Use the Kalling project and a publishable key only.');
   return config;
@@ -24,7 +27,40 @@ export function validateAccounts(accounts){
 export async function loadAccounts(path){
   const p=await realpath(path),root=await realpath(REPOSITORY),info=await stat(p);
   if(p===root||p.startsWith(root+sep)||(info.mode&0o077)!==0)throw Error('Keep the credentials file outside the repository with permissions 0600.');
-  return validateAccounts(JSON.parse(await readFile(p,'utf8')));
+  let accounts;
+  try{accounts=JSON.parse(await readFile(p,'utf8'));}
+  catch{throw Error('Cannot read the credentials file as JSON. Its contents are not printed.');}
+  return validateAccounts(accounts);
+}
+export function readHiddenPassword(label,{input=process.stdin,output=process.stderr}={}){
+  if(!input.isTTY||!output.isTTY||typeof input.setRawMode!=='function')throw Error('Password entry requires an interactive Terminal. Do not pipe passwords into this command.');
+  // Readline handles editing and restores the terminal on close. Its output is
+  // discarded, including pasted input; only our label and newline are visible.
+  const muted=new Writable({write(_chunk,_encoding,done){done();}});
+  const wasRaw=!!input.isRaw;
+  const rl=createInterface({input,output:muted,terminal:true,historySize:0});
+  return new Promise((resolveAnswer,reject)=>{
+    let settled=false;
+    const finish=(error,value)=>{
+      if(settled)return;settled=true;rl.close();
+      if(wasRaw)input.setRawMode(true);
+      muted.destroy();output.write('\n');
+      if(error)reject(error);else resolveAnswer(value);
+    };
+    rl.once('SIGINT',()=>finish(Error('Password entry cancelled. No validation requests were sent.')));
+    rl.once('close',()=>finish(Error('Password entry ended before all credentials were entered.')));
+    output.write(label);
+    rl.question('',answer=>finish(null,answer));
+  });
+}
+export async function promptAccounts(ask=readHiddenPassword){
+  const accounts={};
+  for(const role of roles){
+    const email=fictionalEmails[role],password=await ask('Password for '+email+': ');
+    if(typeof password!=='string'||password.length<24)throw Error('The password for '+role+' must have at least 24 characters. No validation requests were sent.');
+    accounts[role]={email,password};
+  }
+  return validateAccounts(accounts);
 }
 const digest=b=>createHash('sha256').update(b).digest('hex');
 const boundedFetch=(input,init={})=>fetch(input,{...init,signal:init.signal?AbortSignal.any([init.signal,AbortSignal.timeout(20000)]):AbortSignal.timeout(20000)});
@@ -109,8 +145,12 @@ async function main(){
   try{
     if(mode==='doctor')report.transport=await doctor(config,check);
     else if(mode==='run'){
-      ok(process.argv.includes('--confirm-fictional')&&accountsIndex>=0&&process.argv[accountsIndex+1],'Run needs --confirm-fictional and --accounts pointing to a protected file outside this repository.');
-      report.transport=await authenticatedRun(config,await loadAccounts(process.argv[accountsIndex+1]),check,report.fixtureManifest);
+      const prompting=process.argv.includes('--prompt'),file=accountsIndex>=0&&process.argv[accountsIndex+1];
+      ok(process.argv.includes('--confirm-fictional')&&prompting!==!!file,'Run needs --confirm-fictional and exactly one of --prompt or --accounts pointing to a protected file outside this repository.');
+      if(prompting)console.log('Enter the six fictional account passwords. Input stays hidden and is not saved. Ctrl+C cancels before any validation requests.');
+      const accounts=prompting?await promptAccounts():await loadAccounts(file);
+      try{report.transport=await authenticatedRun(config,accounts,check,report.fixtureManifest);}
+      finally{for(const account of Object.values(accounts))delete account.password;}
     }else throw Error('Choose doctor or run.');
     report.status='passed';
   }catch(e){report.status='failed';report.error=e.message;process.exitCode=1;console.error('BLOCKED: '+e.message);}
