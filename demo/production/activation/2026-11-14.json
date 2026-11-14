@@ -98,6 +98,10 @@
     {
       "version": "20261114202229",
       "name": "kalling_owner_upload_guards"
+    },
+    {
+      "version": "20261114223138",
+      "name": "kalling_authenticated_file_metadata"
     }
   ],
   "edge_function": {
@@ -115,7 +119,7 @@
     "actual_authenticated_transport": "passed_for_firm_private_files",
     "authenticated_checks_passed": 24,
     "reason": "Karan supplied the completed 24-check terminal result. A separate read-only hosted query corroborated the retained state. Other portal, marketplace and execution-file HTTP workflows remain unverified.",
-    "hosted_database_policy_checks": 16
+    "hosted_database_policy_checks": 17
   },
   "authenticated_acceptance": {
     "reported_on": "2026-11-14",
@@ -291,6 +295,11 @@
       "file": "20261114195645_kalling_owner_upload_guards.sql",
       "migration_name": "kalling_owner_upload_guards",
       "sha256": "6844b8a9508e4239db18233a4c2d7e7df2a1f1e6763e9b06363e0f9bb2d542ff"
+    },
+    {
+      "file": "20261114222455_kalling_authenticated_file_metadata.sql",
+      "migration_name": "kalling_authenticated_file_metadata",
+      "sha256": "a20ed2f8637366ac503dfb393ec2faeafba39d159aba743104f4c7ba4131ae83"
     }
   ],
   "http_doctor": {
@@ -358,7 +367,7 @@
     "local_tests_passed": 503,
     "build": "passed",
     "hosted_rollback_policy_checks": 16,
-    "actual_owner_portal_http_acceptance": "pending_local_password_prompt_run",
+    "actual_owner_portal_http_acceptance": "first_attempt_blocked_pending_metadata_fix_retry",
     "post_smoke": {
       "fictional_firms": 2,
       "portals": 0,
@@ -385,5 +394,49 @@
       "seller-flow",
       "execution-flow"
     ]
+  },
+  "owner_upload_metadata_fix": {
+    "source_commit": "799807e9e830a92ce0922d5ebd222946ff78fb59",
+    "migration": {
+      "name": "kalling_authenticated_file_metadata",
+      "version": "20261114223138"
+    },
+    "status": "applied",
+    "first_http_attempt": {
+      "result_source": "User-supplied terminal output",
+      "passed_checks": 16,
+      "blocked_check": "The signed owner can download exact advisor-prepared bytes",
+      "http_acceptance": "incomplete"
+    },
+    "observed_storage_failure": {
+      "operation": "object.get_authenticated_info",
+      "http_status": 400,
+      "error_code": "NoSuchKey"
+    },
+    "pre_fix_policy_rows": {
+      "authorised_bytes": 1,
+      "authorised_metadata": 0
+    },
+    "post_fix_policy_rows": {
+      "authorised_bytes": 1,
+      "authorised_metadata": 1,
+      "signed_url": 0,
+      "listing": 0,
+      "unrelated_metadata": 0
+    },
+    "local_tests_passed": 503,
+    "build": "passed",
+    "source_ci_run": 43648523881,
+    "source_ci_result": "success",
+    "hosted_rollback_policy_checks": 17,
+    "post_smoke": {
+      "fictional_firms": 2,
+      "portals": 1,
+      "portal_files": 1,
+      "house_settings": 0,
+      "test_sessions": 0
+    },
+    "actual_owner_portal_http_acceptance": "awaiting_local_retry",
+    "follow_up": "Verify the metadata contract separately for ticketed buyer, verification-reviewer and execution reads; this fix changes owner-file access only."
   }
 }

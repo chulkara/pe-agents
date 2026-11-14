@@ -2,7 +2,7 @@
 
 ## Verified on November 14, 2026
 
-Project `ymbciapnzdmymtthevjp` remains on the Free plan. All 22 remaining migrations were applied individually in order. The initial hosted ledger had 23 entries including the previously applied worker migration; the subsequent owner-upload guard migration brings it to 24. Foundation 001 and scheduler 002 were already active and were not rerun. Exact source checksums and recorded versions are in [the activation record](../production/activation/2026-11-14.json).
+Project `ymbciapnzdmymtthevjp` remains on the Free plan. All 22 remaining migrations were applied individually in order. The initial hosted ledger had 23 entries including the previously applied worker migration; subsequent owner-upload and authenticated-metadata guards bring it to 25. Foundation 001 and scheduler 002 were already active and were not rerun. Exact source checksums and recorded versions are in [the activation record](../production/activation/2026-11-14.json).
 
 All 57 Kalling tables have RLS enabled. The four buckets, `kalling-private`, `kalling-portal`, `kalling-buyer-proof` and `kalling-execution`, are nonpublic. The byte-validation Edge Function is deployed with platform JWT verification enabled and an additional confirmed-user check in its handler. Its server-provided administrative credential stays inside Supabase; no secret key was retrieved or added to the app, worker or repository.
 
@@ -60,12 +60,20 @@ The next runner is `scripts/hosted-owner-uploads.mjs`. It requires the successfu
 
 The first actual run passed 16 checks, then stopped at the signed seller's first download. The stored file and countersigned engagement were present, and the gate was open. Hosted Storage logs showed a refused `object.get_authenticated_info` request (HTTP 400, `NoSuchKey`). A read-only policy diagnostic on that same fictional fixture returned one authorised byte-read row but zero metadata-read rows. The rule had been too narrow. The follow-up migration `20261114222455_kalling_authenticated_file_metadata.sql` permits authenticated metadata and byte reads under the same current file, portal-role and engagement checks; it does not permit signing or listing. The protocol simulation now tests metadata before bytes. Actual owner-upload HTTP acceptance requires a retry and has not passed yet.
 
+The follow-up is applied as hosted version `20261114223138`. The retained fictional fixture now passes SQL policy checks for both authorised read operations; signing, listing and unrelated-account metadata checks still return no rows. All 503 local tests, the build and all three browser flows passed in [source CI run 43648523881](https://github.com/chulkara/pe-agents/actions/runs/43648523881). The latest hosted rollback smoke passed 17 checks. The original two fictional firms and the partial portal/file are preserved, there are zero test sessions and the brokerage house remains unset. These are policy and simulation results, not a completed HTTP byte comparison.
+
 The acceptance protocol covers the unsigned engagement gate through direct RPC and known-object requests; both fictional signatures; retry before upload and after byte arrival; matching downloaded bytes; deduplication; immutable originals; unrelated-party refusal; signed-link refusal; read-only membership and immediate revocation; changed-attachment review invalidation; and owner-email changes. A successful run closes its test portal and revokes the test viewer. Six hidden password prompts use the existing confirmed fictional accounts. No password file is needed.
 
 From the checked-out review branch's `demo/` folder, after `npm ci`:
 
 ```sh
 node --experimental-strip-types scripts/hosted-owner-uploads.mjs run --confirm-fictional --prompt --foundation-report "$HOME/Downloads/kalling-hosted-acceptance.json" --output "$HOME/Downloads/kalling-owner-upload-acceptance.json"
+```
+
+After the metadata fix, the existing runner can be retried without another download. Preserve the first failed report by writing the retry separately:
+
+```sh
+node --experimental-strip-types scripts/hosted-owner-uploads.mjs run --confirm-fictional --prompt --foundation-report "$HOME/Downloads/kalling-hosted-acceptance.json" --output "$HOME/Downloads/kalling-owner-upload-retry.json"
 ```
 
 An interrupted or failed run may leave private partial fixtures. Its report records known fixture IDs, and a subsequent run first revokes the same fictional viewer before creating another sample company. Retain the reports for reviewed cleanup; do not rerun the foundation runner merely to repeat portal checks. All logins must succeed before any fixture changes. The complete owner-upload protocol is exercised locally against PostgreSQL with simulated Auth/byte transport; that local test is not hosted HTTP evidence. Actual hosted owner-portal transport remains pending a successful retry.
