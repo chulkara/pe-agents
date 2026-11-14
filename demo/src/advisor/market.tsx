@@ -59,7 +59,7 @@ function Verification({buyer,funds,note,checked,disabled,save}:{buyer:Buyer;fund
 
 /** Offers for one listing side by side. */
 export function OfferComparison({listing,onAccepted}:{listing:Listing;onAccepted?:(l:Listing)=>void}){
-  const x=useAdvisor();if(!x.d)return null;return <AdvisorOfferDesk store={x.store} offers={x.d.offers.filter(o=>o.listingId===listing.id)} buyers={x.d.buyers} canWrite={x.canWrite} changed={async(action,id)=>{const o=x.d?.offers.find(o=>o.id===id),b=x.d?.buyers.find(b=>b.id===o?.buyerId);if(action==='share')await x.syncPortal(listing,b,'Offer made');await x.reload();if(action==='accept'&&onAccepted){const l=await x.store.listing(listing.id);if(l.status==='Under LOI')onAccepted(l);}}}/>;
+  const x=useAdvisor();if(!x.d)return null;return <AdvisorOfferDesk store={x.store} offers={x.d.offers.filter(o=>o.listingId===listing.id)} buyers={x.d.buyers} canWrite={x.canWrite} changed={async(action,id)=>{const o=x.d?.offers.find(o=>o.id===id),b=x.d?.buyers.find(b=>b.id===o?.buyerId);if(action==='share')await x.syncPortal(listing,b,'Offer made');await x.reload();if(action==='accept'&&onAccepted){const l=await x.store.listing(listing.id);onAccepted(l);}}}/>;
 }
 
 /** Buyer question threads, newest first, with a reply box. */

@@ -21,6 +21,7 @@ if(!['127.0.0.1','localhost'].includes(new URL(U).hostname))throw Error('Executi
     for(const surface of Object.keys(headings)){
       await page.locator('#surface').selectOption(surface);
       await frame.getByRole('heading',{name:headings[surface],exact:true,level:1}).waitFor();
+      if(['advisor','owner','buyer'].includes(surface))await frame.getByRole('heading',{name:'Your completed acquisition',exact:true}).waitFor();
       for(const width of ['1440','1024','390']){
         await page.locator('#width').selectOption(width);
         await page.getByRole('button',{name:'Assert layout and privacy',exact:true}).click();
