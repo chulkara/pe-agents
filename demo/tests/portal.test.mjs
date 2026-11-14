@@ -12,6 +12,22 @@ const request={title:'Profit and loss statements',needed:'Annual statements for 
 const file=(text,name='pl-2025.pdf',type='application/pdf')=>new File([text],name,{type});
 async function opened(){const s=stores();const id=await s.firm.create({companyId:'co-1',businessName:'Garden State Lock & Safe',ownerName:'Dana Reyes',ownerEmail:'Dana@GardenState.test',help});await s.firm.saveRequest(id,request);const token=await s.firm.invite(id);await s.seller.acceptInvite('dana@gardenstate.test',token);return {...s,id,token};}
 
+test('closing the engagement gate hides existing documents and blocks stale local download handles',async()=>{
+  const s=await opened(),r=(await s.seller.load(s.id)).requests[0];
+  const out=await s.seller.upload(r.id,file('Fictional statement'));
+  await s.firm.setRequestsHidden(s.id,true);assert.deepEqual((await s.seller.load(s.id)).files,[]);
+  await assert.rejects(s.seller.download(out.file),/not available/);
+  await s.firm.setRequestsHidden(s.id,false);assert.equal(await (await s.seller.download(out.file)).text(),'Fictional statement');
+});
+test('a changed request attachment requires review again while linking the same file is idempotent',async()=>{
+  const s=await opened(),r=(await s.seller.load(s.id)).requests[0];
+  await s.seller.upload(r.id,file('Original statement'));await s.seller.submit(r.id);await s.firm.review(r.id,'Accepted','Original reviewed.');
+  const revised=await s.firm.upload(r.id,file('Revised statement'));
+  let updated=(await s.firm.load(s.id)).requests[0];assert.equal(updated.status,'In progress');assert.equal(updated.reviewNote,'');assert.equal(updated.submittedAt,undefined);
+  await s.seller.submit(r.id);await s.firm.review(r.id,'Accepted','Both versions reviewed.');await s.firm.link(r.id,revised.file.id);
+  updated=(await s.firm.load(s.id)).requests[0];assert.equal(updated.status,'Accepted');assert.equal(updated.reviewNote,'Both versions reviewed.');
+});
+
 test('invitations are single use, email bound, and only activate the invited owner',async()=>{
   const s=stores();const id=await s.firm.create({companyId:'co-1',businessName:'Garden State Lock & Safe',ownerName:'Dana Reyes',ownerEmail:'dana@gardenstate.test',help});
   await assert.rejects(()=>s.seller.load(id),/not available/);

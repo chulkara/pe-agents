@@ -8,7 +8,7 @@ declare
  advisor uuid=gen_random_uuid(); seller uuid=gen_random_uuid(); buyer uuid=gen_random_uuid(); outsider uuid=gen_random_uuid();
  suffix text=replace(gen_random_uuid()::text,'-',''); advisor_mail text; seller_mail text; buyer_mail text;
  firm uuid; portal uuid; request uuid; letter uuid; file_id uuid; listing uuid; buyer_id uuid; access_id uuid; item uuid; review_id uuid; job_id uuid;
- invite text; code text; path text; f jsonb; paired jsonb; claimed jsonb; opened jsonb; n integer; body text;
+ invite text; code text; path text; old_path text; revised uuid; f jsonb; paired jsonb; claimed jsonb; opened jsonb; n integer; body text;
 begin
  if exists(select 1 from kalling_private.brokerage_settings) then raise exception 'Run this isolated smoke test before configuring the production house firm.'; end if;
  advisor_mail='advisor-'||suffix||'@kalling.invalid'; seller_mail='seller-'||suffix||'@kalling.invalid'; buyer_mail='buyer-'||suffix||'@kalling.invalid';
@@ -29,6 +29,10 @@ begin
   perform public.kalling_portal_accept(invite);
   select count(*) into n from public.kalling_portal_requests where id=request;
   if n<>0 then raise exception 'Unsigned engagement exposed document requests.'; end if;
+  begin
+   perform public.kalling_portal_reserve_file(request,'fictional-before-signing.pdf','application/pdf',10,repeat('e',64));
+   raise exception using errcode='PZ020',message='Unsigned seller bypassed the upload gate using a known request ID.';
+  exception when insufficient_privilege then null; end;
   perform public.kalling_letter_sign(letter,'Fictional Seller',true);
   perform set_config('request.jwt.claim.sub',advisor::text,true);
   perform public.kalling_letter_countersign(letter,'Fictional Advisor',true);
@@ -41,6 +45,9 @@ begin
   file_id=(f#>>'{file,id}')::uuid; path=f#>>'{file,object_path}';
   insert into storage.objects(bucket_id,name,metadata) values('kalling-portal',path,'{"size":10,"mimetype":"application/pdf"}');
   perform public.kalling_portal_finish_file(file_id);
+  perform set_config('storage.operation','object.sign',true);
+  select count(*) into n from storage.objects where bucket_id='kalling-portal' and name=path;
+  if n<>0 then raise exception 'Seller can mint a reusable original-file URL.'; end if;
   perform public.kalling_portal_submit(request);
   perform set_config('request.jwt.claim.sub',advisor::text,true);
   perform public.kalling_portal_review(request,'Accepted','Fictional source reviewed.');
@@ -73,6 +80,27 @@ begin
   if opened->>'ticket' is null then raise exception 'Approved buyer could not obtain logged ticket.'; end if;
   select count(*) into n from storage.objects where bucket_id='kalling-portal' and name=path;
   if n<>1 then raise exception 'Approved, logged buyer cannot fetch document.'; end if;
+  -- Replacing the exact file invalidates owner approval and the old buyer ticket.
+  old_path=path;
+  perform set_config('request.jwt.claim.sub',advisor::text,true);
+  f=public.kalling_portal_reserve_file(request,'fictional-revised-2025.pdf','application/pdf',10,repeat('d',64));
+  revised=(f#>>'{file,id}')::uuid;path=f#>>'{file,object_path}';
+  insert into storage.objects(bucket_id,name,metadata) values('kalling-portal',path,'{"size":10,"mimetype":"application/pdf"}');
+  perform public.kalling_portal_finish_file(revised);
+  perform public.kalling_dataroom_save_item(jsonb_build_object('id',item,'listingId',listing,'portalId',portal,'fileId',revised,'displayName','Fictional annual statement','folder','Financials','tier','After NDA','allowDownload',false));
+  perform set_config('request.jwt.claim.sub',buyer::text,true);
+  select count(*) into n from storage.objects where bucket_id='kalling-portal' and name in (old_path,path);
+  if n<>0 then raise exception 'A replacement retained old approval or ticket access.'; end if;
+  if public.kalling_dataroom_open(item)->>'error' is null then raise exception 'Buyer opened a replacement before owner reapproval.'; end if;
+  perform set_config('request.jwt.claim.sub',seller::text,true);
+  perform public.kalling_dataroom_owner_decide(array[item],'Approved','Fictional replacement reviewed.');
+  perform set_config('request.jwt.claim.sub',buyer::text,true);
+  opened=public.kalling_dataroom_open(item);
+  if opened->>'ticket' is null then raise exception 'Reapproved replacement did not open.'; end if;
+  select count(*) into n from storage.objects where bucket_id='kalling-portal' and name=path;
+  if n<>1 then raise exception 'Reapproved replacement file cannot be read.'; end if;
+  select count(*) into n from storage.objects where bucket_id='kalling-portal' and name=old_path;
+  if n<>0 then raise exception 'Old file remained readable after replacement.'; end if;
   perform set_config('storage.operation','object.sign',true);
   select count(*) into n from storage.objects where bucket_id='kalling-portal' and name=path;
   if n<>0 then raise exception 'Buyer can mint a signed URL.'; end if;
@@ -117,4 +145,4 @@ begin
  exception when sqlstate 'PZ001' then null;
  end;
 end $audit$;
-select jsonb_build_object('status','passed','fixtures_retained',false,'checks',jsonb_build_array('seller engagement gate','file reservation and RLS upload','document acceptance and private source text','owner memorandum approval','anonymous listing','NDA approval','logged authenticated download','signed URL denial','buyer and owner revocation','unrelated account isolation','worker version gate','interrupted lease recovery','local-only result contract')) as phase3_validation;
+select jsonb_build_object('status','passed','fixtures_retained',false,'checks',jsonb_build_array('seller engagement gate','unsigned known-ID upload denial','file reservation and RLS upload','seller signed URL denial','document acceptance and private source text','owner memorandum approval','anonymous listing','NDA approval','logged authenticated download','replacement file reapproval and old-ticket refusal','signed URL denial','buyer and owner revocation','unrelated account isolation','worker version gate','interrupted lease recovery','local-only result contract')) as phase3_validation;

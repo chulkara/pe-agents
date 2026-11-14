@@ -81,9 +81,9 @@ The same local-only Ollama check, budgets, checkpoints, leases, cancellation and
 
 ## Migration order and actual hosted status
 
-On November 13 the live project `ymbciapnzdmymtthevjp` had its foundation and scheduler. This implementation successfully applied the unchanged `003_agent_workers.sql`; Supabase recorded it as `20261113154556_kalling_agent_workers`. The subsequent 004 to 006 batch confirmation expired without running. No 004 or later migration is claimed as applied, and no fictional firm or brokerage house has been provisioned there.
+On November 14, all 22 remaining migrations were applied to `ymbciapnzdmymtthevjp`. The subsequent owner-upload guard brings the ledger to 24 entries including the previously applied worker migration. All 57 Kalling tables have RLS enabled and all four buckets are private. The latest hosted database rollback smoke passed 16 checks; eight unauthenticated HTTPS checks and 24 authenticated firm/private-file checks passed earlier. Six confirmed fictional accounts were used, and two private fictional firms plus one original-file fixture remain. No brokerage house has been configured. See [hosted validation](hosted-validation.md) and its exact activation ledger for the scope and remaining HTTP workflows.
 
-Resume in this order after inspecting live history. Do not rerun the existing foundation, scheduler or worker migration:
+These sources were applied in this order. Inspect live history before any future activation; do not rerun an already-applied migration:
 
 1. `004_owner_portal.sql` through `011_owner_reviews.sql`, numerically.
 2. `20261108215809_kalling_invitation_rls.sql`, then `20261113032739_kalling_dataroom_revocation.sql`.
@@ -92,13 +92,13 @@ Resume in this order after inspecting live history. Do not rerun the existing fo
 
 Use migration operations for DDL, inspect every result and retain the migration ledger. The private tables have RLS and no direct client grants; authenticated callers use narrow checked RPCs. Never put a service-role key in the app, worker or repository. A missing schema produces an unavailable/not-saved state, not a silent local save.
 
-After activation, run the existing rollback-only fictional Phase 3 smoke checks, then verify Phase 4/5 permissions using separately confirmed fictional advisor, seller, buyer and specialist accounts. Record real Auth and actual object-storage transport separately from local PostgreSQL policy tests. These hosted transport checks remain unperformed. Set the brokerage house as the real firm owner only after the firm exists. No migration confirmation expiration is a successful deployment.
+The rollback-only fictional Phase 3 database smoke checks ran successfully on the hosted project. Real Auth/Storage acceptance subsequently passed for the firm workspace and its original-file bucket, including immediate membership revocation. Buyer/seller data-room, execution diligence and post-close handover transport still need their own authenticated checks. Keep the brokerage house unset while launch prerequisites remain open. A migration confirmation expiration is never a successful deployment.
 
 ## Recovery and validation
 
 Reload a stale transaction before retrying a revision-checked command. After a failed upload, retry with a new immutable file ID; unreferenced bytes confer no permissions. After an interrupted close, reload and replay the same command ID and exact body. Never mark Sold through the old listing selector to repair a failed close. A completed record needs a versioned correction, not reopening.
 
-`npm test` currently passes 485 unit/database/worker tests, including private projections, versioned evidence, source amounts, idempotent close, publicity, comparable eligibility and local-only recovery. `npm run build` passes. Database tests use PostgreSQL through PGlite with simulated Auth/Storage contracts; they do not prove hosted transport. Worker tests use simulated local Ollama and do not prove real model quality.
+`npm test` currently passes 503 unit/database/worker tests, including private projections, versioned evidence, source amounts, idempotent close, publicity, comparable eligibility, local-only recovery, owner-upload permissions and hosted-runner credential guards. `npm run build` passes. Database tests use PostgreSQL through PGlite with simulated Auth/Storage contracts; they do not prove hosted transport. Worker tests use simulated local Ollama and do not prove real model quality.
 
 `e2e/phase5.html` and `e2e/phase5-fixture.ts` are loopback-only development fixtures, omitted from the production build. The fixture uses valid fictional PDFs and the production store interface; it preserves and can restore prior demo records. It exercises twelve stages from missing signed evidence through completion, publicity and comparables, plus a stopped-negotiation branch that refuses the replacement buyer access to the prior documents. `e2e/execution-flow.cjs` repeats the fixture and checks advisor, owner, buyer, public and revoked-specialist screens at 1440, 1024 and 390 pixels. Existing deal and seller flows remain in the deployment checks. The browser review additionally submitted and reviewed real UI forms, including Changes needed, Resolved and a correctly blocked proposed license plan. The working UI displays Saved locally for the demo and does not imply shared hosted security.
 
