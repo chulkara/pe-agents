@@ -103,7 +103,7 @@ export function localPortalStore(o:{actor:Actor;firmId:string;firmName:string;te
     },
     async link(requestId:string,fileId:string){await apply(db=>P.linkFile(db,a,requestId,fileId));},
     async unlink(requestId:string,fileId:string){await apply(db=>P.unlinkFile(db,a,requestId,fileId));},
-    async download(f:PortalFile){P.bundle(read(),a,f.portalId,o.team);const b=await bytes.get(f.id);if(!b)throw Error('This document’s contents are stored in a different browser.');return b;},
+    async download(f:PortalFile){const visible=P.bundle(read(),a,f.portalId,o.team);if(!visible.files.some(x=>x.id===f.id))throw Error('This document is not available in this portal.');const b=await bytes.get(f.id);if(!b)throw Error('This document’s contents are stored in a different browser.');return b;},
     async message(portalId:string,body:string){await apply(db=>P.postMessage(db,a,portalId,body));},
     async seen(portalId:string){await apply(db=>P.markSeen(db,a,portalId));},
     async setRequestsHidden(portalId:string,hidden:boolean){await apply(db=>P.setRequestsHidden(db,a,portalId,hidden));},

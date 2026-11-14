@@ -52,6 +52,22 @@ The runner verifies password grants, confirmed user lookups, two private firms, 
 
 The completed run covers the firm workspace and `kalling-private` bucket. Authenticated owner-portal uploads, buyer proof-file upload and validator attestation, buyer data-room reads, execution diligence files and post-close handover over HTTP remain unverified. The hosted SQL smoke checks the data-room ticket policy separately. SMTP delivery, a connected nonempty background job and public launch also remain outside this acceptance result. Do not extend the 24-check result to those workflows.
 
+## Owner-portal upload acceptance
+
+The next runner is `scripts/hosted-owner-uploads.mjs`. It requires the successful foundation report already saved in Karan's Downloads folder. Before any test writes, it verifies all six confirmed identities, the exact fictional firm names and owners, and that every company in the reused workspace is marked as a sample. It reuses those two firms, adds one fictional company and portal, and records the retained fixtures in a separate report. It never configures a brokerage house, emails a recipient or calls a model.
+
+The acceptance protocol covers the unsigned engagement gate through direct RPC and known-object requests; both fictional signatures; retry before upload and after byte arrival; matching downloaded bytes; deduplication; immutable originals; unrelated-party refusal; signed-link refusal; read-only membership and immediate revocation; changed-attachment review invalidation; and owner-email changes. A successful run closes its test portal and revokes the test viewer. Six hidden password prompts use the existing confirmed fictional accounts. No password file is needed.
+
+From the checked-out review branch's `demo/` folder, after `npm ci`:
+
+```sh
+node --experimental-strip-types scripts/hosted-owner-uploads.mjs run --confirm-fictional --prompt --foundation-report "$HOME/Downloads/kalling-hosted-acceptance.json" --output "$HOME/Downloads/kalling-owner-upload-acceptance.json"
+```
+
+An interrupted or failed run may leave private partial fixtures. Its report records known fixture IDs, and a subsequent run first revokes the same fictional viewer before creating another sample company. Retain the reports for reviewed cleanup; do not rerun the foundation runner merely to repeat portal checks. All logins must succeed before any fixture changes. The complete owner-upload protocol is exercised locally against PostgreSQL with simulated Auth/byte transport; that local test is not hosted HTTP evidence. Actual hosted owner-portal transport remains pending Karan's local run.
+
+The replacement-document smoke test separately checks owner reapproval and rejection of the previous buyer ticket inside a rollback-only SQL transaction. It transfers no file bytes, and its temporary house configuration is never visible outside that transaction. Buyer proof-file attestation, buyer data-room HTTP transport, closing-file handover, real Mac inference and the complete hosted mobile rehearsal remain subsequent steps.
+
 ## Advisory findings
 
 The health advisor reports no findings. Security notices remain for deliberate default-deny tables and checked SECURITY DEFINER RPCs. Worker endpoints authenticate bounded worker tokens; public lead intake and case-study queries have explicit application gates. These notices have not been dismissed or described as an independent security audit. See the [no-policy](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy), [anonymous RPC](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable) and [authenticated RPC](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable) guidance.

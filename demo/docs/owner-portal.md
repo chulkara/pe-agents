@@ -55,11 +55,14 @@ The owner opens the link, signs in or creates an account with the invited email,
 * **Invitation tokens.** Tokens are random and stored only as SHA-256 hashes.
 * **Uploads.** Files can only go to a path the uploader reserved, and are checked against the reserved size and type before they count as stored.
 * **Downloads.** Downloads re-check portal access every time.
+* **Engagement and file access.** The upload-guard migration `20261114195645_kalling_owner_upload_guards.sql` enforces the unsigned engagement gate in file reservations, attachments, finalisation, file metadata and Storage reads. A known request or object path does not bypass the gate. Private originals use authenticated downloads; signed URLs and bucket listing are denied.
+* **Retry recovery.** A reservation is reused for the same fingerprint, size and type. If bytes arrived before the connection stopped, retrying finishes the existing upload. Firm PDF uploads use the same recovery rule. The app confirms attachment to the requested question before showing Saved.
+* **Fresh review.** A changed attachment set reopens a submitted or accepted request and clears its old acceptance note and submission time. Linking the same file again preserves the review. Replacing a data-room file separately resets its owner approval and invalidates old buyer tickets.
 * **Pilot limits:**
   * 10 MB per file, 100 files and 200 MB per portal
   * 40 requests, 20 buyers and 12 next steps per portal
   * 50 portals per firm
-* **Tests.** `production/tests/ownerPortal.test.mjs` runs these rules against real PostgreSQL. `tests/portal.test.mjs` covers the same behaviour in the browser demo store.
+* **Tests.** `production/tests/ownerPortal.test.mjs` and `ownerUploadSafety.test.mjs` exercise PostgreSQL permissions. `ownerUploadRunner.test.mjs` runs the complete acceptance protocol against PostgreSQL with simulated Auth and byte transport. `tests/portal.test.mjs` and `portalCloudUpload.test.mjs` cover the local store and upload acknowledgements. These local tests do not establish hosted byte transport; use [the guarded hosted run](hosted-validation.md#owner-portal-upload-acceptance).
 
 **Before inviting a real owner:** Supabase's default email service only delivers confirmation emails to project team addresses. An outside owner can't confirm a new account until a custom SMTP sender is configured in Supabase Authentication, or until an administrator creates and confirms the account from the dashboard.
 
