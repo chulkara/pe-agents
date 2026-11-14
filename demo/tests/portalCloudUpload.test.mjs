@@ -29,8 +29,17 @@ test('interruption and failed attachment never report a saved request',async()=>
     const s=fixture(options),f=new File(['test'],'fictional.txt',{type:'text/plain'});
     await assert.rejects(s.store.upload('second-request',f,(...x)=>s.progress.push(x)),/interrupted|already complete/);
     assert.equal(s.progress.some(x=>x[0]===1),false);
-    if(options.failUpload){assert.equal(s.calls.some(x=>x[0]==='kalling_portal_finish_file'),false);assert.equal(s.calls.find(x=>x[0]==='upload')[1].options.upsert,false);}
+    if(options.failUpload){assert.equal(s.calls.some(x=>x[0]==='kalling_portal_finish_file'),false);assert.equal(s.calls.find(x=>x[0]==='upload')[1].options.upsert,false);assert.equal(s.calls.find(x=>x[0]==='upload')[1].options.cacheControl,'0');}
   }
+});
+test('an already loaded portal file must pass current authorization again before another download',async()=>{
+  let authorised=true;const calls=[];
+  const client={rpc:async(name,args)=>{calls.push({name,args});assert.equal(name,'kalling_portal_file_path');return authorised?{data:'opaque/original',error:null}:{data:null,error:{message:'This file is unavailable.'}};},storage:{from:bucket=>({download:async(path,options,parameters)=>{calls.push({bucket,path,options,parameters});return {data:new Blob(['fictional original']),error:null};}})}};
+  const store=cloudPortalStore(client,{side:'seller'}),file={...row,status:'stored'};
+  assert.equal(await (await store.download(file)).text(),'fictional original');
+  assert.equal(await (await store.download(file)).text(),'fictional original');
+  const reads=calls.filter(c=>c.bucket);assert.equal(reads.length,2);assert.notEqual(reads[0].options.cacheNonce,reads[1].options.cacheNonce);assert.ok(reads.every(c=>c.parameters.cache==='no-store'));
+  authorised=false;await assert.rejects(store.download(file),/unavailable/);assert.equal(calls.filter(c=>c.bucket).length,2);
 });
 test('a firm PDF retry also skips bytes already received',async()=>{
   const s=fixture({uploaded:true,firm:true});

@@ -1,4 +1,5 @@
 import {cloudExecutionStore} from './executionStore.ts';
+import {downloadPrivateFile} from './privateStorage.ts';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {sha256Hex,checkUpload,emptyPortalDb,type Portal,type PortalBundle,type PortalFile,type Side,type DocRequest,type Buyer,type NextStep,type Message} from './portal.ts';
 import type {PortalStore,RequestInput,UploadResult,CreatePortalInput} from './portalStore.ts';
@@ -61,7 +62,7 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
       const sha=await sha256Hex(await f.arrayBuffer());
       const r=await call<{file:FileRow;duplicate:boolean;uploaded?:boolean}>('kalling_portal_reserve_file',{p_request:requestId,p_name:f.name,p_mime:f.type,p_size:f.size,p_sha256:sha});
       if(r.duplicate){onProgress(1,'Already provided');return {file:file(r.file),duplicate:true};}
-      if(!r.uploaded){onProgress(0.2,'Uploading');const up=await client.storage.from('kalling-portal').upload(r.file.object_path!,f,{contentType:f.type,upsert:false});
+      if(!r.uploaded){onProgress(0.2,'Uploading');const up=await client.storage.from('kalling-portal').upload(r.file.object_path!,f,{contentType:f.type,upsert:false,cacheControl:'0'});
         if(up.error&&!/exists|duplicate/i.test(up.error.message))throw Error('The upload was interrupted. Your other documents are saved; try this file again. ('+up.error.message+')');}
       onProgress(0.9,'Confirming');const stored=await call<FileRow>('kalling_portal_finish_file',{p_file:r.file.id});
       // An unfinished reservation may originate from another request in this
@@ -71,7 +72,7 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
     },
     async link(requestId,fileId){await call('kalling_portal_link',{p_request:requestId,p_file:fileId});},
     async unlink(requestId,fileId){await call('kalling_portal_unlink',{p_request:requestId,p_file:fileId});},
-    async download(f){const path=await call<string>('kalling_portal_file_path',{p_file:f.id});const {data,error}=await client.storage.from('kalling-portal').download(path);if(error||!data)throw Error('Download failed: '+(error?.message||'no data'));return data;},
+    async download(f){const path=await call<string>('kalling_portal_file_path',{p_file:f.id});const {data,error}=await downloadPrivateFile(client,'kalling-portal',path);if(error||!data)throw Error('Download failed: '+(error?.message||'no data'));return data;},
     async message(portalId,body){await call('kalling_portal_message',{p_portal:portalId,p_body:body});},
     async seen(portalId){await call('kalling_portal_seen',{p_portal:portalId});},
     async setRequestsHidden(portalId,hidden){await call('kalling_portal_set_gate',{p_portal:portalId,p_hidden:hidden});},
@@ -85,7 +86,7 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
     async publishReview(portalId,r){return call<string>('kalling_portal_publish_review',{p_portal:portalId,p:r});},
     async decideReview(id,d,c){await call('kalling_portal_decide_review',{p_review:id,p_decision:d,p_comments:c});},
     async uploadFirmFile(portalId,f){const sha=await sha256Hex(await f.arrayBuffer());const r=await call<{file:FileRow;duplicate:boolean;uploaded?:boolean}>('kalling_portal_reserve_firm_file',{p_portal:portalId,p_name:f.name,p_mime:f.type,p_size:f.size,p_sha256:sha});
-      if(r.duplicate)return file(r.file);if(!r.uploaded){const up=await client.storage.from('kalling-portal').upload(r.file.object_path!,f,{contentType:f.type,upsert:false});if(up.error&&!/exists|duplicate/i.test(up.error.message))throw Error('The upload was interrupted: '+up.error.message);}
+      if(r.duplicate)return file(r.file);if(!r.uploaded){const up=await client.storage.from('kalling-portal').upload(r.file.object_path!,f,{contentType:f.type,upsert:false,cacheControl:'0'});if(up.error&&!/exists|duplicate/i.test(up.error.message))throw Error('The upload was interrupted: '+up.error.message);}
       return file(await call<FileRow>('kalling_portal_finish_file',{p_file:r.file.id}));},
     async saveExtract(_portalId,ex){await call('kalling_portal_save_text',{p_file:ex.fileId,p_extract:ex});},
     async extracts(portalId){const {data,error}=await client.from('kalling_portal_file_text').select('*').eq('portal_id',portalId);if(error)return [];return (data as {file_id:string;status:Extract['status'];pages:Extract['pages'];text_hash:string;extractor:string;note:string;extracted_at:string}[]).map(r=>({fileId:r.file_id,status:r.status,pages:r.pages,textHash:r.text_hash,extractor:r.extractor,note:r.note,extractedAt:r.extracted_at,chars:r.pages.reduce((n,p)=>n+p.text.length,0)}));},

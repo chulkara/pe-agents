@@ -2,8 +2,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {marketplaceFixture} from './marketplace-helpers.mjs';
-import {ownerUploadRun} from '../../scripts/hosted-owner-uploads.mjs';
-import {roles} from '../../scripts/hosted-validation.mjs';
+import {ownerUploadRun,recheckOwnerRevocation,ownerChangeCheck} from '../../scripts/hosted-owner-uploads.mjs';
+import {roles,fictionalEmails} from '../../scripts/hosted-validation.mjs';
 import {deployedCloudProject} from '../../lib/cloudProject.ts';
 
 // Executes the whole acceptance protocol against PostgreSQL policies and a
@@ -13,7 +13,7 @@ test('owner-upload acceptance protocol completes against real SQL permissions wi
   try{
     await s.db.exec('delete from kalling_private.brokerage_settings');
     const ids={owner_a:s.owner,owner_b:s.outsider,member:s.viewer,seller:s.seller,buyer:s.buyer,specialist:s.other};
-    const accounts=Object.fromEntries(roles.map(role=>[role,{email:role+'@kalling-validation.invalid',password:'Fictional-local-protocol-only-12345'}]));
+    const accounts=Object.fromEntries(roles.map(role=>[role,{email:fictionalEmails[role],password:'Fictional-local-protocol-only-12345'}]));
     for(const role of roles)await s.db.query('update auth.users set email=$1 where id=$2',[accounts[role].email,ids[role]]);
     const fixture=randomUUID(),wa={firm:{name:'Fictional hosted validation A '+fixture},companies:[{id:'foundation',name:'Fictional HVAC',sample:true}],deals:[],events:[]};
     await s.one(s.owner,'select public.kalling_save_workspace($1,$2,$3,$4)',[s.firm,1,wa,'Fictional foundation report fixture']);
@@ -32,7 +32,8 @@ test('owner-upload acceptance protocol completes against real SQL permissions wi
       let uid=null;
       return {
         auth:{
-          signInWithPassword:async credentials=>{const role=roles.find(r=>accounts[r].email===credentials.email&&accounts[r].password===credentials.password);uid=ids[role];return {data:{session:uid?{access_token:'fictional-simulated-token'}:null},error:uid?null:{status:400}};},
+          signInWithPassword:async credentials=>{const role=roles.find(r=>accounts[r].email===credentials.email&&accounts[r].password===credentials.password);uid=ids[role];return {data:{session:uid?{access_token:'fictional-simulated-token-'+uid}:null},error:uid?null:{status:400}};},
+          getSession:async()=>({data:{session:uid?{access_token:'fictional-simulated-token-'+uid}:null},error:null}),
           getUser:async()=>{const r=await s.db.query('select id,email,email_confirmed_at from auth.users where id=$1',[uid]);return {data:{user:r.rows[0]},error:null};},
           signOut:async()=>{signedOut.push(uid);uid=null;return {error:null};},
         },
@@ -52,13 +53,23 @@ test('owner-upload acceptance protocol completes against real SQL permissions wi
           },
           // The hosted failing request used the metadata operation before bytes.
           // Exercise both contexts so a read-only SQL simulation cannot mask it.
-          download:async path=>{for(const operation of ['object.get_authenticated_info','object.get_authenticated']){const r=await query(uid,'select id from storage.objects where bucket_id=$1 and name=$2',[bucket,path],operation);if(!r.data?.length)return {data:null,error:{statusCode:r.error?.statusCode||404}};}return bytes.has(path)?{data:new Blob([bytes.get(path)]),error:null}:{data:null,error:{statusCode:404}};},
+          download:async(path,options,parameters)=>{assert.ok(options.cacheNonce);assert.equal(parameters.cache,'no-store');for(const operation of ['object.get_authenticated_info','object.get_authenticated']){const r=await query(uid,'select id from storage.objects where bucket_id=$1 and name=$2',[bucket,path],operation);if(!r.data?.length)return {data:null,error:{status:400,statusCode:'NoSuchKey',code:'NoSuchKey'}};}return bytes.has(path)?{data:new Blob([bytes.get(path)]),error:null}:{data:null,error:{status:400,statusCode:'NoSuchKey',code:'NoSuchKey'}};},
           createSignedUrl:async path=>{const r=await query(uid,'select id from storage.objects where bucket_id=$1 and name=$2',[bucket,path],'object.sign');return r.data?.length?{data:{signedUrl:'fictional-signed-link'},error:null}:{error:{statusCode:r.error?.statusCode||404}};},
         })},
       };
     }
     const checks=[],manifest={};await ownerUploadRun(deployedCloudProject,accounts,report,(pass,name)=>{assert.ok(pass,name);checks.push(name);},manifest,{makeClient});
-    assert.ok(checks.length>=45);assert.equal(manifest.portalClosed,true);assert.equal(signedOut.length,6);
+    assert.equal(checks.length,50);assert.equal(manifest.portalClosed,true);assert.equal(signedOut.length,6);
+    // Recreate only the final failed report's state, without another full run.
+    // The focused probe must check this original file and JWT, not a fresh file.
+    await s.db.query("update public.kalling_portals set status='Draft' where id=$1",[manifest.portals[0]]);
+    const partial=structuredClone(manifest);delete partial.portalClosed;
+    const previous={project:deployedCloudProject.url,mode:'owner-uploads',status:'failed',fixtureManifest:partial,checks:[...checks.slice(0,48).map(name=>({name,status:'passed'})),{name:ownerChangeCheck,status:'failed'}]};
+    const altered=structuredClone(previous);altered.fixtureManifest.files[1].sha256='0'.repeat(64);
+    await assert.rejects(recheckOwnerRevocation(deployedCloudProject,{owner_a:accounts.owner_a,seller:accounts.seller},report,altered,()=>{}, {},{makeClient}),/linked original file has changed/);
+    const untouched=(await s.db.query('select status,owner_email,seller_id from public.kalling_portals where id=$1',[manifest.portals[0]])).rows[0];assert.equal(untouched.status,'Draft');assert.equal(untouched.owner_email,fictionalEmails.buyer);assert.equal(untouched.seller_id,null);
+    const resumedChecks=[],resumed={};const result=await recheckOwnerRevocation(deployedCloudProject,{owner_a:accounts.owner_a,seller:accounts.seller},report,previous,(pass,name)=>{assert.ok(pass,name);resumedChecks.push(name);},resumed,{makeClient});
+    assert.equal(result.originalOwnerUploadChecksCompleted,50);assert.equal(resumedChecks.length,9);assert.equal(resumed.portalClosed,true);assert.equal(resumed.linkedEvidence.sameSellerJwt,true);assert.equal(resumed.linkedEvidence.originalFile,manifest.files[1].id);assert.deepEqual(resumed.ownerRevocationResponse,{httpStatus:400,code:'NoSuchKey',hasError:true,hasData:false});assert.equal(signedOut.length,10);
     assert.equal((await s.db.query('select count(*)::int n from public.kalling_firms')).rows[0].n,2);
     assert.equal((await s.db.query('select count(*)::int n from kalling_private.brokerage_settings')).rows[0].n,0);
     assert.equal((await s.db.query('select active from public.kalling_members where firm_id=$1 and user_id=$2',[s.firm,s.viewer])).rows[0].active,false);
