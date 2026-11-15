@@ -1,0 +1,93 @@
+{
+  "date": "2026-11-15",
+  "project": "ymbciapnzdmymtthevjp",
+  "source_commit": "1a8bb8f46f8335a7b97ef6d8e8c4f4208fe2644c",
+  "fixture_source_commit": "3d4da9d80fbd15979782adfe63d57b4706211f31",
+  "recorded_migrations": 26,
+  "migration": {
+    "source": "20261115200805_kalling_buyer_access_guards.sql",
+    "sha256": "57ca65e4cb43300dc09ab9732801d62b81cd259c0bde2f39c0b43492af708133",
+    "hosted_version": "20261115203609",
+    "name": "kalling_buyer_access_guards",
+    "status": "applied"
+  },
+  "edge_function": {
+    "name": "kalling-verification-file",
+    "status": "ACTIVE",
+    "version": 2,
+    "verify_jwt": false,
+    "authentication": "Mandatory Auth user lookup and confirmed email inside the handler before all private operations; ES256 supported",
+    "observed_public_signing_algorithm": "ES256",
+    "bundle_sha256": "668d64c8947789d1d5fc7c0573f41945968ea356ca7a53ff647403d571188d44",
+    "ezbr_sha256": "7f44482edb187db9bd97e78a07779131bf2a24b85a9b89039cf25c66a8d8f607",
+    "server_credential_retrieved": false
+  },
+  "verification": {
+    "local_tests_passed": 519,
+    "build": "passed",
+    "protocol_simulated_checks": 65,
+    "source_ci_run": 43758922326,
+    "source_ci_result": "success",
+    "fixture_ci_run": 43759554971,
+    "fixture_ci_result": "success",
+    "browser_flows": [
+      "deal-flow",
+      "seller-flow",
+      "execution-flow"
+    ],
+    "phone_viewer_width": 390,
+    "watermark_on_every_downloaded_page": "passed",
+    "held_viewer_permission_recheck": "passed_on_focus",
+    "hosted_rollback_sql_checks": 17,
+    "hosted_public_http_checks": 8,
+    "extra_http_denials": {
+      "invalid_jwt": 401,
+      "unrelated_origin": 403
+    },
+    "authenticated_buyer_http_acceptance": "pending_mac_run",
+    "post_setup_anonymous_status_and_lead_refusal": "passed"
+  },
+  "private_pilot": {
+    "fixture_manifest": "buyer-access-fixture.json",
+    "fixture": "de32971b-33ca-4f94-b185-882b72a02b11",
+    "firm": "07941ca2-4b03-4890-8c0b-24b2803d25d0",
+    "listing": "451c96c8-134e-428a-be39-9890fc05dc2b",
+    "listing_number": "KL-910015",
+    "public_intake_open": false,
+    "invited_pilot_buyers": 2,
+    "post_setup": {
+      "buyers": 0,
+      "leads": 0,
+      "non_sample_listings": 0,
+      "alert_drafts": 0,
+      "missing_kalling_rls": 0,
+      "kalling_tables": 57,
+      "public_buckets": 0
+    },
+    "fixture_script_sha256": "1f209e00ee755527fdbb7015f08a8df1c07655fe05d32f7a36d5e7039f61059c"
+  },
+  "advisors": {
+    "health_findings": 0,
+    "security_categories": [
+      "rls_enabled_no_policy",
+      "anon_security_definer_function_executable",
+      "authenticated_security_definer_function_executable",
+      "auth_leaked_password_protection"
+    ],
+    "independent_security_audit": false
+  },
+  "frontend": {
+    "state": "draft review branch; not deployed to Pages"
+  },
+  "remaining": [
+    "Positive hosted buyer proof and data-room acceptance",
+    "Execution-file handover transport",
+    "Real Mac model job",
+    "Complete hosted mobile sale rehearsal",
+    "Attorney review",
+    "Licensing",
+    "Fee decision",
+    "SMTP",
+    "Contact information and public launch setup"
+  ]
+}

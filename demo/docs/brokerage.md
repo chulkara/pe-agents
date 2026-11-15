@@ -1,6 +1,6 @@
 # Kalling brokerage (HVAC, New Jersey and New York)
 
-Current hosted activation and acceptance status is recorded in [hosted validation](hosted-validation.md). Migrations are applied and 24 authenticated firm/private-file checks passed. Portal, buyer-proof, data-room and execution-file HTTP acceptance and launch prerequisites remain open. Do not rerun source migrations or configure a real house firm from the setup instructions until those prerequisites are reviewed.
+Current hosted activation and acceptance status is recorded in [hosted validation](hosted-validation.md). Migrations are applied; firm/private-file and linked owner-upload acceptance passed. Buyer-proof, data-room and execution-file HTTP acceptance and launch prerequisites remain open. A private fictional brokerage is prepared for buyer testing with public seller and new buyer registration closed. Do not rerun applied migrations or configure a real brokerage until launch prerequisites are reviewed.
 
 The public site is now Kalling's sell-side marketplace, modeled on how QuietLight runs a brokerage, but built only for HVAC and refrigeration companies in NJ and NY.
 
@@ -61,11 +61,11 @@ Ranges follow public HVAC valuation guides (OffDeal), and the license factor fol
 
 ## Going live
 
-1. Apply `production/migrations/005_brokerage.sql`, then `006_buyer_checks.sql` (advisor funds checks). It inserts three sample listings, and you can withdraw them later from the desk.
-2. As the owner of the Kalling firm, run once:
-   `select public.kalling_brokerage_set_house('<firm id>');`
-   Until this is done, the site refuses seller inquiries with a clear message.
+1. Apply missing migrations in order, including `20261115200805_kalling_buyer_access_guards.sql`. The hosted project already has them. Sample listings remain clearly labelled.
+2. The project administrator provisions the brokerage in `kalling_private.brokerage_settings`. The former `kalling_brokerage_set_house` RPC is no longer callable by application users. Provisioning defaults to `intake_open=false`; it does not launch the marketplace. A bounded `pilot_buyers` list permits invited private buyers to register. Do not replace the prepared fictional brokerage with a real firm until the acceptance fixture and launch decisions are reviewed.
 3. The public site switches from the one-browser demo to the live database automatically once the brokerage tables exist. Buyers then sign in with email and password.
+
+New NDA requests must match the fingerprint of the exact current listing agreement. A changed agreement replaces the old open request with a new pending request; approval requires current signed text. The template text is unchanged and still awaits attorney review.
 
 Before launch:
 

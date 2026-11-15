@@ -111,7 +111,7 @@ A separate read-only hosted confirmation found the exact retained fictional port
 
 ### Next: buyer verification and data-room HTTP acceptance
 
-Use fictional identities and documents. Keep public intake closed while preparing the next fixture. The brokerage house is currently unset, so advisor marketplace functions need a controlled configuration strategy before a hosted buyer run can be offered. Do not set a fictional firm as the production brokerage merely to make a test pass.
+Use fictional identities and documents. Public intake stays closed. The controlled private configuration below supersedes the earlier unset-house state: it separates administrative brokerage provisioning from public launch and admits only explicitly invited fictional buyers. It is not a production launch.
 
 The next acceptance must demonstrate:
 
@@ -120,6 +120,40 @@ The next acceptance must demonstrate:
 - Per-listing NDA and advisor approval before access, followed by logged authenticated metadata and byte reads. Preserve the existing ticket predicates; do not permit listing or reusable signed links.
 - The same-session refusal after buyer access, owner document approval or current source-document approval changes. Replaced documents require owner reapproval, and earlier tickets cannot read the replacement.
 - Watermarked viewing/downloads and anonymous seller-facing engagement records, checked separately in the browser. HTTP transport alone does not verify the viewer rendering.
+
+## Buyer verification and data-room acceptance
+
+Prepared November 15, 2026. The new source migration `20261115200805_kalling_buyer_access_guards.sql` is applied as hosted version `20261115203609`, bringing the recorded total to 26. It fixes the nullable proof-access predicate, gives authenticated metadata the same logged ticket and current access checks as bytes, requires exact current NDA text at signing and approval, and separates private brokerage configuration from public intake. Ordinary clients cannot provision the global brokerage. Paused registration admits only the administrator's bounded list of invited buyer IDs; existing buyers keep their account access.
+
+The administrative script `production/fixtures/prepare-buyer-access.sql` refused any configured brokerage or existing buyer, lead, access request or real listing. It verified both exact fictional foundation owners and their sample-only workspace, then prepared one new sample company and a clearly labelled sample listing. The current manifest is [buyer-access-fixture.json](../production/activation/buyer-access-fixture.json). Only the existing fictional buyer and specialist identities can register as private-pilot buyers. The house is assigned to the fictional firm only for this controlled pilot. Public intake is false, and post-setup counts confirm zero buyers, leads, non-sample listings and alert drafts. No real contact, email or model call was involved.
+
+The updated `kalling-verification-file` function is active at version 2. Public signing-key discovery returned ES256. The legacy gateway JWT setting is disabled, and the function itself validates the caller through Auth and confirmed email before any reservation, user-authorised download or trusted attestation. Invalid tokens still return HTTP 401, missing tokens return 401, unrelated origins return 403, and the GitHub Pages CORS preflight succeeds. No privileged key was retrieved or added to source or the Mac.
+
+Verification so far:
+
+| Evidence | Result | Scope |
+| --- | --- | --- |
+| Local unit/database/worker tests | 519 passed | Includes the full 65-check protocol with simulated Auth/HTTP and the actual validator handler against PostgreSQL policies |
+| Build | Passed | Current frontend compiles |
+| Source browser CI | Passed | Deal, seller and execution flows; phone/tablet/desktop checks, a phone-width open viewer, every stamped download page and viewer closure on access loss |
+| Hosted rollback smoke | 17 passed | Database rules only; temporary fixtures rolled back |
+| Hosted public HTTP checks | 8 passed | Auth/public isolation, validator denial and CORS |
+| Extra validator denials | 2 passed | Invalid JWT and unrelated origin |
+| Positive hosted buyer acceptance | Pending | Requires the six fictional accounts' passwords entered locally on Karan's Mac |
+
+Browser CI uses fictional local stores and a scripted local model. It does not prove hosted Auth/Storage transport or real model quality. A held viewer rechecks on focus/visibility and every 15 seconds while visible; server metadata and byte reads enforce revocation on every request. Previously downloaded copies cannot be recalled.
+
+### Run the prepared buyer acceptance
+
+Keep all earlier reports. From Karan's existing `demo/` folder, update `scripts/hosted-buyer-access.mjs` and `lib/verificationStore.ts` from the checked review branch, and save the fixture JSON in Downloads. The previously downloaded `lib/privateStorage.ts` and hosted validation helpers are also required. Dependencies are already installed from the earlier acceptance run.
+
+```sh
+node --experimental-strip-types scripts/hosted-buyer-access.mjs run --confirm-fictional --prompt --foundation-report "$HOME/Downloads/kalling-hosted-acceptance.json" --fixture "$HOME/Downloads/kalling-buyer-access-fixture.json" --output "$HOME/Downloads/kalling-buyer-access-acceptance.json"
+```
+
+The 65 checks verify all six confirmed identities and the exact prepared private brokerage before any fixture changes. They exercise corrupt-byte rejection, trusted attestation, immutable retry, proof isolation and logged reads, role downgrade, exact-file review, private-note separation, the seller's anonymous badge, exact NDA and advisor approval, after-LOI locking, log-before-bytes, every stamped PDF page, anonymous seller engagement, unchanged-JWT revocation, owner removal, replacement approval and refusal history. A pass withdraws the sample listing and proof, unpublishes its room, closes its portal, revokes the temporary analyst role and signs out all six sessions. Private originals and audit history are retained. The private brokerage remains paused until administrative cleanup or the next reviewed acceptance stage.
+
+On failure, preserve the report and supply only the final PASS/BLOCKED lines. The script does not bypass a policy or count a transport/server error as access-denial proof. Real buyer transport is not accepted until that run passes. The PR remains a draft, and these frontend changes have not been deployed to Pages. Execution handover, a real Mac model job, the complete hosted mobile sale and all launch decisions remain open.
 
 Before later buyer and execution HTTP acceptance, check the same metadata-before-bytes contract in their ticketed Storage policies. They remain separately scoped and unverified; this owner-file fix grants no buyer or specialist access.
 
