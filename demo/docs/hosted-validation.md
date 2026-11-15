@@ -1,5 +1,7 @@
 # Hosted activation and acceptance
 
+Latest acceptance result, November 15, 2026: Karan reports all nine focused owner-revocation checks passed. Together with the preceding 48 owner-upload checks, the linked runs complete the 50 original owner-upload checks. A separate read-only hosted check confirms the exact fictional portal is closed, the earlier seller binding is cleared, three original files remain stored, both recheck accounts have no remaining sessions, and the brokerage house remains unset. Buyer verification and data-room HTTP acceptance are next; they are not covered by the owner-upload result.
+
 ## Verified on November 14, 2026
 
 Project `ymbciapnzdmymtthevjp` remains on the Free plan. All 22 remaining migrations were applied individually in order. The initial hosted ledger had 23 entries including the previously applied worker migration; subsequent owner-upload and authenticated-metadata guards bring it to 25. Foundation 001 and scheduler 002 were already active and were not rerun. Exact source checksums and recorded versions are in [the activation record](../production/activation/2026-11-14.json).
@@ -50,7 +52,7 @@ node --experimental-strip-types scripts/hosted-validation.mjs run --confirm-fict
 
 The runner verifies password grants, confirmed user lookups, two private firms, known workspace isolation, an accepted analyst invitation, actual immutable original-file upload/download with matching SHA-256, refusal for unrelated parties, role downgrade and revocation using the existing JWT, and Auth refresh. It signs out the fictional sessions afterward. It never configures the brokerage house or sends email. Private fictional fixtures remain for inspection; the report records IDs and object paths for a separately reviewed cleanup. A failed run is reported as failed, not repaired by bypassing policies.
 
-The completed run covers the firm workspace and `kalling-private` bucket. Authenticated owner-portal uploads, buyer proof-file upload and validator attestation, buyer data-room reads, execution diligence files and post-close handover over HTTP remain unverified. The hosted SQL smoke checks the data-room ticket policy separately. SMTP delivery, a connected nonempty background job and public launch also remain outside this acceptance result. Do not extend the 24-check result to those workflows.
+The 24-check run covers the firm workspace and `kalling-private` bucket. Owner-portal uploads were subsequently accepted through the linked runs below. Buyer proof-file upload and validator attestation, buyer data-room reads, execution diligence files and post-close handover over HTTP remain unverified. The hosted SQL smoke checks the data-room ticket policy separately. SMTP delivery, a connected nonempty background job and public launch also remain outside this acceptance result. Do not extend the 24-check result to those workflows.
 
 ## Owner-portal upload acceptance
 
@@ -58,7 +60,7 @@ The upload-guard migration is applied as hosted version `20261114202229`. All 50
 
 The next runner is `scripts/hosted-owner-uploads.mjs`. It requires the successful foundation report already saved in Karan's Downloads folder. Before any test writes, it verifies all six confirmed identities, the exact fictional firm names and owners, and that every company in the reused workspace is marked as a sample. It reuses those two firms, adds one fictional company and portal, and records the retained fixtures in a separate report. It never configures a brokerage house, emails a recipient or calls a model.
 
-The first actual run passed 16 checks, then stopped at the signed seller's first download. The stored file and countersigned engagement were present, and the gate was open. Hosted Storage logs showed a refused `object.get_authenticated_info` request (HTTP 400, `NoSuchKey`). A read-only policy diagnostic on that same fictional fixture returned one authorised byte-read row but zero metadata-read rows. The rule had been too narrow. The follow-up migration `20261114222455_kalling_authenticated_file_metadata.sql` permits authenticated metadata and byte reads under the same current file, portal-role and engagement checks; it does not permit signing or listing. The protocol simulation now tests metadata before bytes. Actual owner-upload HTTP acceptance requires a retry and has not passed yet.
+The first actual run passed 16 checks, then stopped at the signed seller's first download. The stored file and countersigned engagement were present, and the gate was open. Hosted Storage logs showed a refused `object.get_authenticated_info` request (HTTP 400, `NoSuchKey`). A read-only policy diagnostic on that same fictional fixture returned one authorised byte-read row but zero metadata-read rows. The rule had been too narrow. The follow-up migration `20261114222455_kalling_authenticated_file_metadata.sql` permits authenticated metadata and byte reads under the same current file, portal-role and engagement checks; it does not permit signing or listing. The protocol simulation now tests metadata before bytes. A retry was required; the subsequent outcomes are recorded below.
 
 The follow-up is applied as hosted version `20261114223138`. The retained fictional fixture now passes SQL policy checks for both authorised read operations; signing, listing and unrelated-account metadata checks still return no rows. All 503 local tests, the build and all three browser flows passed in [source CI run 43648523881](https://github.com/chulkara/pe-agents/actions/runs/43648523881). The latest hosted rollback smoke passed 17 checks. The original two fictional firms and the partial portal/file are preserved, there are zero test sessions and the brokerage house remains unset. These are policy and simulation results, not a completed HTTP byte comparison.
 
@@ -101,7 +103,23 @@ Then run:
 node --experimental-strip-types scripts/hosted-owner-uploads.mjs recheck-revocation --confirm-fictional --prompt --foundation-report "$HOME/Downloads/kalling-hosted-acceptance.json" --resume-report "$HOME/Downloads/kalling-owner-upload-retry.json" --output "$HOME/Downloads/kalling-owner-revocation-acceptance.json"
 ```
 
-Local verification passed 509 tests and the build, including the complete protocol against PostgreSQL policies, the focused same-file recheck, rejection of a mismatched fixture, the real SDK's semantic-code response, unchanged authorization headers and fresh private reads. [Source CI run 43652999090](https://github.com/chulkara/pe-agents/actions/runs/43652999090) also passed all three browser flows, including the three screen widths. Auth and byte transport in those tests are simulated. Actual hosted acceptance remains incomplete until this focused Mac run passes. A successful result reports nine focused checks and links them to the previous 48 passes; it does not describe those as 50 checks in a single run. The review branch remains a draft and these frontend changes are not deployed to Pages yet.
+Local verification passed 509 tests and the build, including the complete protocol against PostgreSQL policies, the focused same-file recheck, rejection of a mismatched fixture, the real SDK's semantic-code response, unchanged authorization headers and fresh private reads. [Source CI run 43652999090](https://github.com/chulkara/pe-agents/actions/runs/43652999090) also passed all three browser flows, including the three screen widths. Auth and byte transport in those tests are simulated.
+
+On November 15, Karan reported all nine focused Mac checks passed. The focused run verifies matching original bytes before revocation, refusal with the same valid seller JWT afterward, file-path RPC refusal, hidden portal/file rows and fixture closure. Linked with the prior 48 passes, this completes coverage of the original 50-check protocol. These were separate runs. The complete local JSON reports have not been imported; the authenticated HTTP result is user-reported.
+
+A separate read-only hosted confirmation found the exact retained fictional portal closed, its earlier seller binding cleared, its invitation changed to the fictional buyer, three stored portal files, no remaining sessions for the two recheck accounts, and no brokerage house. That corroborates the retained state; SQL metadata was not used to infer downloaded bytes or SHA-256 comparisons. The review branch remains a draft and these frontend changes are not deployed to Pages yet.
+
+### Next: buyer verification and data-room HTTP acceptance
+
+Use fictional identities and documents. Keep public intake closed while preparing the next fixture. The brokerage house is currently unset, so advisor marketplace functions need a controlled configuration strategy before a hosted buyer run can be offered. Do not set a fictional firm as the production brokerage merely to make a test pass.
+
+The next acceptance must demonstrate:
+
+- Buyer proof upload, immutable retry and trusted validator attestation using actual private bytes. A failed validation must prevent submission.
+- Proof-document access for the submitting buyer and authorised advisor only. Sellers receive the anonymous verification badge, never the proof document or buyer identity.
+- Per-listing NDA and advisor approval before access, followed by logged authenticated metadata and byte reads. Preserve the existing ticket predicates; do not permit listing or reusable signed links.
+- The same-session refusal after buyer access, owner document approval or current source-document approval changes. Replaced documents require owner reapproval, and earlier tickets cannot read the replacement.
+- Watermarked viewing/downloads and anonymous seller-facing engagement records, checked separately in the browser. HTTP transport alone does not verify the viewer rendering.
 
 Before later buyer and execution HTTP acceptance, check the same metadata-before-bytes contract in their ticketed Storage policies. They remain separately scoped and unverified; this owner-file fix grants no buyer or specialist access.
 
