@@ -118,7 +118,7 @@ test('the local store refuses bytes if approval changes while a file is being re
 test('the cloud store logs first and uses authenticated storage downloads, never signed links',async()=>{
   const order=[],blob=new Blob(['private']);
   const client={async rpc(name,args){order.push([name,args]);return {data:{ticket:'t1',path:'P1/f1',name:'Memorandum',file_name:'memo.pdf',mime:'application/pdf',allow_download:false,watermark:'Alex'},error:null};},
-    storage:{from(bucket){assert.equal(bucket,'kalling-portal');return {async download(path){order.push(['download',path]);return {data:blob,error:null};},createSignedUrl(){assert.fail('signed links must not be issued');}};}}};
+    storage:{from(bucket){assert.equal(bucket,'kalling-portal');return {async download(path,options,parameters){assert.ok(options.cacheNonce);assert.equal(parameters.cache,'no-store');order.push(['download',path]);return {data:blob,error:null};},createSignedUrl(){assert.fail('signed links must not be issued');}};}}};
   const result=await cloudDataRoomStore(client).open('i1');assert.equal(result.blob,blob);
   assert.deepEqual(order,[['kalling_dataroom_open',{p_item:'i1'}],['download','P1/f1']]);
   order.length=0;await cloudDataRoomStore(client).open('i1','downloaded');assert.equal(order[0][0],'kalling_dataroom_download');

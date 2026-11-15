@@ -8,7 +8,7 @@ declare
  advisor uuid=gen_random_uuid(); seller uuid=gen_random_uuid(); buyer uuid=gen_random_uuid(); outsider uuid=gen_random_uuid();
  suffix text=replace(gen_random_uuid()::text,'-',''); advisor_mail text; seller_mail text; buyer_mail text;
  firm uuid; portal uuid; request uuid; letter uuid; file_id uuid; listing uuid; buyer_id uuid; access_id uuid; item uuid; review_id uuid; job_id uuid;
- invite text; code text; path text; old_path text; revised uuid; f jsonb; paired jsonb; claimed jsonb; opened jsonb; n integer; body text;
+ invite text; code text; path text; old_path text; revised uuid; f jsonb; paired jsonb; claimed jsonb; opened jsonb; n integer; body text; nda_hash text;
 begin
  if exists(select 1 from kalling_private.brokerage_settings) then raise exception 'Run this isolated smoke test before configuring the production house firm.'; end if;
  advisor_mail='advisor-'||suffix||'@kalling.invalid'; seller_mail='seller-'||suffix||'@kalling.invalid'; buyer_mail='buyer-'||suffix||'@kalling.invalid';
@@ -17,7 +17,10 @@ begin
   execute 'set local role authenticated';
   perform set_config('request.jwt.claim.sub',advisor::text,true);
   firm=public.kalling_create_firm('Fictional Kalling validation',jsonb_build_object('firm',jsonb_build_object('name','Fictional Kalling validation'),'companies',jsonb_build_array(jsonb_build_object('id','phase3-smoke','name','Fictional HVAC company')),'deals','[]'::jsonb,'events','[]'::jsonb));
-  perform public.kalling_brokerage_set_house(firm);
+  -- Initial broker provisioning is administrative, never first-claim by a client.
+  execute 'reset role';
+  insert into kalling_private.brokerage_settings(firm_id,pilot_buyers) values(firm,array[buyer]);
+  execute 'set local role authenticated';
   portal=public.kalling_portal_create(firm,'phase3-smoke','Fictional HVAC company','Fictional Seller',seller_mail,jsonb_build_object('name','Fictional Advisor','email',advisor_mail),'Fictional validation only.');
   perform public.kalling_portal_set_gate(portal,true);
   request=public.kalling_portal_save_request(portal,jsonb_build_object('title','Profit and loss statement, 2025','needed','A fictional annual statement for testing.','why','Validate the earnings review workflow.','sharing','Only advisors until owner approval.','contact',jsonb_build_object('name','Fictional Advisor','email',advisor_mail)));
@@ -71,7 +74,10 @@ begin
   perform public.kalling_dataroom_set_status(listing,'Published');
   perform set_config('request.jwt.claim.sub',buyer::text,true);
   buyer_id=public.kalling_buyer_save_profile('{"name":"Fictional Buyer","type":"Owner-operator","funds":"$500K to $1M","experience":"Fictional buyer with mechanical services experience for testing.","regions":["Central Jersey"],"maxPrice":2000000}'::jsonb);
-  perform public.kalling_buyer_request_access(listing,'Fictional Buyer',true,'Fictional validation only.',repeat('c',64));
+  execute 'reset role';
+  select encode(sha256(convert_to(kalling_private.nda_text(l),'UTF8')),'hex') into nda_hash from public.kalling_listings l where id=listing;
+  execute 'set local role authenticated';
+  perform public.kalling_buyer_request_access(listing,'Fictional Buyer',true,'Fictional validation only.',nda_hash);
   select a.id into access_id from public.kalling_access a where a.buyer_id=phase3.buyer_id and a.listing_id=listing;
   perform set_config('storage.operation','object.get_authenticated',true);
   select count(*) into n from storage.objects where bucket_id='kalling-portal' and name=path;

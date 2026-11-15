@@ -3,6 +3,7 @@ import {emptyBrokerDb,type Viewer} from './brokerage.ts';
 import {LOCAL_BROKER_KEY} from './brokerStore.ts';
 import {indexedBytes,type ByteStore} from './portalStore.ts';
 import * as V from './buyerVerification.ts';
+import {downloadPrivateFile} from './privateStorage.ts';
 export interface VerificationStore{
   mode:'local'|'cloud';policy(days?:number):Promise<number>;list(buyerId?:string):Promise<V.Verification[]>;save(input:V.ProofInput):Promise<V.Verification>;
   upload(id:string,file:File,onProgress?:(stage:string,fraction:number)=>void):Promise<void>;
@@ -48,6 +49,6 @@ export function cloudVerificationStore(client:SupabaseClient):VerificationStore{
       if(error||!data?.ok)throw Error('Trusted file validation is unavailable or failed. Your upload is saved but cannot be submitted. Try again or contact Kalling.');progress?.('Saved, not submitted',1);
     },
     async change(id,action){await call('kalling_verification_change',{p_submission:id,p_action:typeof action==='string'?action:action.decision,p:typeof action==='string'?{}:action});},
-    async open(fileId){const path=await call<string>('kalling_verification_open',{p_file:fileId});const {data,error}=await client.storage.from('kalling-buyer-proof').download(path);if(error||!data)throw Error('Document access is unavailable or has changed.');return data;}
+    async open(fileId){const path=await call<string>('kalling_verification_open',{p_file:fileId});const {data,error}=await downloadPrivateFile(client,'kalling-buyer-proof',path);if(error||!data)throw Error('Document access is unavailable or has changed.');return data;}
   };
 }
