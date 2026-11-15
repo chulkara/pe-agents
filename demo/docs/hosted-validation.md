@@ -145,11 +145,25 @@ Browser CI uses fictional local stores and a scripted local model. It does not p
 
 ### Run the prepared buyer acceptance
 
-Keep all earlier reports. From Karan's existing `demo/` folder, update `scripts/hosted-buyer-access.mjs` and `lib/verificationStore.ts` from the checked review branch, and save the fixture JSON in Downloads. The previously downloaded `lib/privateStorage.ts` and hosted validation helpers are also required. Dependencies are already installed from the earlier acceptance run.
+Keep all earlier reports. Use a complete checked snapshot in a new folder. Karan's older ZIP was missing both the `pdf-lib` dependency and `lib/brokerage.ts`; copying individual scripts mixed incompatible source versions. Installing one missing package does not repair the absent project files.
+
+These commands leave the existing project folder unchanged, install the locked dependencies, and use the fixture shipped with the checked snapshot:
 
 ```sh
-node --experimental-strip-types scripts/hosted-buyer-access.mjs run --confirm-fictional --prompt --foundation-report "$HOME/Downloads/kalling-hosted-acceptance.json" --fixture "$HOME/Downloads/kalling-buyer-access-fixture.json" --output "$HOME/Downloads/kalling-buyer-access-acceptance.json"
+kalling_check_dir="$(mktemp -d "$HOME/Downloads/kalling-buyer-check.XXXXXX")" &&
+curl -fL https://github.com/chulkara/pe-agents/archive/8a70d235cfd08944a6a3dc8102915d0aed71143e.zip -o "$kalling_check_dir/source.zip" &&
+unzip -q "$kalling_check_dir/source.zip" -d "$kalling_check_dir" &&
+cd "$kalling_check_dir/pe-agents-8a70d235cfd08944a6a3dc8102915d0aed71143e/demo" &&
+npm ci
 ```
+
+Then run the acceptance from that new `demo/` folder:
+
+```sh
+node --experimental-strip-types scripts/hosted-buyer-access.mjs run --confirm-fictional --prompt --foundation-report "$HOME/Downloads/kalling-hosted-acceptance.json" --fixture production/activation/buyer-access-fixture.json --output "$HOME/Downloads/kalling-buyer-access-acceptance.json"
+```
+
+A clean export of the exact checked source completed `npm ci` and reached the foundation-report guard without missing packages or imports. That startup check deliberately used an absent report to stop before credentials, Auth requests or fixture writes. It is setup verification, not a positive hosted acceptance result. Both reported module-loading failures occurred before the runner started, so neither consumed or changed the prepared hosted fixture.
 
 The 65 checks verify all six confirmed identities and the exact prepared private brokerage before any fixture changes. They exercise corrupt-byte rejection, trusted attestation, immutable retry, proof isolation and logged reads, role downgrade, exact-file review, private-note separation, the seller's anonymous badge, exact NDA and advisor approval, after-LOI locking, log-before-bytes, every stamped PDF page, anonymous seller engagement, unchanged-JWT revocation, owner removal, replacement approval and refusal history. A pass withdraws the sample listing and proof, unpublishes its room, closes its portal, revokes the temporary analyst role and signs out all six sessions. Private originals and audit history are retained. The private brokerage remains paused until administrative cleanup or the next reviewed acceptance stage.
 

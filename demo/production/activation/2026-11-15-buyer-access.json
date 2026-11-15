@@ -45,6 +45,14 @@
       "unrelated_origin": 403
     },
     "authenticated_buyer_http_acceptance": "pending_mac_run",
+    "clean_snapshot_setup": {
+      "source_snapshot": "8a70d235cfd08944a6a3dc8102915d0aed71143e",
+      "reported_local_setup_failures": ["pdf-lib package absent", "lib/brokerage.ts absent in the old ZIP"],
+      "resolution": "Use the complete checked source in a separate folder and npm ci; preserve the existing project and reports",
+      "locked_install": "passed",
+      "module_resolution": "passed",
+      "offline_stop": "Expected foundation-report guard with an intentionally absent report; no credentials, Auth requests or fixture writes"
+    },
     "post_setup_anonymous_status_and_lead_refusal": "passed"
   },
   "private_pilot": {
