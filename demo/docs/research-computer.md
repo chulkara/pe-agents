@@ -17,13 +17,13 @@ The browser submits an approved input snapshot to the Supabase queue. The paired
   * Model outages pause claiming instead of burning attempts. Interrupted attempts retry with backoff, four attempts at most. After that, the person sees the error and a **Try again** button.
 * **Cancellation.** Cancelling in Kalling stops the worker at its next progress report and blocks the result.
 * **Security.**
-  * The Mac holds a random 256-bit worker token, stored only as a SHA-256 hash in the database, plus the public project key. No service-role key exists anywhere.
+  * The Mac holds a random 256-bit worker token, stored only as a SHA-256 hash in the database, plus the public project key. No service-role key exists in the browser or Mac worker.
   * A token can claim work only for its own firm. It stops working when an owner or admin disconnects the computer, or when the admin who connected it loses that role.
   * Work requested by a member who lost write access is cancelled, not run.
 
 ## One-time setup on the Mac (pilot administrator)
 
-The [18-check real Mac worker acceptance](mac-worker-validation.md) passed as reported by Karan and corroborated by its hosted job/result and cleanup state. One local Qwen call produced a sourced fictional proposal in about nine seconds with $0 model API charges. The temporary worker was stopped and revoked as planned; existing configuration and login items were preserved. The setup below is for the persistent pilot computer, whose startup/login restart still needs its own rehearsal.
+The [18-check real Mac worker acceptance](mac-worker-validation.md) passed as reported by Karan and corroborated by hosted state. The subsequent [persistent startup/reboot acceptance](persistent-worker.md) also passed its five explicit post-reboot checks and proposal export. Its separate worker completed one local Qwen call in about nine seconds at $0 model API cost. Karan then ran cleanup: that pilot login item was removed and its hosted credential revoked. The original configuration and private checkpoints remain. The pilot is currently stopped, and the proposal still needs human review. See [the current acceptance record](../production/activation/2026-11-16-persistent-worker.json).
 
 Prerequisites are Node 22.13+ and Ollama in local-only mode with `qwen3:4b`. The existing `scripts/local-research.mjs configure-local-only` and `doctor` commands check these.
 

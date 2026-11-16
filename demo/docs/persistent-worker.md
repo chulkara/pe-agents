@@ -2,7 +2,11 @@
 
 This step installs a separate login service for the closed fictional HVAC fixture. It uses the existing Supabase Free project and local `qwen3:4b`. No paid API, model download, new SQL or new test account is needed. Nothing is approved, emailed, published or added to the financial record.
 
-**Status: implementation and software checks only until Karan supplies the Mac results.** The earlier 18-check real model run passed. Its temporary worker stopped and was revoked. This new service must separately prove process restart and startup after an actual reboot and sign-in. Linux tests simulate launchd; they cannot establish that the Mac's login settings work.
+**Accepted November 16, 2026, from Karan's reported Mac run.** All five post-reboot checks passed, the service reported a fresh matching launchd process with local-only Qwen online, and the original-PDF proposal export succeeded. The successful login verifier requires the earlier setup/restart result. The complete 17-line setup output and full local JSON were not supplied, so those are not described as independently imported evidence. A read-only hosted query corroborates one succeeded persistent-worker assignment: one local model call, 9,000 ms and $0 model API charges. See [the acceptance record](../production/activation/2026-11-16-persistent-worker.json).
+
+**Current state: stopped after cleanup.** Karan subsequently ran the scoped cleanup command, which reported removal of this pilot's login item and hosted credential. Supabase confirms the worker is revoked, with zero token rows, connected firm workers, unfinished jobs or test sessions. The transaction remains Closed at revision 57 and intake stays paused. Private checkpoints and the original worker configuration were preserved. The proposal remains pending human review.
+
+The instructions below are retained for a future fresh installation. Preserve the completed report, whose top-level status becomes `stopped` after successful cleanup while its passed restart/login fields remain. Do not rerun setup over that report. When a future rehearsal needs a connected pilot, choose a new output filename; the controller can archive this revoked pilot's private state without deleting it. No reinstallation or reconnection was performed while recording these results.
 
 ## Before running
 
@@ -100,4 +104,4 @@ Cleanup uses the exact saved run, assignment, worker name, creator and runtime i
 
 Reference: [Apple's launchd user-agent documentation](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html). LaunchAgents start for the logged-in user; `RunAtLoad` and `KeepAlive` request startup and process replacement. The actual reboot check remains necessary.
 
-Still open: the live Mac results for this step, an interrupted active-job launchd rehearsal, browser review, the full mobile sale rehearsal, attorney review, NJ/NY licensing, fees, SMTP, real contact details and public launch setup.
+Still open: human judgment on the exported proposal, an interrupted active-job launchd rehearsal, browser review, the full hosted mobile sale rehearsal, attorney review, NJ/NY licensing, fees, SMTP, real contact details and public launch setup. The startup/reboot acceptance itself is complete as reported and corroborated; the pilot is currently stopped after cleanup.

@@ -6,7 +6,7 @@ This acceptance step uses the completed fictional HVAC handover to run one **Sta
 
 Checked source `f5f4b668e5c961cb94ea02d037ea36caa198a51b` passes 538 tests, the build and all three browser flows in [GitHub run 43820485662](https://github.com/chulkara/pe-agents/actions/runs/43820485662). A clean source export passed locked installation, transitive module loading and a missing-report stop before Auth or inference. The public archive matches all 366 tracked source files. Those source/controller checks use simulated services; Karan subsequently completed the separate real Mac run. The full local JSON has not been imported. Hosted metadata corroborates job/result/cleanup state rather than independently attesting to physical hardware.
 
-Persistent pilot startup/restart and a read-only original-PDF proposal export are now implemented. Run the [separate Mac acceptance](persistent-worker.md). It preserves the original worker, leaves a separate fictional pilot connected after restart, and requires a later real reboot to prove startup at login. The new live Mac results are still pending; none of the earlier accepted reports is overwritten.
+The separate [persistent Mac acceptance](persistent-worker.md) has now passed as reported by Karan: all five post-reboot checks, a fresh connected service status and the read-only proposal/PDF export succeeded. Its verifier requires the prior setup/restart result; the full setup console and local JSON were not imported. Hosted state corroborates one further succeeded local Qwen job and subsequent revocation. Karan then ran cleanup, which removed this pilot login item and credential. The pilot is now stopped; the original worker configuration and private checkpoints remain. Proposal approval and the hosted browser/mobile rehearsal are still open.
 
 ## What runs
 
@@ -22,7 +22,7 @@ This is an isolated foreground acceptance worker. It does not install a login it
 
 ## Run on the M1 Mac
 
-These instructions are retained for reference. Preserve the passed `kalling-mac-worker-acceptance.json` report. A future run needs a new output filename; do not overwrite the accepted run or reopen the completed handover. The temporary worker intentionally stopped after this check. Persistent startup and login restart still need their own acceptance.
+These instructions are retained for reference. Preserve the passed `kalling-mac-worker-acceptance.json` report. A future run needs a new output filename; do not overwrite the accepted run or reopen the completed handover. The temporary worker intentionally stopped after this check. Persistent startup/reboot has since passed in the separate acceptance above and its pilot was then cleaned up.
 
 Keep Ollama open, the Mac awake and Terminal open until the command finishes. Use the existing local `qwen3:4b`; no larger model or new model download is needed. Use a complete checked source snapshot in a new folder and install its locked dependencies with `npm ci`. Do not copy an individual script into the older incomplete ZIP.
 
@@ -87,4 +87,4 @@ The 18 checks cover local-only readiness, confirmed Auth, exact fixture and empt
 
 The live report's `transport.actualAuthenticatedTransport` and `actualLocalInference` are true only for the normal hosted client and local transport on macOS. Injected test transports report false. PostgreSQL can corroborate job state, model metadata supplied by the worker, proposal-only output, revocation and audit history. It cannot independently attest to the physical hardware or rederive local model quality. This is not a hardware attestation or independent security audit.
 
-No paid integration or model API is added. The job uses the existing Supabase Free project and local hardware. Do not upgrade the project or add a provider to complete this check. Full hosted mobile sale rehearsal, launchd restart behavior, attorney review, NJ/NY licensing, fees, SMTP, real contact details and public launch setup remain open.
+No paid integration or model API is added. The job uses the existing Supabase Free project and local hardware. Do not upgrade the project or add a provider to complete this check. The full hosted mobile sale rehearsal, interrupted active-job launchd recovery, attorney review, NJ/NY licensing, fees, SMTP, real contact details and public launch setup remain open. The separately accepted startup/reboot test does not extend the scope of this earlier isolated 18-check run.
