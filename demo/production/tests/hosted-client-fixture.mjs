@@ -5,7 +5,11 @@ import {verificationFileHandler} from '../functions/kalling-verification-file/in
 import {roles} from '../../scripts/hosted-validation.mjs';
 export function hostedClientFixture(s,accounts,ids){
   const bytes=new Map(),signedOut=[];
-  async function query(uid,sql,args=[],operation='',role=uid?'authenticated':'anon'){
+  let pending=Promise.resolve();
+  function query(uid,sql,args=[],operation='',role=uid?'authenticated':'anon'){
+    const run=pending.then(()=>performQuery(uid,sql,args,operation,role));pending=run.catch(()=>{});return run;
+  }
+  async function performQuery(uid,sql,args,operation,role){
     await s.db.exec('begin;set local role '+role);
     try{await s.db.query("select set_config('request.jwt.claim.sub',$1,true),set_config('storage.operation',$2,true)",[uid||'',operation]);const r=await s.db.query(sql,args);await s.db.exec('commit');return {data:r.rows,error:null,status:200};}
     catch(e){await s.db.exec('rollback');return {data:null,error:{code:e.code,message:e.message,status:e.code==='42501'?403:400},status:e.code==='42501'?403:400};}
@@ -32,7 +36,12 @@ export function hostedClientFixture(s,accounts,ids){
       getSession:async()=>({data:{session:uid?{access_token:'fictional-user-'+uid}:null},error:null}),
       signOut:async()=>{signedOut.push(uid);uid=null;return {error:null};},
     },rpc:(name,args={})=>rpc(uid,name,args),
-    from:table=>{assert.match(table,/^kalling_[a-z_]+$/);let fields='*';const filters=[];const run=async single=>{const r=await query(uid,'select '+fields+' from public.'+table+(filters.length?' where '+filters.map(([k],i)=>k+'=$'+(i+1)).join(' and '):''),filters.map(x=>x[1]));return {...r,data:single?r.data?.[0]??null:r.data};};const q={select:value=>{assert.match(value,/^(\*|[a-z_,]+)$/);fields=value;return q;},eq:(key,value)=>{assert.match(key,/^[a-z_]+$/);filters.push([key,value]);return q;},single:()=>run(true),then:(yes,no)=>run(false).then(yes,no)};return q;},
+    from:table=>{
+      assert.match(table,/^kalling_[a-z_]+$/);let fields='*',sort='',limit='';const filters=[];
+      const run=async single=>{const args=[],where=filters.map(([key,value,op])=>{if(op==='null')return key+' is null';args.push(value);return key+(op==='in'?'=any($':'=$')+args.length+(op==='in'?')':'');});const r=await query(uid,'select '+fields+' from public.'+table+(where.length?' where '+where.join(' and '):'')+sort+limit,args);return {...r,data:single?r.data?.[0]??null:r.data};};
+      const key=value=>assert.match(value,/^[a-z_]+$/);
+      const q={select:value=>{assert.match(value,/^(\*|[a-z_,]+)$/);fields=value;return q;},eq:(k,v)=>{key(k);filters.push([k,v,'eq']);return q;},is:(k,v)=>{key(k);assert.equal(v,null);filters.push([k,null,'null']);return q;},in:(k,v)=>{key(k);assert.ok(Array.isArray(v)&&v.length<=50);filters.push([k,v,'in']);return q;},order:(k,{ascending=true}={})=>{key(k);sort=' order by '+k+(ascending?' asc':' desc');return q;},limit:n=>{assert.ok(Number.isInteger(n)&&n>0&&n<=1000);limit=' limit '+n;return q;},single:()=>run(true),then:(yes,no)=>run(false).then(yes,no)};return q;
+    },
     storage:{from:bucket=>({
       upload:async(path,content,options)=>{const data=Buffer.from(await (content.arrayBuffer?content.arrayBuffer():content)),meta={size:data.length,mimetype:options.contentType};const r=await query(uid,options.upsert?'update storage.objects set metadata=$3 where bucket_id=$1 and name=$2 returning id':'insert into storage.objects(bucket_id,name,metadata) values($1,$2,$3)',[bucket,path,meta]);const saved=!r.error&&(!options.upsert||r.data?.length);if(saved)bytes.set(bucket+'/'+path,data);return saved?r:{data:null,error:{status:r.error?.code==='23505'?409:403},status:r.error?.code==='23505'?409:403};},
       info:async path=>{const r=await query(uid,'select metadata from storage.objects where bucket_id=$1 and name=$2',[bucket,path],'object.get_authenticated_info');return r.data?.length?{data:r.data[0].metadata,error:null}:missing();},
@@ -41,5 +50,5 @@ export function hostedClientFixture(s,accounts,ids){
     })},
     functions:{invoke:async(name,{body})=>{assert.equal(name,'kalling-verification-file');const r=await handler(new Request('https://fixture.invalid/functions/'+name,{method:'POST',headers:{Authorization:'Bearer fictional-user-'+uid,'Content-Type':'application/json'},body:JSON.stringify(body)}));const data=await r.json();return {data,error:r.ok?null:{status:r.status}};}},
   };}
-  return {makeClient,signedOut,bytes};
+  return {makeClient,signedOut,bytes,anonymousRpc:(name,args)=>rpc(null,name,args,'anon'),idle:()=>pending};
 }

@@ -10,6 +10,8 @@ This folder contains executable PostgreSQL migrations and isolation/queue tests.
 
 ## Zero-cost architecture
 
+The next live step is [one real Mac worker job](../docs/mac-worker-validation.md), an 18-check acceptance run against the completed fictional HVAC transaction using local-only `qwen3:4b`. Its temporary worker does not replace the persistent Mac configuration. Actual Mac inference is pending; no new migration, model provider or paid service is required. See [the preparation record](activation/2026-11-16-mac-worker.json).
+
 - GitHub Pages serves the existing React frontend.
 - Supabase Free supplies Auth, PostgreSQL and a private Storage bucket.
 - Supabase Cron runs one bounded database worker each minute; no additional always-on worker service or paid model calls.

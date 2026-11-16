@@ -1,0 +1,78 @@
+{
+  "date": "2026-11-16",
+  "project": "ymbciapnzdmymtthevjp",
+  "mode": "mac-worker",
+  "status": "prepared_not_started",
+  "scope": {
+    "firm": "07941ca2-4b03-4890-8c0b-24b2803d25d0",
+    "company": "fictional-handover-71d2cf14-de61-446f-a33c-3e788ddc9cea",
+    "listing": "d30849b3-8c27-4173-8006-300dcbb0aa66",
+    "transaction": "578f6ec6-927f-4363-923e-33759dc917d4",
+    "purpose": "Status summary",
+    "source_passages": 1
+  },
+  "worker": {
+    "version": "kalling-worker-3",
+    "model": "qwen3:4b",
+    "execution_policy": "local-only-required-v2",
+    "provider": "Ollama local",
+    "endpoint": "http://127.0.0.1:11434",
+    "max_model_calls": 2,
+    "mode": "Isolated foreground acceptance worker, stopped and revoked after the check",
+    "persistent_login_item_changed": false,
+    "existing_worker_configuration_changed": false
+  },
+  "preflight": {
+    "method": "Read-only hosted query; no user credentials or worker tokens retrieved",
+    "checked_at": "2026-11-16T06:16:51.195761+00:00",
+    "active_workers": 0,
+    "active_jobs": 0,
+    "transaction_state": "Closed",
+    "transaction_revision": 57,
+    "sample_status": "Sold",
+    "public_intake_open": false
+  },
+  "verification": {
+    "full_local_suite_before_final_guards": 535,
+    "final_targeted_suite": "10 passed, including lost replies, cancellation, cleanup identity and report protection",
+    "expected_current_total": 538,
+    "build": "passed",
+    "source_ci": "pending",
+    "real_Mac_inference": "pending_on_Karans_Mac",
+    "hosted_worker_job": "not_queued",
+    "live_checks_prepared": 18
+  },
+  "privacy": {
+    "publishable_key_only": true,
+    "server_credentials_retrieved": false,
+    "password_prompts": 1,
+    "account": "owner_a fictional validation account",
+    "raw_tokens_in_report": false,
+    "fixture_data_only": true,
+    "no_email_or_paid_model_API": true
+  },
+  "limits": [
+    "Protocol tests use simulated Auth/HTTP/Ollama and are not physical Mac inference evidence",
+    "No permanent launchd installation or restart acceptance in this isolated run",
+    "Browser click-to-review interaction and the complete hosted mobile sale rehearsal remain",
+    "Returned claims and questions remain Pending human review; no business decisions are made"
+  ],
+  "runner": "demo/scripts/hosted-worker.mjs",
+  "guide": "demo/docs/mac-worker-validation.md",
+  "local_reports": {
+    "foundation": "$HOME/Downloads/kalling-hosted-acceptance.json",
+    "handover": "$HOME/Downloads/kalling-handover-acceptance.json",
+    "output": "$HOME/Downloads/kalling-mac-worker-acceptance.json"
+  },
+  "remaining": [
+    "Run the actual 18-check Mac worker job",
+    "Review the returned fictional quotes and proposed questions",
+    "Persistent worker login/restart check",
+    "Complete hosted mobile sale rehearsal",
+    "Attorney review",
+    "NJ/NY licensing",
+    "Fee decisions",
+    "SMTP",
+    "Real contact details and public launch setup"
+  ]
+}
