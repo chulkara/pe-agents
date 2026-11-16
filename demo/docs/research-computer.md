@@ -28,7 +28,7 @@ Local demo (no account): Browser ──▶ http://127.0.0.1:47311 (same worker)
 
 ## One-time setup on the Mac (pilot administrator)
 
-For the current acceptance step, use [One real Mac worker job](mac-worker-validation.md). It runs one sourced fictional proposal through the real queue and local model using a separate temporary worker. It keeps the existing worker configuration and login items unchanged. The setup below is for the persistent pilot computer; its login restart still needs its own rehearsal.
+The [18-check real Mac worker acceptance](mac-worker-validation.md) passed as reported by Karan and corroborated by its hosted job/result and cleanup state. One local Qwen call produced a sourced fictional proposal in about nine seconds with $0 model API charges. The temporary worker was stopped and revoked as planned; existing configuration and login items were preserved. The setup below is for the persistent pilot computer, whose startup/login restart still needs its own rehearsal.
 
 Prerequisites are Node 22.13+ and Ollama in local-only mode with `qwen3:4b`. The existing `scripts/local-research.mjs configure-local-only` and `doctor` commands check these.
 

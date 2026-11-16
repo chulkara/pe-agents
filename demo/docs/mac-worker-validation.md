@@ -2,9 +2,9 @@
 
 This acceptance step uses the completed fictional HVAC handover to run one **Status summary** proposal through the existing app queue, worker version 3 and local `qwen3:4b`. It sends one reviewed fictional completion excerpt to Ollama on `127.0.0.1:11434`. It does not send an email, change a transaction, share a file, publish a case study or accept a model claim.
 
-**Current status: prepared, real Mac run pending.** Database-backed tests exercise the controller and real queue/worker code with simulated Auth, HTTP and Ollama. They do not establish that Karan's physical Mac has performed inference. That requires the command below on the Mac. The preceding 90 hosted closing-file checks are complete.
+**Completed November 16, 2026:** Karan supplied the full successful Terminal output for all 18 live Mac worker checks. Supabase separately confirms one succeeded job on its first attempt, worker version 3, local `qwen3:4b`, the required local-only policy, one model call, 8,977 ms of recorded runner time, 263 prompt tokens, 99 output tokens and $0 model API charges. One cited excerpt and one proposed question remain pending human review. The temporary worker is revoked, its token row removed, no jobs remain unfinished and all test sessions are closed. The transaction remains Closed at revision 57, with the original handover intact and intake paused. See [the live acceptance record](../production/activation/2026-11-16-mac-worker.json).
 
-Checked source `f5f4b668e5c961cb94ea02d037ea36caa198a51b` passes 538 tests, the build and all three browser flows in [GitHub run 43820485662](https://github.com/chulkara/pe-agents/actions/runs/43820485662). A clean source export passed locked installation, transitive module loading and a missing-report stop before Auth or inference. The public archive matches all 366 tracked source files. These are source/controller checks; the live Mac job is still pending.
+Checked source `f5f4b668e5c961cb94ea02d037ea36caa198a51b` passes 538 tests, the build and all three browser flows in [GitHub run 43820485662](https://github.com/chulkara/pe-agents/actions/runs/43820485662). A clean source export passed locked installation, transitive module loading and a missing-report stop before Auth or inference. The public archive matches all 366 tracked source files. Those source/controller checks use simulated services; Karan subsequently completed the separate real Mac run. The full local JSON has not been imported. Hosted metadata corroborates job/result/cleanup state rather than independently attesting to physical hardware.
 
 ## What runs
 
@@ -19,6 +19,8 @@ Checked source `f5f4b668e5c961cb94ea02d037ea36caa198a51b` passes 538 tests, the 
 This is an isolated foreground acceptance worker. It does not install a login item, bind a new local HTTP server, overwrite `~/.kalling-agent/worker.json` or disconnect another worker. Persistent launchd operation and the browser click-to-review path are separate checks. Sellers still use the web app; these Terminal steps are for Karan as the pilot administrator.
 
 ## Run on the M1 Mac
+
+These instructions are retained for reference. Preserve the passed `kalling-mac-worker-acceptance.json` report. A future run needs a new output filename; do not overwrite the accepted run or reopen the completed handover. The temporary worker intentionally stopped after this check. Persistent startup and login restart still need their own acceptance.
 
 Keep Ollama open, the Mac awake and Terminal open until the command finishes. Use the existing local `qwen3:4b`; no larger model or new model download is needed. Use a complete checked source snapshot in a new folder and install its locked dependencies with `npm ci`. Do not copy an individual script into the older incomplete ZIP.
 
