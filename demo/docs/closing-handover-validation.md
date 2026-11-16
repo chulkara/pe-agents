@@ -2,7 +2,7 @@
 
 This is the next authenticated acceptance step after the 24 foundation checks, owner uploads and all 65 buyer-access checks. It uses the same six confirmed fictional accounts, a separate clearly labelled Sample HVAC listing and small fictional PDFs. No real transaction, signature, professional opinion, funding or fee is represented. No email, model API or paid service is used.
 
-The checked controller is `scripts/hosted-handover.mjs`. The full local protocol run passes **90 checks** against real PostgreSQL permissions through PGlite with simulated Auth and HTTP. That is controller and policy evidence. Positive hosted Auth and Storage acceptance remains pending until Karan runs it on his Mac.
+The checked controller is `scripts/hosted-handover.mjs`. The full local protocol run passes **90 checks** against real PostgreSQL permissions through PGlite with simulated Auth and HTTP. Source snapshot `4a7af404769fda6f654b48d61773c03b978d982a` passed 528 tests, the build and all three browser flows in [GitHub run 43808430117](https://github.com/chulkara/pe-agents/actions/runs/43808430117). That is controller, policy and local browser evidence. Positive hosted Auth and Storage acceptance remains pending until Karan runs it on his Mac.
 
 ## What the 90 checks cover
 
@@ -32,10 +32,19 @@ Use a **complete pinned source snapshot in a new folder** and run `npm ci` there
 
 The operator prepares one new fixture using [prepare-handover.sql](../production/fixtures/prepare-handover.sql), after confirming the preceding buyer run is closed. That script refuses changed broker settings, open intake, unexpected buyer profiles, real listings/leads, outbound drafts and an earlier incomplete handover fixture. It appends a sample company and listing; it does not replace the house, previous listings or previous reports. The manifest is `production/activation/handover-fixture.json` in the checked source.
 
-From the **new snapshot's `demo/` folder**, run:
+Paste this setup into Terminal. It leaves the old project and previous reports unchanged. The public archive was checked against all 361 tracked source files, and a clean locked dependency installation and controller import passed:
 
 ```sh
+kalling_check_dir="$(mktemp -d "$HOME/Downloads/kalling-handover-XXXXXX")" &&
+curl -fL https://github.com/chulkara/pe-agents/archive/4a7af404769fda6f654b48d61773c03b978d982a.zip -o "$kalling_check_dir/source.zip" &&
+unzip -q "$kalling_check_dir/source.zip" -d "$kalling_check_dir" &&
+cd "$kalling_check_dir/pe-agents-4a7af404769fda6f654b48d61773c03b978d982a/demo" &&
 npm ci
+```
+
+Then, in that same Terminal window, run:
+
+```sh
 node --experimental-strip-types scripts/hosted-handover.mjs run --confirm-fictional --prompt --foundation-report "$HOME/Downloads/kalling-hosted-acceptance.json" --buyer-report "$HOME/Downloads/kalling-buyer-access-acceptance.json" --fixture production/activation/handover-fixture.json --output "$HOME/Downloads/kalling-handover-acceptance.json"
 ```
 

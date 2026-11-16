@@ -16,8 +16,8 @@
     "Reviewer-only file audit returns bounded file events without paths or private notes"
   ],
   "verification": {
-    "full_local_suite_passed": 527,
-    "additional_audit_regression": "passed with all four handover guard tests",
+    "full_local_suite_passed": 528,
+    "additional_audit_regression": "passed",
     "expected_current_suite_total": 528,
     "build": "passed",
     "simulated_closing_protocol_checks": 90,
@@ -29,8 +29,26 @@
       "Anonymous execution rows refused",
       "Anonymous file audit refused"
     ],
-    "source_ci": "pending",
-    "browser_flows": "pending_for_this_source; earlier deal/seller/execution flows passed"
+    "source_ci": "success",
+    "browser_flows": [
+      "deal-flow",
+      "seller-flow",
+      "execution-flow"
+    ],
+    "source_ci_run": 43808430117,
+    "source_ci_job": 133104436828,
+    "screen_widths": [
+      390,
+      1024,
+      1440
+    ],
+    "clean_snapshot_setup": {
+      "locked_dependency_install": "passed",
+      "module_loading": "passed",
+      "missing_report_guard": "passed before passwords, Auth or fixture writes",
+      "public_archive": "matches all 361 tracked source files",
+      "snapshot": "4a7af404769fda6f654b48d61773c03b978d982a"
+    }
   },
   "private_pilot": {
     "fixture_manifest": "handover-fixture.json",
@@ -90,5 +108,6 @@
     "Fee decisions",
     "SMTP",
     "Real contact information and public launch setup"
-  ]
+  ],
+  "source_commit": "4a7af404769fda6f654b48d61773c03b978d982a"
 }
