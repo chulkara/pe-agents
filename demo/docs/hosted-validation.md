@@ -1,6 +1,6 @@
 # Hosted activation and acceptance
 
-Latest acceptance result, November 15, 2026: Karan reports all nine focused owner-revocation checks passed. Together with the preceding 48 owner-upload checks, the linked runs complete the 50 original owner-upload checks. A separate read-only hosted check confirms the exact fictional portal is closed, the earlier seller binding is cleared, three original files remain stored, both recheck accounts have no remaining sessions, and the brokerage house remains unset. Buyer verification and data-room HTTP acceptance are next; they are not covered by the owner-upload result.
+Latest acceptance result, November 15, 2026: Karan reports all 65 hosted buyer-access checks passed. This follows the 24 firm/private-file checks and linked owner-upload acceptance covering its original 50 checks. A separate read-only hosted query confirms the exact sample listing is withdrawn, its room unpublished, its portal closed, the temporary reviewer revoked and all six test sessions signed out. Public registration remains paused. Closing-file handover, a real Mac model job and the complete hosted mobile sale rehearsal are next.
 
 ## Verified on November 14, 2026
 
@@ -52,7 +52,7 @@ node --experimental-strip-types scripts/hosted-validation.mjs run --confirm-fict
 
 The runner verifies password grants, confirmed user lookups, two private firms, known workspace isolation, an accepted analyst invitation, actual immutable original-file upload/download with matching SHA-256, refusal for unrelated parties, role downgrade and revocation using the existing JWT, and Auth refresh. It signs out the fictional sessions afterward. It never configures the brokerage house or sends email. Private fictional fixtures remain for inspection; the report records IDs and object paths for a separately reviewed cleanup. A failed run is reported as failed, not repaired by bypassing policies.
 
-The 24-check run covers the firm workspace and `kalling-private` bucket. Owner-portal uploads were subsequently accepted through the linked runs below. Buyer proof-file upload and validator attestation, buyer data-room reads, execution diligence files and post-close handover over HTTP remain unverified. The hosted SQL smoke checks the data-room ticket policy separately. SMTP delivery, a connected nonempty background job and public launch also remain outside this acceptance result. Do not extend the 24-check result to those workflows.
+The 24-check run covers the firm workspace and `kalling-private` bucket. Owner-portal uploads were subsequently accepted through linked runs, and buyer proof/validator and data-room transport through the later 65-check run below. Execution diligence files and post-close handover over HTTP remain unverified. SMTP delivery, a connected nonempty model job and public launch also remain outside these acceptance results. Each later result has its own evidence; the initial 24 checks alone do not establish those workflows.
 
 ## Owner-portal upload acceptance
 
@@ -109,11 +109,11 @@ On November 15, Karan reported all nine focused Mac checks passed. The focused r
 
 A separate read-only hosted confirmation found the exact retained fictional portal closed, its earlier seller binding cleared, its invitation changed to the fictional buyer, three stored portal files, no remaining sessions for the two recheck accounts, and no brokerage house. That corroborates the retained state; SQL metadata was not used to infer downloaded bytes or SHA-256 comparisons. The review branch remains a draft and these frontend changes are not deployed to Pages yet.
 
-### Next: buyer verification and data-room HTTP acceptance
+### Buyer verification and data-room acceptance scope
 
 Use fictional identities and documents. Public intake stays closed. The controlled private configuration below supersedes the earlier unset-house state: it separates administrative brokerage provisioning from public launch and admits only explicitly invited fictional buyers. It is not a production launch.
 
-The next acceptance must demonstrate:
+The subsequent buyer acceptance covers:
 
 - Buyer proof upload, immutable retry and trusted validator attestation using actual private bytes. A failed validation must prevent submission.
 - Proof-document access for the submitting buyer and authorised advisor only. Sellers receive the anonymous verification badge, never the proof document or buyer identity.
@@ -139,11 +139,19 @@ Verification so far:
 | Hosted rollback smoke | 17 passed | Database rules only; temporary fixtures rolled back |
 | Hosted public HTTP checks | 8 passed | Auth/public isolation, validator denial and CORS |
 | Extra validator denials | 2 passed | Invalid JWT and unrelated origin |
-| Positive hosted buyer acceptance | Pending | Requires the six fictional accounts' passwords entered locally on Karan's Mac |
+| Positive hosted buyer acceptance | 65 passed, reported by Karan | Real hosted logins and transport from the checked snapshot on his Mac; complete local JSON not imported |
 
 Browser CI uses fictional local stores and a scripted local model. It does not prove hosted Auth/Storage transport or real model quality. A held viewer rechecks on focus/visibility and every 15 seconds while visible; server metadata and byte reads enforce revocation on every request. Previously downloaded copies cannot be recalled.
 
-### Run the prepared buyer acceptance
+### Completed buyer acceptance and retained setup instructions
+
+Karan confirmed all 65 checks finished on November 15. The actual hosted result is user-reported; the full JSON remains on his Mac. Source snapshot `8a70d235cfd08944a6a3dc8102915d0aed71143e` supplied the complete matching project and locked dependencies.
+
+A separate read-only confirmation at `2026-11-16T04:17:12Z` (November 15 in New York) verified the exact sample listing `KL-910015` is Withdrawn, its data room Unpublished, its one portal Closed and the buyer Restricted. The latest proof is Withdrawn, with one server-attested stored proof and one deliberately mismatched, unattested reservation retained from the validator-negative test. There is one verification event, three stored room originals and five denied-open events. The temporary member is an inactive viewer, all six test Auth sessions are gone, public intake is false, and leads, alert drafts and non-sample listings remain at zero.
+
+This corroborates retained state and cleanup. It does not reconstruct SHA-256 comparisons, HTTP refusals or stamped PDF contents from SQL metadata. Those were checked by the Mac runner. Watermark rendering in a real hosted mobile browser remains part of the later full-sale rehearsal; repository browser CI uses fictional local stores.
+
+The following commands document the completed run. Preserve its report and the archived fixture; do not rerun or reopen it as a fresh buyer test. A new execution-handover stage needs a separately reviewed fictional fixture.
 
 Keep all earlier reports. Use a complete checked snapshot in a new folder. Karan's older ZIP was missing both the `pdf-lib` dependency and `lib/brokerage.ts`; copying individual scripts mixed incompatible source versions. Installing one missing package does not repair the absent project files.
 
@@ -167,11 +175,11 @@ A clean export of the exact checked source completed `npm ci` and reached the fo
 
 The 65 checks verify all six confirmed identities and the exact prepared private brokerage before any fixture changes. They exercise corrupt-byte rejection, trusted attestation, immutable retry, proof isolation and logged reads, role downgrade, exact-file review, private-note separation, the seller's anonymous badge, exact NDA and advisor approval, after-LOI locking, log-before-bytes, every stamped PDF page, anonymous seller engagement, unchanged-JWT revocation, owner removal, replacement approval and refusal history. A pass withdraws the sample listing and proof, unpublishes its room, closes its portal, revokes the temporary analyst role and signs out all six sessions. Private originals and audit history are retained. The private brokerage remains paused until administrative cleanup or the next reviewed acceptance stage.
 
-On failure, preserve the report and supply only the final PASS/BLOCKED lines. The script does not bypass a policy or count a transport/server error as access-denial proof. Real buyer transport is not accepted until that run passes. The PR remains a draft, and these frontend changes have not been deployed to Pages. Execution handover, a real Mac model job, the complete hosted mobile sale and all launch decisions remain open.
+On a future failure, preserve the report and supply only the final PASS/BLOCKED lines. The script does not bypass a policy or count a transport/server error as access-denial proof. The buyer transport run above is accepted as reported and corroborated. The PR remains a draft, and these frontend changes have not been deployed to Pages. Execution handover, a real Mac model job, the complete hosted mobile sale and all launch decisions remain open.
 
-Before later buyer and execution HTTP acceptance, check the same metadata-before-bytes contract in their ticketed Storage policies. They remain separately scoped and unverified; this owner-file fix grants no buyer or specialist access.
+Before execution HTTP acceptance, check the same metadata-before-bytes contract in its ticketed Storage policy. Execution remains separately scoped and unverified; the owner and buyer file fixes do not grant execution specialists access.
 
-The replacement-document smoke test separately checks owner reapproval and rejection of the previous buyer ticket inside a rollback-only SQL transaction. It transfers no file bytes, and its temporary house configuration is never visible outside that transaction. Buyer proof-file attestation, buyer data-room HTTP transport, closing-file handover, real Mac inference and the complete hosted mobile rehearsal remain subsequent steps.
+The replacement-document smoke test separately checks owner reapproval and rejection of the previous buyer ticket inside a rollback-only SQL transaction. It transfers no file bytes, and its temporary house configuration is never visible outside that transaction. The later 65-check Mac run covers actual buyer proof and data-room transport. Closing-file handover, real Mac inference and the complete hosted mobile rehearsal remain subsequent steps.
 
 ## Advisory findings
 

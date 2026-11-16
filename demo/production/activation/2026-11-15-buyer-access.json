@@ -44,10 +44,13 @@
       "invalid_jwt": 401,
       "unrelated_origin": 403
     },
-    "authenticated_buyer_http_acceptance": "pending_mac_run",
+    "authenticated_buyer_http_acceptance": "passed_user_reported",
     "clean_snapshot_setup": {
       "source_snapshot": "8a70d235cfd08944a6a3dc8102915d0aed71143e",
-      "reported_local_setup_failures": ["pdf-lib package absent", "lib/brokerage.ts absent in the old ZIP"],
+      "reported_local_setup_failures": [
+        "pdf-lib package absent",
+        "lib/brokerage.ts absent in the old ZIP"
+      ],
       "resolution": "Use the complete checked source in a separate folder and npm ci; preserve the existing project and reports",
       "locked_install": "passed",
       "module_resolution": "passed",
@@ -72,7 +75,18 @@
       "kalling_tables": 57,
       "public_buckets": 0
     },
-    "fixture_script_sha256": "1f209e00ee755527fdbb7015f08a8df1c07655fe05d32f7a36d5e7039f61059c"
+    "fixture_script_sha256": "1f209e00ee755527fdbb7015f08a8df1c07655fe05d32f7a36d5e7039f61059c",
+    "fixture_state": "buyer_acceptance_completed_and_closed",
+    "post_acceptance": {
+      "listing": "Withdrawn",
+      "room": "Unpublished",
+      "portal": "Closed",
+      "buyer": "Restricted",
+      "latestProof": "Withdrawn",
+      "member": "Inactive viewer",
+      "remainingTestSessions": 0,
+      "publicIntakeOpen": false
+    }
   },
   "advisors": {
     "health_findings": 0,
@@ -88,7 +102,6 @@
     "state": "draft review branch; not deployed to Pages"
   },
   "remaining": [
-    "Positive hosted buyer proof and data-room acceptance",
     "Execution-file handover transport",
     "Real Mac model job",
     "Complete hosted mobile sale rehearsal",
@@ -97,5 +110,54 @@
     "Fee decision",
     "SMTP",
     "Contact information and public launch setup"
-  ]
+  ],
+  "authenticated_acceptance": {
+    "reported_on": "2026-11-15",
+    "reporting_timezone": "America/New_York",
+    "status": "passed_user_reported",
+    "checks_passed": 65,
+    "runner_source_snapshot": "8a70d235cfd08944a6a3dc8102915d0aed71143e",
+    "result_source": "Karan confirmed Finished 65 buyer-access checks in chat; complete local JSON report not imported",
+    "local_report": "$HOME/Downloads/kalling-buyer-access-acceptance.json",
+    "coverage": [
+      "Six password grants and confirmed hosted identities",
+      "Trusted byte-validator attestation and rejected mismatched bytes",
+      "Immutable proof retry and private proof access",
+      "Current reviewer authorization and immediate role downgrade",
+      "Exact-file verification, private-note separation and anonymous seller badge",
+      "Exact current listing NDA and separate advisor approval",
+      "Logged metadata and byte reads, signed-link refusal and after-LOI lock",
+      "Buyer identity stamped into every downloaded PDF page",
+      "Same valid buyer JWT retained during buyer restriction, NDA revocation, owner removal and replacement tests",
+      "Anonymous seller engagement, denied-open history and fixture/session cleanup"
+    ],
+    "independent_hosted_confirmation": {
+      "method": "Read-only query restricted to the known fictional listing, company, portal and accounts; no credentials, tokens or stored bytes retrieved",
+      "checked_at": "2026-11-16T04:17:12.72251+00:00",
+      "matched_listing": 1,
+      "listing_status": "Withdrawn",
+      "closed_portals": 1,
+      "active_portals": 0,
+      "room_status": "Unpublished",
+      "buyer_status": "Restricted",
+      "latest_proof_status": "Withdrawn",
+      "proof_submissions": 2,
+      "attested_proof_files": 1,
+      "unattested_reserved_proof_files": 1,
+      "verification_events": 1,
+      "stored_room_files": 3,
+      "denied_room_opens": 5,
+      "member_revoked": true,
+      "remaining_test_sessions": 0,
+      "public_intake_open": false,
+      "leads": 0,
+      "alert_drafts": 0,
+      "non_sample_listings": 0
+    },
+    "limitations": [
+      "Full local JSON not imported",
+      "SQL metadata corroborates retained state, not HTTP byte comparisons or PDF contents",
+      "Real hosted mobile-browser watermark rendering remains for the full-sale rehearsal"
+    ]
+  }
 }
