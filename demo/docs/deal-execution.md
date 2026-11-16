@@ -81,6 +81,8 @@ The same local-only Ollama check, budgets, checkpoints, leases, cancellation and
 
 ## Migration order and actual hosted status
 
+Current update: the hosted ledger now has 27 entries, including `kalling_handover_file_guards`. The foundation, owner-upload and 65-check buyer acceptance runs are complete as reported by Karan and corroborated by retained state. The private fictional brokerage remains configured with public registration paused. [Closing-file handover acceptance](closing-handover-validation.md) has a separate prepared sample fixture and a 90-check controller; its real hosted transport is pending. A real local-only Mac model job and a full hosted mobile rehearsal remain. This update supersedes the historical activation details below.
+
 On November 14, all 22 remaining migrations were applied to `ymbciapnzdmymtthevjp`. Subsequent owner-upload and authenticated-metadata guards bring the ledger to 25 entries including the previously applied worker migration. All 57 Kalling tables have RLS enabled and all four buckets are private. The latest hosted database rollback smoke passed 17 checks; eight unauthenticated HTTPS checks and 24 authenticated firm/private-file checks passed earlier. The first owner-portal HTTP attempt stopped after 16 checks; its metadata permission fix is applied, and the retry remains pending. Private fictional firms/files and that partial portal are retained. No brokerage house has been configured. See [hosted validation](hosted-validation.md) and its exact activation ledger for the scope and remaining HTTP workflows.
 
 These sources were applied in this order. Inspect live history before any future activation; do not rerun an already-applied migration:
@@ -96,7 +98,7 @@ The rollback-only fictional Phase 3 database smoke checks ran successfully on th
 
 ## Recovery and validation
 
-Reload a stale transaction before retrying a revision-checked command. After a failed upload, retry with a new immutable file ID; unreferenced bytes confer no permissions. After an interrupted close, reload and replay the same command ID and exact body. Never mark Sold through the old listing selector to repair a failed close. A completed record needs a versioned correction, not reopening.
+Reload a stale transaction before retrying a revision-checked command. After an interrupted execution upload, retry the same file with the same purpose and confidentiality: the cloud store reuses the uploader-scoped reservation, skips arrived bytes and finalizes the same immutable ID. This does not restore revoked grants or earlier review tickets. After an interrupted close, reload and replay the same command ID and exact body. Never mark Sold through the old listing selector to repair a failed close. A completed record needs a versioned correction, not reopening.
 
 `npm test` currently passes 503 unit/database/worker tests, including private projections, versioned evidence, source amounts, idempotent close, publicity, comparable eligibility, local-only recovery, owner-upload permissions and hosted-runner credential guards. `npm run build` passes. Database tests use PostgreSQL through PGlite with simulated Auth/Storage contracts; they do not prove hosted transport. Worker tests use simulated local Ollama and do not prove real model quality.
 

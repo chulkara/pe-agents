@@ -1,6 +1,6 @@
 # Hosted activation and acceptance
 
-Latest acceptance result, November 15, 2026: Karan reports all 65 hosted buyer-access checks passed. This follows the 24 firm/private-file checks and linked owner-upload acceptance covering its original 50 checks. A separate read-only hosted query confirms the exact sample listing is withdrawn, its room unpublished, its portal closed, the temporary reviewer revoked and all six test sessions signed out. Public registration remains paused. Closing-file handover, a real Mac model job and the complete hosted mobile sale rehearsal are next.
+Latest acceptance result: Karan reports all 65 hosted buyer-access checks passed, following the 24 foundation checks and linked owner-upload acceptance. The buyer fixture remains withdrawn/closed. The next [closing-file handover run](closing-handover-validation.md) is prepared with 90 database-backed protocol checks and a separate Sample listing. Its authenticated hosted run remains pending on Karan's Mac. The handover guards are applied as migration 27; all 57 Kalling tables retain RLS and all four buckets remain private. Public registration is paused. A real Mac model job and complete hosted mobile sale rehearsal follow.
 
 ## Verified on November 14, 2026
 
@@ -182,6 +182,8 @@ Before execution HTTP acceptance, check the same metadata-before-bytes contract 
 The replacement-document smoke test separately checks owner reapproval and rejection of the previous buyer ticket inside a rollback-only SQL transaction. It transfers no file bytes, and its temporary house configuration is never visible outside that transaction. The later 65-check Mac run covers actual buyer proof and data-room transport. Closing-file handover, real Mac inference and the complete hosted mobile rehearsal remain subsequent steps.
 
 ## Advisory findings
+
+The closing-file handover change preserves the same advisory categories and zero health findings. Its reviewer-only file-audit RPC adds one expected authenticated SECURITY DEFINER entry for review. See [the handover activation record](../production/activation/2026-11-16-handover.json). This is not an independent security audit.
 
 The health advisor reports no findings. Security notices remain for deliberate default-deny tables and checked SECURITY DEFINER RPCs. Worker endpoints authenticate bounded worker tokens; public lead intake and case-study queries have explicit application gates. These notices have not been dismissed or described as an independent security audit. See the [no-policy](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy), [anonymous RPC](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable) and [authenticated RPC](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable) guidance.
 

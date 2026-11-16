@@ -1,0 +1,14 @@
+{
+  "project": "https://ymbciapnzdmymtthevjp.supabase.co",
+  "mode": "handover",
+  "status": "prepared",
+  "fixture": "71d2cf14-de61-446f-a33c-3e788ddc9cea",
+  "firm": "07941ca2-4b03-4890-8c0b-24b2803d25d0",
+  "otherFirm": "4c328f74-d115-4e5a-8c74-8a8788e9dba2",
+  "company": "fictional-handover-71d2cf14-de61-446f-a33c-3e788ddc9cea",
+  "listing": "d30849b3-8c27-4173-8006-300dcbb0aa66",
+  "listingNumber": "KL-920016",
+  "expectedHeadline": "Sample HVAC closing-file validation",
+  "priorBuyerFixture": "de32971b-33ca-4f94-b185-882b72a02b11",
+  "priorBuyerListing": "451c96c8-134e-428a-be39-9890fc05dc2b"
+}

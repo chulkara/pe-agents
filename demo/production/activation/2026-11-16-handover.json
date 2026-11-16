@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-16",
+  "project": "ymbciapnzdmymtthevjp",
+  "recorded_migrations": 27,
+  "migration": {
+    "source": "20261116043225_kalling_handover_file_guards.sql",
+    "sha256": "7d57aee45fa5700489bf0f9f920f7680518911875cbcffb89f93d9de4ee60cab",
+    "hosted_version": "20261116050217",
+    "name": "kalling_handover_file_guards",
+    "status": "applied"
+  },
+  "changes": [
+    "Uploader-scoped stable upload retry fingerprints; arrived bytes resume without a second document version",
+    "Authenticated Storage metadata and bytes require current logged tickets and grant revisions; signed URLs and listing remain refused",
+    "Closed archives accept only current-advisor Closing evidence uploads, without rewriting the original close or sharing automatically",
+    "Reviewer-only file audit returns bounded file events without paths or private notes"
+  ],
+  "verification": {
+    "full_local_suite_passed": 527,
+    "additional_audit_regression": "passed with all four handover guard tests",
+    "expected_current_suite_total": 528,
+    "build": "passed",
+    "simulated_closing_protocol_checks": 90,
+    "simulated_failure_cleanup": "passed",
+    "positive_hosted_handover_acceptance": "pending_on_Karans_Mac",
+    "public_http_checks": 3,
+    "public_http_scope": [
+      "Closed public intake",
+      "Anonymous execution rows refused",
+      "Anonymous file audit refused"
+    ],
+    "source_ci": "pending",
+    "browser_flows": "pending_for_this_source; earlier deal/seller/execution flows passed"
+  },
+  "private_pilot": {
+    "fixture_manifest": "handover-fixture.json",
+    "fixture": "71d2cf14-de61-446f-a33c-3e788ddc9cea",
+    "firm": "07941ca2-4b03-4890-8c0b-24b2803d25d0",
+    "listing": "d30849b3-8c27-4173-8006-300dcbb0aa66",
+    "listing_number": "KL-920016",
+    "fixture_script_sha256": "85c06a61b561a20e6c45e490fded68aea4332e30d20c96e2aa2309978946fd38",
+    "runner_sha256": "d881acd071ccf65965b5bc1ea57df0f4482b93b5442b9dee69c8e6b1df22b377",
+    "status": "prepared_not_started",
+    "post_setup": {
+      "checked_at": "2026-11-16T05:04:25.746353+00:00",
+      "migrations": 27,
+      "handover_migration": "20261116050217",
+      "sample_prepared": 1,
+      "prior_sample_status": "Withdrawn",
+      "public_intake_open": false,
+      "pilot_buyer_count": 2,
+      "kalling_tables": 57,
+      "missing_rls": 0,
+      "public_buckets": 0,
+      "leads": 0,
+      "alert_drafts": 0,
+      "non_sample_listings": 0,
+      "handover_transactions": 0,
+      "test_sessions": 0
+    }
+  },
+  "security": {
+    "server_credentials_retrieved": false,
+    "new_paid_services": false,
+    "emails_or_model_requests": false,
+    "health_findings": 0,
+    "security_categories": [
+      "rls_enabled_no_policy",
+      "anon_security_definer_function_executable",
+      "authenticated_security_definer_function_executable",
+      "auth_leaked_password_protection"
+    ],
+    "new_review_surface": "One authenticated reviewer-only SECURITY DEFINER audit RPC",
+    "independent_security_audit": false
+  },
+  "frontend": {
+    "state": "draft review branch; not deployed to Pages"
+  },
+  "limitations": [
+    "Simulated Auth/HTTP is controller and SQL-policy evidence, not positive hosted file transport",
+    "Execution finalization validates Storage metadata; actual download SHA comparisons are part of the pending Mac run, not trusted server-side execution attestation",
+    "Complete hosted mobile sale rehearsal and real local-only Mac inference remain pending"
+  ],
+  "remaining": [
+    "90-check authenticated closing-file handover run",
+    "Real Mac model job",
+    "Complete hosted mobile sale rehearsal",
+    "Attorney review",
+    "NJ/NY licensing",
+    "Fee decisions",
+    "SMTP",
+    "Real contact information and public launch setup"
+  ]
+}
