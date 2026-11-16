@@ -78,6 +78,8 @@ const until=async(fn,ms=60000)=>{const end=Date.now()+ms;for(;;){const v=await f
 
   // 12. Data room: the memorandum and two owner documents, approved by the owner, then published.
   await tab('Data room');await adv.getByRole('button',{name:'Add memorandum'}).click();await adv.waitForSelector('text=Memorandum added');
+  await adv.locator('.dr-table tr').filter({hasText:'Confidential memorandum'}).getByRole('button',{name:'Edit',exact:true}).click();
+  const edit=adv.getByRole('form',{name:'Edit document'});await edit.getByLabel(/Allow download/).check();await edit.getByRole('button',{name:'Save',exact:true}).click();await edit.waitFor({state:'detached'});
   for(const f of ['pl-2025.pdf','tax-returns.pdf']){await adv.locator('.dr-choices li').filter({hasText:f}).getByRole('button',{name:'Add'}).click();await adv.getByRole('button',{name:'Add to data room'}).click();await adv.waitForSelector('text=Added. Send it to the owner');}
   assert.ok(await adv.getByRole('button',{name:'Publish data room'}).isDisabled(),'publishing waits for the owner');
   await adv.getByRole('button',{name:'Send to owner for approval'}).click();await adv.waitForSelector('text=Sent to the owner.');await shot(adv,'dataroom-advisor-1440');
@@ -99,10 +101,15 @@ const until=async(fn,ms=60000)=>{const end=Date.now()+ms;for(;;){const v=await f
   // 14. The buyer opens the memorandum with a watermark; the after-LOI tax returns stay locked.
   await site.reload();await site.waitForSelector('.ks-dr');
   const tax=site.locator('.ks-dr-folder li').filter({hasText:/tax returns/i});assert.match(await tax.innerText(),/After LOI/);
+  await site.setViewportSize({width:390,height:844});
   await site.locator('.ks-dr-folder li').filter({hasText:'Confidential memorandum'}).getByRole('button',{name:'Open'}).click();
   await site.waitForSelector('.ks-viewer canvas');await site.waitForTimeout(800);
+  assert.ok(await site.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)<=1,'the stamped viewer must fit a phone-width page');await shot(site,'viewer-390',false);await site.setViewportSize({width:1440,height:900});
   assert.match(await site.locator('.ks-viewer-stamp').innerText(),/^Alex Morgan, alex@buyer\.test, \d{4}-\d{2}-\d{2}\. Confidential, Kalling data room$/);
   await shot(site,'viewer-1440',false);await site.keyboard.press('ArrowRight');await site.waitForTimeout(1300);assert.match(await site.locator('.ks-viewer-page').innerText(),/Page 2 of/);
+  const dl=site.waitForEvent('download');await site.getByRole('button',{name:'Download stamped copy'}).click();const saved=await dl,stamped=path.join(home,'stamped-memorandum.pdf');await saved.saveAs(stamped);
+  const {PDFDocument,PDFArray,PDFRawStream,decodePDFRawStream}=require('pdf-lib'),stampedDoc=await PDFDocument.load(fs.readFileSync(stamped)),identityHex=Buffer.from('Alex Morgan, alex@buyer.test','latin1').toString('hex').toUpperCase();
+  assert.ok(stampedDoc.getPageCount()>=2);for(const p of stampedDoc.getPages()){const contents=p.node.Contents(),refs=contents instanceof PDFArray?contents.asArray():[contents];const body=refs.map(r=>stampedDoc.context.lookup(r)).filter(s=>s instanceof PDFRawStream).map(s=>Buffer.from(decodePDFRawStream(s).decode()).toString()).join('\n');assert.ok(body.toUpperCase().includes(identityHex),'every downloaded page contains the buyer identity');}
   await site.keyboard.press('Escape');await site.waitForSelector('.ks-viewer',{state:'detached'});
   await site.goto(U+'#/account');await site.waitForSelector('text=Documents you’ve opened');step(14,'buyer opened the memorandum with a watermark; tax returns locked until LOI');
 
@@ -110,8 +117,12 @@ const until=async(fn,ms=60000)=>{const end=Date.now()+ms;for(;;){const v=await f
   await owner.reload();await owner.waitForSelector('#portal-opened');const opened=await owner.locator('#portal-opened').innerText();
   assert.match(opened,/Buyer 1, owner-operator opened it once/);assert.doesNotMatch(opened,/Alex/);await shot(owner,'opened-owner-1440');
   await site.goto(listingUrl);await site.waitForSelector('.ks-dr');
+  await site.locator('.ks-dr-folder li').filter({hasText:'Confidential memorandum'}).getByRole('button',{name:'Open'}).click();await site.waitForSelector('.ks-viewer canvas');
   const buyers=await ctx.newPage();watch(buyers,'buyers');await buyers.goto(U+'#advisor/buyers');await buyers.getByRole('tab',{name:/^All buyers/}).click();
-  await buyers.getByLabel('Status for Alex Morgan').selectOption('Restricted');await buyers.waitForTimeout(600);await buyers.close();
+  await buyers.getByLabel('Status for Alex Morgan').selectOption('Restricted');await buyers.waitForTimeout(600);
+  await site.bringToFront();await site.evaluate(()=>window.dispatchEvent(new Event('focus')));await site.waitForSelector('.ks-viewer',{state:'detached'});assert.match(await site.locator('.ks-dr .ks-error').innerText(),/Access to this document has changed/);
+  await buyers.getByLabel('Status for Alex Morgan').selectOption('Registered');await buyers.waitForTimeout(400);await site.reload();await site.waitForSelector('.ks-dr-folder');
+  await buyers.getByLabel('Status for Alex Morgan').selectOption('Restricted');await buyers.waitForTimeout(400);await buyers.close();
   await site.locator('.ks-dr-folder li').filter({hasText:'Confidential memorandum'}).getByRole('button',{name:'Open'}).click();
   await site.waitForSelector('.ks-dr .ks-error');assert.match(await site.locator('.ks-dr .ks-error').innerText(),/do not have access/);
   await adv.reload();await adv.waitForSelector('.deal-head h1');await tab('Data room');await adv.waitForSelector('.dr-table');

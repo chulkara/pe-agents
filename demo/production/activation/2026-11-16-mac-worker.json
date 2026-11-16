@@ -1,0 +1,174 @@
+{
+  "date": "2026-11-16",
+  "project": "ymbciapnzdmymtthevjp",
+  "mode": "mac-worker",
+  "status": "passed_user_reported_and_hosted_state_corroborated",
+  "scope": {
+    "firm": "07941ca2-4b03-4890-8c0b-24b2803d25d0",
+    "company": "fictional-handover-71d2cf14-de61-446f-a33c-3e788ddc9cea",
+    "listing": "d30849b3-8c27-4173-8006-300dcbb0aa66",
+    "transaction": "578f6ec6-927f-4363-923e-33759dc917d4",
+    "purpose": "Status summary",
+    "source_passages": 1
+  },
+  "worker": {
+    "version": "kalling-worker-3",
+    "model": "qwen3:4b",
+    "execution_policy": "local-only-required-v2",
+    "provider": "Ollama local",
+    "endpoint": "http://127.0.0.1:11434",
+    "max_model_calls": 2,
+    "mode": "Isolated foreground acceptance worker, stopped and revoked after the check",
+    "persistent_login_item_changed": false,
+    "existing_worker_configuration_changed": false
+  },
+  "preflight": {
+    "method": "Read-only hosted query; no user credentials or worker tokens retrieved",
+    "checked_at": "2026-11-16T06:16:51.195761+00:00",
+    "active_workers": 0,
+    "active_jobs": 0,
+    "transaction_state": "Closed",
+    "transaction_revision": 57,
+    "sample_status": "Sold",
+    "public_intake_open": false
+  },
+  "verification": {
+    "full_local_suite_before_final_guards": 535,
+    "final_targeted_suite": "10 passed",
+    "expected_current_total": 538,
+    "build": "passed",
+    "source_ci": "success",
+    "real_Mac_inference": "passed_user_reported",
+    "hosted_worker_job": "succeeded_and_corroborated",
+    "live_checks_prepared": 18,
+    "full_local_suite_passed": 538,
+    "source_ci_run": 43820485662,
+    "source_ci_job": 133142196601,
+    "browser_flows": [
+      "deal-flow",
+      "seller-flow",
+      "execution-flow"
+    ],
+    "screen_widths": [
+      390,
+      1024,
+      1440
+    ],
+    "clean_source_setup": {
+      "locked_npm_install": "passed",
+      "controller_import": "passed",
+      "missing_report_stop": "passed before Auth or inference; no report overwrite",
+      "public_archive": "matches all 366 tracked files",
+      "snapshot": "f5f4b668e5c961cb94ea02d037ea36caa198a51b"
+    },
+    "live_checks_passed": 18
+  },
+  "privacy": {
+    "publishable_key_only": true,
+    "server_credentials_retrieved": false,
+    "password_prompts": 1,
+    "account": "owner_a fictional validation account",
+    "raw_tokens_in_report": false,
+    "fixture_data_only": true,
+    "no_email_or_paid_model_API": true
+  },
+  "limits": [
+    "Protocol tests remain simulated; the separate live run is user-reported and corroborated by hosted job/result metadata",
+    "No permanent launchd installation or restart acceptance in this isolated run",
+    "Browser click-to-review interaction and the complete hosted mobile sale rehearsal remain",
+    "Returned claims and questions remain Pending human review; no business decisions are made"
+  ],
+  "runner": "demo/scripts/hosted-worker.mjs",
+  "guide": "demo/docs/mac-worker-validation.md",
+  "local_reports": {
+    "foundation": "$HOME/Downloads/kalling-hosted-acceptance.json",
+    "handover": "$HOME/Downloads/kalling-handover-acceptance.json",
+    "output": "$HOME/Downloads/kalling-mac-worker-acceptance.json"
+  },
+  "remaining": [
+    "Review the returned fictional quotes and proposed questions",
+    "Persistent worker login/restart check",
+    "Complete hosted mobile sale rehearsal",
+    "Attorney review",
+    "NJ/NY licensing",
+    "Fee decisions",
+    "SMTP",
+    "Real contact details and public launch setup"
+  ],
+  "source_commit": "f5f4b668e5c961cb94ea02d037ea36caa198a51b",
+  "authenticated_acceptance": {
+    "reported_on": "2026-11-16",
+    "reporting_timezone": "America/New_York",
+    "status": "passed_user_reported",
+    "checks_passed": 18,
+    "runner_source_snapshot": "f5f4b668e5c961cb94ea02d037ea36caa198a51b",
+    "result_source": "Karan supplied the complete successful Terminal output, including generated excerpt and question; full local JSON not imported",
+    "observed_terminal_progress": {
+      "queued_seconds": 0,
+      "running_seconds": 2,
+      "succeeded_seconds": 9
+    },
+    "review_status": "Pending human review",
+    "independent_hosted_confirmation": {
+      "method": "Read-only query scoped to the known fictional company, transaction, pilot worker name and requesting owner; no credentials, tokens, prompts or file bytes retrieved",
+      "checked_at": "2026-11-16T07:37:46.484313+00:00",
+      "matched_jobs": 1,
+      "jobs": [
+        {
+          "id": "2681d5a6-cd07-4ad4-afce-161df782d7b2",
+          "assignment": "mac-worker-69bff9fe-cb2e-4346-8b61-36a00894adc1",
+          "status": "succeeded",
+          "attempts": 1,
+          "worker": "9f84a249-eb56-404e-9cbe-4341e3b332f8",
+          "worker_version": "kalling-worker-3",
+          "worker_model": "qwen3:4b",
+          "worker_revoked": true,
+          "remaining_worker_tokens": 0,
+          "provider": "Ollama local",
+          "model": "qwen3:4b",
+          "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "execution_policy": "local-only-required-v2",
+          "proposal_only": true,
+          "claims": 1,
+          "questions": 1,
+          "input_hash_matches": true,
+          "transaction_revision": 57,
+          "metrics": {
+            "calls": 1,
+            "resumed": false,
+            "elapsedMs": 8977,
+            "apiCostUSD": 0,
+            "outputTokens": 99,
+            "promptTokens": 263,
+            "usageIncomplete": false
+          },
+          "progress_stage": "ready-for-review",
+          "started_at": "2026-11-16T07:35:50.901733+00:00",
+          "finished_at": "2026-11-16T07:36:00.059628+00:00"
+        }
+      ],
+      "active_firm_workers": 0,
+      "unfinished_firm_jobs": 0,
+      "remaining_test_sessions": 0,
+      "transaction": {
+        "state": "Closed",
+        "revision": 57,
+        "closes": 1,
+        "buyer_files": 3,
+        "seller_files": 2,
+        "published_cases": 0,
+        "comparables": 0
+      },
+      "listing_status": "Sold",
+      "public_intake_open": false,
+      "leads": 0,
+      "alert_drafts": 0,
+      "non_sample_listings": 0
+    },
+    "evidence_limits": [
+      "The Mac console reports the live local request and mandatory cloud-disabled checks; server metadata corroborates job/result/cleanup state rather than independently attesting to physical hardware",
+      "The complete local JSON remains on Karan's Mac",
+      "One short fictional passage does not establish general research accuracy, launchd restart behavior or browser click-to-review acceptance"
+    ]
+  }
+}

@@ -30,7 +30,7 @@ export function ListingsPage({route}:{route:Route}){
   const {store}=useSession();const res=useAsync(()=>store.listings(),[store]);
   const q=route.query;const [f,setF]=useState<ListingFilter>({q:q.get('q')||'',state:(q.get('state') as 'NJ'|'NY')||'',region:(q.get('region') as Region)||'',focus:(q.get('focus') as Focus)||'',maxPrice:Number(q.get('max'))||0,recurringOnly:q.get('recurring')==='1',sort:(q.get('sort') as ListingFilter['sort'])||'newest'});
   useEffect(()=>{const p=new URLSearchParams();if(f.q)p.set('q',f.q);if(f.state)p.set('state',f.state);if(f.region)p.set('region',f.region);if(f.focus)p.set('focus',f.focus);if(f.maxPrice)p.set('max',String(f.maxPrice));if(f.recurringOnly)p.set('recurring','1');if(f.sort&&f.sort!=='newest')p.set('sort',f.sort);history.replaceState(null,'','#/listings'+(p.size?'?'+p:''));},[f]);
-  const list=filterListings(res.data||[],f),open=list.filter(l=>l.status!=='Sold'),sold=list.filter(l=>l.status==='Sold');
+  const list=filterListings(res.data||[],f),open=list.filter(l=>l.status!=='Sold'),sold=list.filter(l=>l.status==='Sold'&&!l.sample);
   return <>
     <section className="ks-wrap ks-page-head"><h1 className="ks-display ks-display-s">HVAC companies for sale</h1><p>Every listing is anonymous. Create a buyer profile and sign a listing’s NDA to request the company name, financials and documents.</p></section>
     <div className="ks-wrap ks-market">
@@ -55,9 +55,9 @@ export function ListingsPage({route}:{route:Route}){
 }
 
 export function ListingPage({id}:{id:string}){
-  const s=useSession();const res=useAsync(()=>Promise.all([s.store.listing(id),s.store.me(),s.store.questions()]),[s.store,id]);const stories=useAsync(()=>s.store.execution.publicCases(),[s.store]);
+  const s=useSession();const res=useAsync(()=>Promise.all([s.store.listing(id),s.store.me().catch(()=>null),s.store.questions(undefined).catch(()=>[])]),[s.store,id]);const stories=useAsync(()=>s.store.execution.publicCases(),[s.store]);
   const [error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[showNda,setShowNda]=useState(false);
-  if(res.error)return <section className="ks-wrap ks-page-head"><h1>Listing not available</h1><p>{res.error}</p><a className="ks-btn" href={href('/listings')}>Browse listings</a></section>;
+  if(res.error)return <section className="ks-wrap ks-page-head"><h1>Listing not available</h1><p>{/not available|withdrawn|sold/i.test(res.error)?res.error:'This listing can\u2019t be shown right now. It may have been withdrawn, or something went wrong on our side. Try again in a moment.'}</p><a className="ks-btn" href={href('/listings')}>Browse listings</a></section>;
   if(!res.data)return <section className="ks-wrap ks-page-head"><p>Loading…</p></section>;
   const [l,me,qs]=res.data,saved=me?.buyer.saved.includes(l.id),approved=l.access==='Approved'&&!!l.confidential.businessName,mult=(l.askingPrice/l.sde).toFixed(1);
   const offers=me?.offers.filter(o=>o.listingId===l.id)||[],questions=qs.filter(q=>q.listingId===l.id);

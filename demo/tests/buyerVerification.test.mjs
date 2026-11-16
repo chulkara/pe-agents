@@ -71,3 +71,10 @@ test('anonymous labels survive another buyer losing access',()=>{
 });
 
 test('freshness policy is configurable and enforces the new boundary',async()=>{const s=setup(),v=await submitted(s);assert.equal(await s.advisor.policy(),90);await assert.rejects(s.buyer.policy(12),/authorized advisor/);await s.advisor.policy(7);await assert.rejects(s.advisor.change(v.id,review(v)),/freshness policy/);await s.advisor.change(v.id,{...review(v),until:V.reviewDefault(Date.now(),7)});assert.equal(V.verificationBadge((await s.buyer.list())[0]).status,'Verified');});
+test('the validator rejects invalid and unconfirmed sessions before any private RPC or file request',async()=>{
+ for(const [identity,status]of [[new Response('{}',{status:401}),401],[Response.json({id:'fictional-user',email_confirmed_at:null}),403]]){
+  const calls=[],handler=verificationFileHandler({url:'https://fixture.invalid',publicKey:'public-test',serverKey:'server-test'},async(url,options)=>{calls.push({url,options});return identity;});
+  const result=await handler(new Request('https://function.invalid',{method:'POST',headers:{Authorization:'Bearer fictional-invalid-or-unconfirmed'},body:JSON.stringify({fileId:'11111111-1111-4111-8111-111111111111'})}));
+  assert.equal(result.status,status);assert.equal(calls.length,1);assert.equal(calls[0].url,'https://fixture.invalid/auth/v1/user');assert.equal(calls[0].options.cache,'no-store');
+ }
+});

@@ -1,0 +1,12 @@
+{
+  "project": "https://ymbciapnzdmymtthevjp.supabase.co",
+  "mode": "buyer-access",
+  "status": "prepared",
+  "fixture": "de32971b-33ca-4f94-b185-882b72a02b11",
+  "firm": "07941ca2-4b03-4890-8c0b-24b2803d25d0",
+  "otherFirm": "4c328f74-d115-4e5a-8c74-8a8788e9dba2",
+  "company": "fictional-buyer-access-de32971b-33ca-4f94-b185-882b72a02b11",
+  "listing": "451c96c8-134e-428a-be39-9890fc05dc2b",
+  "listingNumber": "KL-910015",
+  "expectedHeadline": "Sample HVAC company for software validation"
+}

@@ -2,3 +2,18 @@
 @media(max-width:650px){.ex-panel{padding:18px 14px;border-radius:12px}.ex-grid,.ex-facts{grid-template-columns:minmax(0,1fr)}.ex-workspace fieldset{padding:14px 10px}.ex-head{gap:8px}.ex-head h2{font-size:30px}.ex-document{padding:12px}.ex-files .ex-button{flex:1}.ex-workspace .ex-button{font-size:12px}.ex-summary{gap:10px}.ex-number{font-size:36px}}
 
 .ex-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--ex-line);border-bottom:1px solid var(--ex-line);padding:20px 0;margin:20px 0 24px;gap:20px}.ex-metrics dt{font:11px "Zalando Sans Variable",sans-serif;color:#655b71;line-height:1.4}.ex-metrics dd{font:clamp(25px,3vw,39px) "Forum",Georgia,serif;letter-spacing:-.025em;margin:9px 0 0;overflow-wrap:anywhere}@media(max-width:650px){.ex-metrics{grid-template-columns:minmax(0,1fr);gap:16px}.ex-metrics>div+div{border-top:1px solid var(--ex-line);padding-top:12px}}
+.ex-claim{background:#fff}.ex-claim>small{display:block;color:#6a626f;font-size:12px;margin-top:4px}
+.ex-evidence{border-top:1px dashed var(--ex-line)!important;margin-top:10px!important}
+.ex-evidence-head{font-size:12px;color:#635b6b;margin:4px 0 8px}
+.ex-evidence-text{background:var(--ex-tint);border-radius:10px;padding:14px 16px;font-size:13px;line-height:1.6;white-space:pre-wrap}
+.ex-evidence-text mark{background:#A7B2F7;color:#19141e;padding:1px 2px;border-radius:3px}
+.ex-evidence-text em{display:block;margin-top:8px;color:#762c27;font-style:normal;font-weight:600}
+.ex-judgment{border-top:1px solid var(--ex-line);margin-top:20px;padding-top:6px}
+.ex-judgment-standing{background:var(--ex-tint);border-radius:10px;padding:12px 14px;font-size:14px}
+.ex-judgment-pick{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+.ex-judgment-pick label{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:9px 16px;border:1px solid var(--ex-line);border-radius:24px;font-size:13px;cursor:pointer}
+.ex-judgment-pick label.on{background:var(--ex-purple);color:#fff;border-color:var(--ex-purple)}
+.ex-judgment-pick input{position:absolute;inset:-1px;width:auto;height:auto;opacity:0;margin:0;cursor:pointer}
+.ex-judgment-pick label:has(input:focus-visible){outline:3px solid var(--ex-peri);outline-offset:3px}
+.ex-judgment-act{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.ex-judgment-act small{font-size:12px;color:#635b6b;flex:1;min-width:200px}
+.ex-judgment-history{margin-top:8px}

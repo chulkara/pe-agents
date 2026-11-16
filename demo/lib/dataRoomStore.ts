@@ -7,6 +7,7 @@ import {sampleListings} from './brokerageSamples.ts';
 import {indexedBytes,type ByteStore} from './portalStore.ts';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import type {Viewer} from './brokerage.ts';
+import {downloadPrivateFile} from './privateStorage.ts';
 
 export type ItemInput=Parameters<typeof D.saveItem>[2];
 export type AdvisorRoom={room?:D.Room;items:D.RoomItem[];engagement:D.Engagement[];buyers:{buyerId:string;name:string;label:string;documents:number;seconds:number;last:string}[];loi:D.LoiGrant[]};
@@ -91,7 +92,7 @@ export function cloudDataRoomStore(client:SupabaseClient):DataRoomStore{
       const r=await call<{ticket:string;path:string;name:string;file_name:string;mime:string;allow_download:boolean;watermark:string;error?:string}>(kind==='downloaded'?'kalling_dataroom_download':'kalling_dataroom_open',{p_item:itemId});
       if(r.error)throw Error(r.error);
       if(!r.ticket||!r.path)throw Error('Could not open the document.');
-      const {data,error}=await client.storage.from('kalling-portal').download(r.path);
+      const {data,error}=await downloadPrivateFile(client,'kalling-portal',r.path);
       if(error||!data)throw Error('Could not open the document. Access may have changed; refresh the data room and try again.');
       return {ticket:r.ticket,blob:data,item:{id:itemId,displayName:r.name,mime:r.mime,allowDownload:r.allow_download,fileName:r.file_name},watermark:r.watermark};
     },

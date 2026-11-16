@@ -171,12 +171,13 @@ export function createWorker({stateDir,configPath=join(stateDir,'worker.json'),m
         active:state.active?{source:state.active.source,kind:state.active.kind,company:state.active.company,progress:state.active.progress,startedAt:new Date(state.active.startedAt).toISOString()}:null,
         local:{queued}};
     },
-    async pair(code,project=deployedCloudProject){
+    async pair(code,project=deployedCloudProject,{activate=true}={}){
       if(!/^[0-9A-Fa-f]{6}(-[0-9A-Fa-f]{6}){3}$/.test(String(code||'').trim()))throw new WorkerError('Enter the full connection code shown in Kalling.');
+      await loadConfig(true);
       const client=cloudFactory(project),r=await client.pair(String(code).trim().toUpperCase());
       if(!r?.token||!r?.worker_id)throw new WorkerError('Kalling did not return a computer credential.');
       await saveConfig({...state.config,cloud:{url:project.url,publishableKey:project.publishableKey,token:r.token,workerId:r.worker_id,firmId:r.firm_id,firmName:r.firm_name,name:r.name,pairedAt:new Date().toISOString()}});
-      state.beat=0;log(`Connected to ${r.firm_name} as ${r.name}.`);void api.tick();return api.status();
+      state.beat=0;log(`Connected to ${r.firm_name} as ${r.name}.`);if(activate)void api.tick();return api.status();
     },
     async unpair(){const {cloud:_,...rest}=state.config;await saveConfig(rest);state.cloud={status:'not-connected',detail:'',lastContact:0,waiting:0};return api.status();},
     async submitLocal(packet){

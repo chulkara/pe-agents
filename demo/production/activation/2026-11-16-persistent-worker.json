@@ -1,0 +1,145 @@
+{
+  "date": "2026-11-16",
+  "project": "ymbciapnzdmymtthevjp",
+  "mode": "persistent-worker",
+  "status": "passed_user_reported_and_hosted_state_corroborated",
+  "source_commit": "055765efc7ac29044e14f71fee73a10aa98e68ab",
+  "scope": {
+    "firm": "07941ca2-4b03-4890-8c0b-24b2803d25d0",
+    "company": "fictional-handover-71d2cf14-de61-446f-a33c-3e788ddc9cea",
+    "transaction": "578f6ec6-927f-4363-923e-33759dc917d4",
+    "worker": "92223b0d-962c-4c87-b794-956196b618f9",
+    "profile": "pilot"
+  },
+  "acceptance": {
+    "reporting_timezone": "America/New_York",
+    "method": "Karan supplied the successful post-reboot Terminal output, proposal-export result, fresh service status, manual idle-restart acknowledgement and successful cleanup. Full local JSON was not imported.",
+    "setup_checks_prepared": 17,
+    "setup_full_console_received": false,
+    "setup_completion": "Required by the successful verify-login guard; also corroborated by the succeeded hosted assignment. The complete 17-check setup output was not supplied.",
+    "login_checks_explicitly_reported_passed": 5,
+    "login_checks": [
+      "A real reboot occurred after installation",
+      "The login agent started using the unchanged worker identity",
+      "Local-only Ollama and qwen3:4b recovered after sign-in",
+      "The same pilot reconnected without changing the fictional transaction",
+      "The original worker configuration remained unchanged"
+    ],
+    "login_result": "Persistent startup and restart passed",
+    "proposal_export": "succeeded_user_reported",
+    "export_made_model_request": false,
+    "review_status": "Pending human review",
+    "human_approval_recorded": false
+  },
+  "observed_before_cleanup": {
+    "installed": true,
+    "managed": true,
+    "registered": true,
+    "programMatches": true,
+    "pid": 1020,
+    "instance": "6d40c9fe-1814-407a-afab-c3bbd525c234",
+    "version": "kalling-worker-3",
+    "startedAt": "2026-11-16T15:28:06.298Z",
+    "updatedAt": "2026-11-16T15:31:18.501Z",
+    "model": "qwen3:4b",
+    "model_ready": true,
+    "cloud_features_disabled": true,
+    "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "cloud_status": "online",
+    "active_assignment": null,
+    "local_chat_requests_in_post_reboot_process": 0,
+    "manual_idle_restart": "Acknowledged for PID 1020; a subsequent replacement PID was not supplied"
+  },
+  "cleanup": {
+    "status": "completed_user_reported_and_hosted_revocation_corroborated",
+    "login_item_removed": "Reported by the successful cleanup command; not independently inspected on the Mac",
+    "hosted_worker_revoked": true,
+    "remaining_worker_tokens": 0,
+    "private_checkpoints_retained": true,
+    "original_worker_configuration_preserved": true,
+    "current_pilot_operational_state": "stopped_and_disconnected",
+    "automatically_reinstalled": false
+  },
+  "hosted_confirmation": {
+    "method": "Read-only query scoped to the reported fictional worker, its jobs and the known closed transaction; no secrets, prompts or original file bytes retrieved",
+    "jobs": [
+      {
+        "id": "6611edd2-e8e8-461e-9100-de7a2e0f7489",
+        "model": "qwen3:4b",
+        "claims": 1,
+        "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+        "policy": "local-only-required-v2",
+        "status": "succeeded",
+        "worker": "92223b0d-962c-4c87-b794-956196b618f9",
+        "metrics": {
+          "calls": 1,
+          "resumed": false,
+          "elapsedMs": 9000,
+          "apiCostUSD": 0,
+          "outputTokens": 99,
+          "promptTokens": 263,
+          "usageIncomplete": false
+        },
+        "attempts": 1,
+        "provider": "Ollama local",
+        "revision": "57",
+        "questions": 1,
+        "assignment": "persistent-worker-43a636cf-5b7c-4daa-9abb-ad1b0e6f2d99",
+        "started_at": "2026-11-16T15:22:06.891221+00:00",
+        "finished_at": "2026-11-16T15:22:16.185389+00:00",
+        "transaction": "578f6ec6-927f-4363-923e-33759dc917d4",
+        "proposal_only": true,
+        "input_hash_matches": true
+      }
+    ],
+    "intake": false,
+    "worker": {
+      "id": "92223b0d-962c-4c87-b794-956196b618f9",
+      "firm": "07941ca2-4b03-4890-8c0b-24b2803d25d0",
+      "name": "Fictional persistent pilot 43a636cf",
+      "model": "qwen3:4b",
+      "version": "kalling-worker-3",
+      "revoked_at": "2026-11-16T15:32:14.262089+00:00",
+      "last_seen_at": "2026-11-16T15:32:11.409196+00:00"
+    },
+    "checked_at": "2026-11-16T15:36:57.133304+00:00",
+    "transaction": {
+      "state": "Closed",
+      "closes": 1,
+      "revision": 57
+    },
+    "active_firm_workers": 0,
+    "unfinished_firm_jobs": 0,
+    "remaining_test_sessions": 0,
+    "remaining_worker_tokens": 0
+  },
+  "verification": {
+    "runtime_source_ci_run": 43893971191,
+    "runtime_source_tests": 549,
+    "build": "passed",
+    "browser_flows": [
+      "deal-flow",
+      "seller-flow",
+      "execution-flow"
+    ],
+    "runtime_code_changed_for_this_record": false,
+    "full_local_report_received": false
+  },
+  "local_reports": {
+    "persistent": "$HOME/Downloads/kalling-persistent-worker-acceptance.json",
+    "proposal_review": "$HOME/Downloads/kalling-proposal-review/review.txt"
+  },
+  "evidence_limits": [
+    "Server metadata corroborates the job, model metadata, revoked credential and unchanged transaction revision; it cannot independently attest to a physical reboot or inspect the Mac's login item.",
+    "The five post-reboot checks were explicitly supplied. The setup's complete 17-line console output and full local JSON were not imported.",
+    "Successful export proves the reported review package was prepared; it is not a human approval or a hosted-browser review.",
+    "The later manual restart request was acknowledged, but no follow-up PID was supplied; the earlier controller restart and real login checks are the accepted recovery evidence."
+  ],
+  "remaining": [
+    "Human judgment on the quotation and proposed question",
+    "Browser click-to-review and a complete hosted mobile sale rehearsal",
+    "Interrupted active-job launchd recovery",
+    "Reconnect a new pilot only when the next rehearsal requires it; preserve this stopped report",
+    "Attorney NDA/engagement review, NJ/NY licensing, fee decisions, SMTP, real contact details and public launch setup"
+  ]
+}

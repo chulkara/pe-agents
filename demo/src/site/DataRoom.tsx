@@ -17,7 +17,17 @@ export function BuyerDataRoom({room,listingId,questions,onAsked}:{room:DataRoomS
   const opener=useRef<HTMLElement|null>(null);
   const load=useCallback(async()=>{try{setR(await room.buyerRoom(listingId));}catch{setR({tier:0,items:[]});}},[room,listingId]);
   useEffect(()=>{void load();},[load]);
-  if(!r||!r.tier||!r.items.length)return null;
+  // Already downloaded copies cannot be recalled. Stop displaying a held copy
+  // when a fresh room check finds that its current permission has changed.
+  useEffect(()=>{if(!open)return;let live=true,busy=false;
+    const check=async()=>{if(busy||document.visibilityState==='hidden')return;busy=true;try{
+      const next=await room.buyerRoom(listingId);if(!live)return;setR(next);
+      if(!next.tier||!next.items.some(i=>i.id===open.item.id&&i.open)){setOpen(null);setErr('Access to this document has changed. Ask your advisor before opening it again.');requestAnimationFrame(()=>opener.current?.focus());}
+    }catch{if(live){setOpen(null);setErr('Document access could not be confirmed. Reopen it when connected.');}}finally{busy=false;}};
+    const timer=setInterval(()=>void check(),15000),focus=()=>void check();window.addEventListener('focus',focus);document.addEventListener('visibilitychange',focus);
+    return()=>{live=false;clearInterval(timer);window.removeEventListener('focus',focus);document.removeEventListener('visibilitychange',focus);};
+  },[open,room,listingId]);
+  if(!r||!r.tier||!r.items.length)return err?<section className="ks-dr"><p className="ks-error" role="alert">{err}</p></section>:null;
   async function view(id:string,el:HTMLElement){setBusy(id);setErr('');opener.current=el;try{setOpen(await room.open(id));}catch(e){setErr((e as Error).message);}finally{setBusy('');}}
   const names=Object.fromEntries(r.items.map(i=>[i.id,i.displayName]));
   return <section className="ks-dr" aria-labelledby="ks-dr-h"><h2 id="ks-dr-h">Data room</h2>
