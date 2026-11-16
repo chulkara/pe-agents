@@ -6,15 +6,16 @@ The runner automates every step it can assert reliably, and hands you the browse
 
 ## Before the run
 
-1. **Fixture.** In the Supabase SQL editor, run `production/fixtures/prepare-sale-rehearsal.sql`. It verifies the fictional brokerage and confirmed accounts, keeps intake closed, and records one clearly fictional seller inquiry (the paused public form is itself verified in the browser first). It refuses to run if any real-looking row exists.
-2. **Research computer.** The AI drafting steps use the local model only. On this Mac:
+1. **Pending migrations.** In the Supabase SQL editor, apply any migration newer than the hosted ledger. As of this branch that is `production/migrations/20261116191500_kalling_proposal_reviews.sql`, which stores the recorded proposal judgments; without it, recording a judgment in step 7 fails with a missing-function error.
+2. **Fixture.** In the Supabase SQL editor, run `production/fixtures/prepare-sale-rehearsal.sql`. It verifies the fictional brokerage and confirmed accounts, keeps intake closed, and records one clearly fictional seller inquiry (the paused public form is itself verified in the browser first). It refuses to run if any real-looking row exists.
+3. **Research computer.** The AI drafting steps use the local model only. On this Mac:
    ```sh
    ollama ls   # qwen3:4b at least; qwen3:8b or 14b give a better memorandum
    node --experimental-strip-types scripts/kalling-worker.mjs install
    node --experimental-strip-types scripts/kalling-worker.mjs status
    ```
    If no research computer is paired to the firm, open any deal's Research tab as the fictional advisor and use **Connect this Mac** first.
-3. **Build the checked runtime.** From `demo/` on the review branch:
+4. **Build the checked runtime.** From `demo/` on the review branch:
    ```sh
    npm ci && npm run build
    ```
