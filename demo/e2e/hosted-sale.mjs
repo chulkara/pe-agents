@@ -387,8 +387,12 @@ const step=async(name,fn)=>{
     if(!all.replace(/\\n/g,' ').replace(/\s+/g,' ').includes(needle))fail('The proposal quotation was not found in the stored source text: "'+needle+'" ('+src+')');
     await sb.auth.signOut();
     report.proposal={quote,source:src,verified:'quotation found in stored source text'};
-    await guided(adv,'Read the proposal and record YOUR judgment in the app (accept into the record, or dismiss). The runner never records a judgment for you.',
-      async()=>(await adv.getByText(/Imported|Dismissed|Reviewed/).count())>0,30*60000);
+    // Each claim carries a Show in source view with the quoted part marked in the permitted passage.
+    const evidence=adv.locator('.ex-evidence summary').first();
+    if(await evidence.count()){await evidence.click();if(!(await adv.locator('.ex-evidence-text mark').count()))fail('The claim quote is not marked inside its source passage.');}
+    await guided(adv,'Read each claim against Show in source, then record YOUR judgment under Your judgment: Reviewed, Changes needed (with a note), or Dismissed. The runner never records a judgment for you, and recording one approves nothing.',
+      async()=>(await adv.locator('.ex-judgment-standing').count())>0,30*60000);
+    report.judgment=(await adv.locator('.ex-judgment-standing').innerText()).trim();
     await sweep(adv,'execution-workspace');
   });
 
