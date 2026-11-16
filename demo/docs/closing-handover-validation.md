@@ -1,8 +1,10 @@
 # Closing-file handover acceptance
 
-This is the next authenticated acceptance step after the 24 foundation checks, owner uploads and all 65 buyer-access checks. It uses the same six confirmed fictional accounts, a separate clearly labelled Sample HVAC listing and small fictional PDFs. No real transaction, signature, professional opinion, funding or fee is represented. No email, model API or paid service is used.
+**Completed November 16, 2026:** Karan reports all 90 hosted closing-file handover checks passed. A separate read-only query confirms one Closed transaction, one Sample Sold listing, three buyer handover files, two seller handover files, 11 stored execution-file records including one reused owner original, three revoked specialists, the closed portal, restricted buyer, inactive temporary member and zero remaining test sessions. Twenty refused file opens are retained. Public intake remains closed, with no leads, alert drafts or real listings. The full local JSON has not been imported; SQL corroborates retained state rather than rechecking the actual downloaded bytes.
 
-The checked controller is `scripts/hosted-handover.mjs`. The full local protocol run passes **90 checks** against real PostgreSQL permissions through PGlite with simulated Auth and HTTP. Source snapshot `4a7af404769fda6f654b48d61773c03b978d982a` passed 528 tests, the build and all three browser flows in [GitHub run 43808430117](https://github.com/chulkara/pe-agents/actions/runs/43808430117). That is controller, policy and local browser evidence. Positive hosted Auth and Storage acceptance remains pending until Karan runs it on his Mac.
+This acceptance step follows the 24 foundation checks, owner uploads and all 65 buyer-access checks. It used the same six confirmed fictional accounts, a separate clearly labelled Sample HVAC listing and small fictional PDFs. No real transaction, signature, professional opinion, funding or fee was represented. No email, model API or paid service was used. See [the recorded acceptance](../production/activation/2026-11-16-handover.json).
+
+The checked controller is `scripts/hosted-handover.mjs`. The full local protocol run also passes **90 checks** against PostgreSQL permissions through PGlite with simulated Auth and HTTP. Source snapshot `4a7af404769fda6f654b48d61773c03b978d982a` passed 528 tests, the build and all three browser flows in [GitHub run 43808430117](https://github.com/chulkara/pe-agents/actions/runs/43808430117). Karan subsequently completed the real hosted run from that snapshot on his Mac.
 
 ## What the 90 checks cover
 
@@ -27,6 +29,8 @@ The checked controller is `scripts/hosted-handover.mjs`. The full local protocol
 The runner retains the original, still-valid JWTs during revocation checks. A network/server failure is not accepted as an authorization refusal. Requests have a 20-second timeout; credentials, tokens and document bytes are not printed or saved in the report.
 
 ## Preparation and Mac run
+
+The following instructions are retained for traceability. **Do not rerun this completed fixture.** Its manifest describes the original prepared state; the sample is now a closed archive. Preserve the passed report in Downloads. A future full run needs a separate bounded fixture, not reopening or overwriting this one.
 
 Use a **complete pinned source snapshot in a new folder** and run `npm ci` there. Do not copy individual files into the old ZIP. The old folder was missing dependencies and transitive imports. Keep every earlier Downloads report.
 

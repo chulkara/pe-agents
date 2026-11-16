@@ -22,7 +22,7 @@
     "build": "passed",
     "simulated_closing_protocol_checks": 90,
     "simulated_failure_cleanup": "passed",
-    "positive_hosted_handover_acceptance": "pending_on_Karans_Mac",
+    "positive_hosted_handover_acceptance": "passed_user_reported",
     "public_http_checks": 3,
     "public_http_scope": [
       "Closed public intake",
@@ -58,7 +58,7 @@
     "listing_number": "KL-920016",
     "fixture_script_sha256": "85c06a61b561a20e6c45e490fded68aea4332e30d20c96e2aa2309978946fd38",
     "runner_sha256": "d881acd071ccf65965b5bc1ea57df0f4482b93b5442b9dee69c8e6b1df22b377",
-    "status": "prepared_not_started",
+    "status": "handover_acceptance_completed_and_archived",
     "post_setup": {
       "checked_at": "2026-11-16T05:04:25.746353+00:00",
       "migrations": 27,
@@ -75,6 +75,19 @@
       "non_sample_listings": 0,
       "handover_transactions": 0,
       "test_sessions": 0
+    },
+    "post_acceptance": {
+      "listing": "Sample Sold",
+      "transaction": "Closed",
+      "closes": 1,
+      "buyerHandoverFiles": 3,
+      "sellerHandoverFiles": 2,
+      "activeSpecialists": 0,
+      "portal": "Closed",
+      "buyer": "Restricted",
+      "member": "Inactive",
+      "remainingTestSessions": 0,
+      "publicIntakeOpen": false
     }
   },
   "security": {
@@ -95,12 +108,12 @@
     "state": "draft review branch; not deployed to Pages"
   },
   "limitations": [
-    "Simulated Auth/HTTP is controller and SQL-policy evidence, not positive hosted file transport",
-    "Execution finalization validates Storage metadata; actual download SHA comparisons are part of the pending Mac run, not trusted server-side execution attestation",
-    "Complete hosted mobile sale rehearsal and real local-only Mac inference remain pending"
+    "The complete local JSON report has not been imported; Karan reported the final 90-check success line",
+    "SQL confirmation corroborates retained state, not the actual downloaded PDF fingerprints or intermediate HTTP denials",
+    "Execution finalization validates stored metadata; the successful Mac runner compares actual download SHA-256 rather than providing trusted server-side execution attestation",
+    "Real local-only Mac inference and the complete hosted mobile sale rehearsal remain pending"
   ],
   "remaining": [
-    "90-check authenticated closing-file handover run",
     "Real Mac model job",
     "Complete hosted mobile sale rehearsal",
     "Attorney review",
@@ -109,5 +122,66 @@
     "SMTP",
     "Real contact information and public launch setup"
   ],
-  "source_commit": "4a7af404769fda6f654b48d61773c03b978d982a"
+  "source_commit": "4a7af404769fda6f654b48d61773c03b978d982a",
+  "authenticated_acceptance": {
+    "reported_on": "2026-11-16",
+    "reporting_timezone": "America/New_York",
+    "status": "passed_user_reported",
+    "checks_passed": 90,
+    "runner_source_snapshot": "4a7af404769fda6f654b48d61773c03b978d982a",
+    "result_source": "Karan confirmed Finished 90 closing-file handover checks in chat; full local report not imported",
+    "local_report": "$HOME/Downloads/kalling-handover-acceptance.json",
+    "independent_hosted_confirmation": {
+      "method": "Read-only query restricted to the known fictional listing, transaction, company and accounts; no credentials, tokens or stored bytes retrieved",
+      "checked_at": "2026-11-16T05:22:02.711505+00:00",
+      "matched_listing": 1,
+      "listing_status": "Sold",
+      "transactions": [
+        {
+          "id": "578f6ec6-927f-4363-923e-33759dc917d4",
+          "state": "Closed",
+          "closes": 1,
+          "buyer_handover_files": 3,
+          "seller_handover_files": 2,
+          "recorded_guest_ids": 1,
+          "cases": 1,
+          "published_cases": 0,
+          "comparables": 0,
+          "buyer_status": "Restricted",
+          "portal_status": "Closed",
+          "stored_files": 11,
+          "reused_portal_originals": 1,
+          "active_specialists": 0,
+          "revoked_specialists": 3,
+          "close_events": 1,
+          "denied_file_reads": 20
+        }
+      ],
+      "member_inactive": true,
+      "remaining_test_sessions": 0,
+      "prior_buyer_listing_status": "Withdrawn",
+      "public_intake_open": false,
+      "leads": 0,
+      "alert_drafts": 0,
+      "non_sample_listings": 0,
+      "file_metadata_confirmation": {
+        "stored_files_with_matching_object_metadata": 11,
+        "buyer_selected_current_reviewed_grants": 3,
+        "seller_selected_current_reviewed_grants": 2,
+        "private_post_close_append": 1
+      }
+    },
+    "coverage": [
+      "Six confirmed hosted identities and exact prior fixtures",
+      "Interrupted execution uploads, immutable retries and exact PDF downloads",
+      "Logged reads, private audit, reviewed version-specific grants and current-permission revocation",
+      "Counterparty identity permissions and restricted lender material",
+      "Email-bound specialist invitations, revocation, re-invitation and scoped retained access",
+      "Accepted owner original reused without copying and separately approved buyer sharing",
+      "Reviewed LOI, financial diligence, five conditions and one idempotent controlled close",
+      "Exact buyer and seller handover archives with independent permissions",
+      "Private post-close evidence append and buyer handover after seller portal closure",
+      "Original valid JWTs retained during revocation checks; temporary access removed and all six sessions signed out"
+    ]
+  }
 }
