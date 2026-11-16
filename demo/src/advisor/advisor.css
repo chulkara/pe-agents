@@ -176,10 +176,10 @@
 .drf-stale{padding:12px 16px;border-radius:var(--k-radius-input);background:var(--k-peri-soft);font-size:14px;display:grid;gap:8px}.drf-stale input{min-height:40px;padding:6px 12px;border:1px solid rgba(0,0,0,.28);border-radius:10px;min-width:240px}
 .drf-blocked{margin:8px 0;padding:12px 16px;border-radius:var(--k-radius-input);background:var(--k-error-soft);color:var(--k-error);font:14px/1.5 var(--k-ui);overflow-wrap:anywhere}
 .drf-mismatch,.drf-findings{margin:12px 0;padding:12px 16px;border-radius:var(--k-radius-input);background:var(--k-error-soft);color:var(--k-error);font-size:14px}.drf-mismatch ul,.drf-findings ul{margin:6px 0 0;padding-left:18px;display:grid;gap:4px}
-.drf-props tr.skipped td{opacity:.5}.drf-props tr.accepted td:first-child{box-shadow:inset 3px 0 0 var(--k-green)}.drf-props input{width:110px;min-height:36px;border:1px solid rgba(0,0,0,.28);border-radius:8px;padding:4px 8px}
+.drf-props tr.skipped td{opacity:.5}.drf-props tr.accepted td:first-child{box-shadow:inset 3px 0 0 var(--k-green)}.drf-props input{width:110px;min-height:44px;border:1px solid rgba(0,0,0,.28);border-radius:8px;padding:4px 8px}
 .drf-excerpt{display:block;color:var(--k-grey-1);font-size:12px;margin-top:3px;font-style:italic}
 .drf-compare .drf-text{white-space:pre-wrap;max-width:36ch;font-size:13px;line-height:1.5}
-.anon-findings{margin:10px 0 0;padding-left:18px;display:grid;gap:6px;font-size:13px}.anon-warns{margin-top:10px;display:grid;gap:8px;font-size:13px}.anon-warn{display:grid;gap:6px}.anon-warn input{min-height:36px;border-radius:8px;border:1px solid rgba(0,0,0,.28);padding:4px 10px;background:#fff}
+.anon-findings{margin:10px 0 0;padding-left:18px;display:grid;gap:6px;font-size:13px}.anon-warns{margin-top:10px;display:grid;gap:8px;font-size:13px}.anon-warn{display:grid;gap:6px}.anon-warn input{min-height:44px;border-radius:8px;border:1px solid rgba(0,0,0,.28);padding:4px 10px;background:#fff}
 .adv-check-panel.bad .text-link{color:var(--k-error);font-weight:600}
 .mat-tab{display:grid;gap:16px}
 .cim-checks{padding:14px 16px;border-radius:var(--k-radius-panel);margin:12px 0}.cim-checks h3{margin:0 0 6px;font-size:16px}.cim-checks ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}.cim-checks p{margin:0;font-size:14px}
