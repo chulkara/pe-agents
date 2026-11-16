@@ -43,7 +43,7 @@ async function start(){
     await worker.start();await receipt();timer=setInterval(()=>void receipt().catch(()=>{}),2000);
     // The pilot consumes the hosted queue only, leaving the existing local-demo port untouched.
     if(profile==='default'){
-      api=createLocalApi(worker);try{await api.listen();await log('Local demo connection ready on 127.0.0.1:'+localApiPort+'.');}
+      api=createLocalApi(worker);try{await api.listen();await log('Local Kalling demo connection ready on 127.0.0.1:'+localApiPort+'.');}
       catch(e){await log(e.code==='EADDRINUSE'?'Local demo port is already in use. Hosted work remains available.':'Local demo connection unavailable.');}
     }
     process.once('SIGINT',()=>void stop());process.once('SIGTERM',()=>void stop());
