@@ -34,13 +34,33 @@
   },
   "verification": {
     "full_local_suite_before_final_guards": 535,
-    "final_targeted_suite": "10 passed, including lost replies, cancellation, cleanup identity and report protection",
+    "final_targeted_suite": "10 passed",
     "expected_current_total": 538,
     "build": "passed",
-    "source_ci": "pending",
+    "source_ci": "success",
     "real_Mac_inference": "pending_on_Karans_Mac",
     "hosted_worker_job": "not_queued",
-    "live_checks_prepared": 18
+    "live_checks_prepared": 18,
+    "full_local_suite_passed": 538,
+    "source_ci_run": 43820485662,
+    "source_ci_job": 133142196601,
+    "browser_flows": [
+      "deal-flow",
+      "seller-flow",
+      "execution-flow"
+    ],
+    "screen_widths": [
+      390,
+      1024,
+      1440
+    ],
+    "clean_source_setup": {
+      "locked_npm_install": "passed",
+      "controller_import": "passed",
+      "missing_report_stop": "passed before Auth or inference; no report overwrite",
+      "public_archive": "matches all 366 tracked files",
+      "snapshot": "f5f4b668e5c961cb94ea02d037ea36caa198a51b"
+    }
   },
   "privacy": {
     "publishable_key_only": true,
@@ -74,5 +94,6 @@
     "Fee decisions",
     "SMTP",
     "Real contact details and public launch setup"
-  ]
+  ],
+  "source_commit": "f5f4b668e5c961cb94ea02d037ea36caa198a51b"
 }

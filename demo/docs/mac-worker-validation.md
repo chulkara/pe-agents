@@ -4,6 +4,8 @@ This acceptance step uses the completed fictional HVAC handover to run one **Sta
 
 **Current status: prepared, real Mac run pending.** Database-backed tests exercise the controller and real queue/worker code with simulated Auth, HTTP and Ollama. They do not establish that Karan's physical Mac has performed inference. That requires the command below on the Mac. The preceding 90 hosted closing-file checks are complete.
 
+Checked source `f5f4b668e5c961cb94ea02d037ea36caa198a51b` passes 538 tests, the build and all three browser flows in [GitHub run 43820485662](https://github.com/chulkara/pe-agents/actions/runs/43820485662). A clean source export passed locked installation, transitive module loading and a missing-report stop before Auth or inference. The public archive matches all 366 tracked source files. These are source/controller checks; the live Mac job is still pending.
+
 ## What runs
 
 1. Verify the completed foundation and 90-check handover reports, then confirm the running local Ollama has cloud features disabled and `qwen3:4b` installed. No prompt is sent during this readiness check.
@@ -25,7 +27,17 @@ Keep these earlier reports in Downloads:
 - `kalling-hosted-acceptance.json`: the passed 24-check foundation run.
 - `kalling-handover-acceptance.json`: the passed 90-check handover run.
 
-From the checked snapshot's `demo/` folder, first check readiness:
+Download that complete checked copy into a new folder:
+
+```sh
+kalling_check_dir="$(mktemp -d "$HOME/Downloads/kalling-mac-worker-XXXXXX")" &&
+curl -fL https://github.com/chulkara/pe-agents/archive/f5f4b668e5c961cb94ea02d037ea36caa198a51b.zip -o "$kalling_check_dir/source.zip" &&
+unzip -q "$kalling_check_dir/source.zip" -d "$kalling_check_dir" &&
+cd "$kalling_check_dir/pe-agents-f5f4b668e5c961cb94ea02d037ea36caa198a51b/demo" &&
+npm ci
+```
+
+In the same Terminal window, check readiness:
 
 ```sh
 node --experimental-strip-types scripts/hosted-worker.mjs doctor
