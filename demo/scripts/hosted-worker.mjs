@@ -138,6 +138,9 @@ export async function cleanupWorkerRun(config,account,foundation,handover,report
   }finally{const r=await c.auth.signOut({scope:'global'});m.signedOut=!r.error;delete account.password;}return report;
 }
 
+// Shared by the persistent service acceptance and the read-only proposal review command.
+export {makeHostedClient,ownerLogin,verifyOwner,verifyContext,snapshot,rpc,row};
+
 async function main(){
   const arg=name=>{const i=process.argv.indexOf(name);return i>=0?process.argv[i+1]:undefined;},mode=process.argv[2],output=arg('--output');let canWrite=false,report={project:deployedCloudProject.url,at:new Date().toISOString(),mode:'mac-worker',status:'pending',checks:[],fixtureManifest:{}};
   const save=async()=>{if(output&&canWrite){const p=resolve(output),tmp=p+'.tmp-'+process.pid+'-'+randomUUID();await writeFile(tmp,JSON.stringify(report,null,2)+'\n',{mode:0o600,flag:'wx'});await rename(tmp,p);}};

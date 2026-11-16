@@ -4,6 +4,8 @@ Latest acceptance result, November 16, 2026: Karan supplied all **18 passed live
 
 The returned excerpt and question remain pending human review. Persistent worker startup/login restart and the complete hosted mobile sale rehearsal remain, along with attorney review, licensing, fees, SMTP, contact details and public launch setup. The isolated successful run did not install or replace a login item or existing worker configuration.
 
+Persistent pilot startup/restart and a read-only original-PDF proposal export are now implemented. Run the [separate Mac acceptance](persistent-worker.md). It preserves the original worker, leaves a separate fictional pilot connected after restart, and requires a later real reboot to prove startup at login. The new live Mac results are still pending; none of the earlier accepted reports is overwritten.
+
 ## Verified on November 14, 2026
 
 Project `ymbciapnzdmymtthevjp` remains on the Free plan. All 22 remaining migrations were applied individually in order. The initial hosted ledger had 23 entries including the previously applied worker migration; subsequent owner-upload and authenticated-metadata guards bring it to 25. Foundation 001 and scheduler 002 were already active and were not rerun. Exact source checksums and recorded versions are in [the activation record](../production/activation/2026-11-14.json).

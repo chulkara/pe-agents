@@ -6,6 +6,8 @@ This acceptance step uses the completed fictional HVAC handover to run one **Sta
 
 Checked source `f5f4b668e5c961cb94ea02d037ea36caa198a51b` passes 538 tests, the build and all three browser flows in [GitHub run 43820485662](https://github.com/chulkara/pe-agents/actions/runs/43820485662). A clean source export passed locked installation, transitive module loading and a missing-report stop before Auth or inference. The public archive matches all 366 tracked source files. Those source/controller checks use simulated services; Karan subsequently completed the separate real Mac run. The full local JSON has not been imported. Hosted metadata corroborates job/result/cleanup state rather than independently attesting to physical hardware.
 
+Persistent pilot startup/restart and a read-only original-PDF proposal export are now implemented. Run the [separate Mac acceptance](persistent-worker.md). It preserves the original worker, leaves a separate fictional pilot connected after restart, and requires a later real reboot to prove startup at login. The new live Mac results are still pending; none of the earlier accepted reports is overwritten.
+
 ## What runs
 
 1. Verify the completed foundation and 90-check handover reports, then confirm the running local Ollama has cloud features disabled and `qwen3:4b` installed. No prompt is sent during this readiness check.

@@ -8,6 +8,8 @@ Mission: Kalling helps a small acquisition team find, evaluate, acquire, and ope
 
 This folder contains executable PostgreSQL migrations and isolation/queue tests. The frontend exposes **Accounts & cloud** in the sidebar. The Kalling Free project, private buckets and scheduler are active. The hosted app includes only public connection settings. Fictional-account firm, owner-upload, buyer data-room, closing-file handover and one connected local-model job have passed acceptance as reported and corroborated. Persistent worker startup and the complete hosted mobile rehearsal remain. Frontend changes on the draft review branch have not been deployed to Pages. Never describe publishing the frontend as activating the backend.
 
+Persistent pilot startup/restart and a read-only original-PDF proposal export are now implemented. Run the [separate Mac acceptance](../docs/persistent-worker.md). It preserves the original worker, leaves a separate fictional pilot connected after restart, and requires a later real reboot to prove startup at login. The new live Mac results are still pending; none of the earlier accepted reports is overwritten.
+
 ## Zero-cost architecture
 
 The [18-check real Mac worker run](../docs/mac-worker-validation.md) is complete. It used local-only `qwen3:4b` against one reviewed fictional passage and preserved the persistent Mac configuration. No new migration, model provider or paid service was required. See [the accepted run](activation/2026-11-16-mac-worker.json).

@@ -6,17 +6,12 @@ For the internal pilot, that computer is Karan's Mac. It works whenever it is aw
 
 ## How it works
 
-```
-Browser ──(signed-in RPC)──▶ Supabase queue ◀──(worker token RPC)── Mac worker ──▶ Ollama 127.0.0.1:11434
-   ▲                                                                      │
-   └───────── polls progress and result; imports it as proposals ◀────────┘
-Local demo (no account): Browser ──▶ http://127.0.0.1:47311 (same worker)
-```
+The browser submits an approved input snapshot to the Supabase queue. The paired Mac claims it, calls local Ollama, and returns a proposal through that queue. The app polls for progress and the result. The optional default-profile demo uses a separate loopback connection.
 
 * **Cloud firms.** The browser saves the assignment to the workspace, then queues it with `kalling_agent_enqueue`. The worker claims it with a 3-minute lease, reports each step, and renews the lease while it works. The result comes back as verbatim JSON. The open page imports it into the existing review screens. Nothing is accepted or sent automatically.
 * **Local demo.** If you aren't signed in, the page talks to the same worker on `127.0.0.1:47311`. Only Kalling origins are accepted, and the `Host` header is checked to block DNS rebinding. Chrome may ask to let the site reach apps on this device; allow it. Safari may block loopback requests from an HTTPS page; use Chrome or a cloud workspace.
 * **Recovery.**
-  * Every model step is checkpointed under `~/.kalling-agent/<scope>/<assignment>/`.
+  * Every model step is checkpointed under its profile's state directory. The default is `~/.kalling-agent/<scope>/<assignment>/`; the pilot keeps separate state under Application Support.
   * If the worker restarts, it resumes the assignment it already holds without spending an attempt.
   * If it sleeps past its lease, another connected computer can take over. The lease token fences the old one out.
   * Model outages pause claiming instead of burning attempts. Interrupted attempts retry with backoff, four attempts at most. After that, the person sees the error and a **Try again** button.
@@ -32,28 +27,26 @@ The [18-check real Mac worker acceptance](mac-worker-validation.md) passed as re
 
 Prerequisites are Node 22.13+ and Ollama in local-only mode with `qwen3:4b`. The existing `scripts/local-research.mjs configure-local-only` and `doctor` commands check these.
 
-From the repository's `demo` folder:
+Use the [persistent worker acceptance](persistent-worker.md) for the current fictional pilot. It installs `--profile pilot` under `~/Library/Application Support/Kalling/worker-pilot`, registers `com.kalling.worker.pilot`, pairs it separately and tests a process restart. It leaves the pilot online. A second command after a real reboot and sign-in verifies startup at login. The original `~/.kalling-agent/worker.json`, default login item and local-demo port are preserved.
+
+The installer copies a standalone runtime outside Downloads. Moving a source ZIP does not break it. The absolute Node executable must remain installed; reinstall the service after changing that path. The pilot opens the installed Ollama app at startup, checks the running server's cloud-disabled status and waits if the model or network is unavailable. It never downloads a model or falls back to a hosted provider.
+
+The pilot consumes the hosted firm queue and does not expose a local HTTP listener. To inspect it from a complete current source checkout:
 
 ```sh
-node --experimental-strip-types scripts/kalling-worker.mjs install      # runs now and at every login (launchd)
-node --experimental-strip-types scripts/kalling-worker.mjs status       # model, connection, current work, recent log
+node --experimental-strip-types scripts/kalling-worker.mjs status --profile pilot
+node --experimental-strip-types scripts/kalling-worker.mjs restart --profile pilot
 ```
 
-Next, in Kalling, open any company's **Research** step. Under **Research computers for this firm**, choose **Connect this Mac**. Do this on the Mac itself, as a firm owner or admin. The page creates a 15-minute connection code and hands it to the local worker. If the browser can't reach the worker, the page shows the code instead. Then run `kalling-worker.mjs pair CODE` on that computer.
+Restart and removal require an idle service. A second process using the same profile is refused. Logs are private at `~/Library/Logs/Kalling/pilot/worker.log` and rotate at 2 MB. `service-status.json` contains a PID, fresh heartbeat, model digest and assignment ID; it excludes credentials and prompt contents. `uninstall --profile pilot` stops the login service but retains its private configuration. Use the acceptance controller's `cleanup` command to revoke its hosted credential as well.
 
-To use a different model, run `install --model qwen3:8b`. Remove the login item with `uninstall`. Logs go to `~/Library/Logs/Kalling/worker.log`, which rotates at 2 MB.
-
-After pulling repository updates, run `install` again so launchd restarts the new code.
+The default profile remains available for a new local-demo installation. An existing legacy login item is refused rather than replaced automatically. Do not uninstall, overwrite or re-pair a legacy worker merely to get past a pilot preflight refusal. The current pilot does not need a browser-to-local pairing connection.
 
 ### Updating for drafting and execution (worker 3)
 
-The current worker is `kalling-worker-3`. It supports the existing research, introduction and sale-material drafts, plus optional execution proposals. The database refuses execution work from older workers. Update the administrator's Mac with:
+The current worker is `kalling-worker-3`. It supports the existing research, introduction and sale-material drafts, plus optional execution proposals. The database refuses execution work from older workers. Update a managed pilot only while idle, using a complete checked source snapshot and `install --profile pilot`. The installer verifies its existing registration, stages and imports the new runtime before replacement, and restores the prior registration if bootstrap fails. Follow the pilot acceptance instructions before changing its checked model configuration.
 
-```sh
-cd ~/pe-agents/demo && git pull && node --experimental-strip-types scripts/kalling-worker.mjs install
-```
-
-`status` lists the model used for each kind. The default is the install model. A larger model can be set per kind in `~/.kalling-agent/worker.json`, for example `{"models":{"cim":"qwen3:14b"}}`; allowed models are `qwen3:4b`, `qwen3:8b` and `qwen3:14b`. Pull the model with `ollama pull qwen3:14b` first. See `docs/ai-drafting.md` for what each kind does.
+`status` lists the model used for each kind. The default is the install model. A larger model can be set per kind in the selected profile's `worker.json`, for example `{"models":{"cim":"qwen3:14b"}}`; allowed models are `qwen3:4b`, `qwen3:8b` and `qwen3:14b`. Pull the model with `ollama pull qwen3:14b` first. See `docs/ai-drafting.md` for what each kind does.
 
 The M1 pilot can retain `qwen3:4b`; the larger model is optional. Execution proposals use reviewed cited passages, not whole original files or restricted lender material. A changed transaction cancels stale work. The model cannot sign, send, change permissions, clear a condition or record completion. Coordination still works while the Mac is offline. See [deal execution](deal-execution.md).
 
@@ -67,3 +60,5 @@ The M1 pilot can retain `qwen3:4b`; the larger model is optional. Execution prop
 * Only one assignment runs at a time per computer. Waiting work is processed oldest first.
 * The local demo path stores its queue on the Mac (`~/.kalling-agent/local-jobs`), and the browser stores the workspace. Clearing either loses that demo's state.
 * Software tests don't establish real-world model accuracy. Keep using the pilot evaluation in `local-research-pilot.md`.
+
+For the accepted fictional proposal, use the read-only PDF and proposal export in [persistent worker acceptance](persistent-worker.md#review-the-earlier-proposal). The review-branch execution panel can discover it through the same queue, but that browser review path has not yet been rehearsed on the hosted site.
