@@ -52,7 +52,11 @@ export function cloudBrokerStore(client:SupabaseClient,viewer:Viewer):BrokerStor
     async requests(){return (await rows<Parameters<typeof access>[0]>(client.from('kalling_access').select('*').order('created_at',{ascending:false}))).map(access);},
     async decide(id,status,note){await call('kalling_access_decide',{p_request:id,p_status:status,p_note:note});},
     async offers(){return ((await call('kalling_offer_rows',{})) as Parameters<typeof offer>[0][]).map(offer);},
-    async questions(listingId){let q=client.from('kalling_listing_questions').select('*').order('created_at');if(listingId)q=q.eq('listing_id',listingId);return (await rows<Parameters<typeof question>[0]>(q)).map(question);},
+    async questions(listingId){
+        // Signed-out visitors have no questions of their own; the table refuses anonymous reads.
+        // A public listing page must still render, so that refusal means an empty list, not an error.
+        if(!(await client.auth.getSession()).data.session)return [];
+        let q=client.from('kalling_listing_questions').select('*').order('created_at');if(listingId)q=q.eq('listing_id',listingId);return (await rows<Parameters<typeof question>[0]>(q)).map(question);},
   };
   return store;
 }
