@@ -25,7 +25,7 @@ async function qualifyLead(adv,o={}){
 async function prepareLetter(adv,shot=async()=>{}){
   await adv.waitForSelector('.eng-letter');const L=adv.locator('.eng-letter');
   assert.ok(await L.getByRole('button',{name:'Ready for owner'}).isDisabled(),'empty fees block the letter');
-  assert.match(await L.locator('.eng-problems').innerText(),/success fee percentage/);
+  assert.match(await L.locator('.eng-problems').innerText(),/minimum success fee/);assert.equal(await L.getByLabel('Success fee, %').inputValue(),'8','new letters start at the firm’s 8% default');
   await L.getByLabel('Firm address').fill('1 Main Street, Green Brook, NJ 08812');
   await L.getByLabel('Success fee, %').fill('8');await L.getByLabel('Minimum success fee, $').fill('60000');
   await L.getByLabel('Fee is calculated on').selectOption({index:1});await L.getByLabel(/^Retainer/).first().selectOption('none');

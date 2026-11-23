@@ -54,11 +54,13 @@ export const LETTER_TEMPLATE_VERSION='kalling-engagement-2026-11-v1';
 export type LetterTerms={successFeePct:number|null;successFeeMin:number|null;feeBasis:string;retainer:'none'|number|null;exclusivityMonths:number|null;tailMonths:number|null;terminationDays:number|null;expenses:string};
 export type LetterInput={ownerName:string;ownerTitle:string;legalName:string;state:'NJ'|'NY'|'';advisorName:string;advisorEmail:string;firmName:string;firmAddress:string;effectiveDate:string;terms:LetterTerms};
 export const emptyTerms=():LetterTerms=>({successFeePct:null,successFeeMin:null,feeBasis:'',retainer:null,exclusivityMonths:null,tailMonths:null,terminationDays:null,expenses:''});
+/** Firm default success fee, decided November 23, 2026. New letters start here; the advisor reviews every term before sending. */
+export const DEFAULT_SUCCESS_FEE_PCT=8;
 export const feeBases=['The total purchase price, including cash at close, seller notes and earned earnouts','Cash and notes at close only; earnouts when paid'];
 
 export function letterDefaults(c:Company,o:{advisorName:string;advisorEmail:string;firmName:string;firmAddress:string;today?:string}):LetterInput{
   const d=c as DealCompany;const state=(c.state==='NJ'||c.state==='NY'?c.state:d.region?regionState(d.region):'') as LetterInput['state'];
-  return {ownerName:c.owner,ownerTitle:'Owner',legalName:c.name,state,advisorName:o.advisorName,advisorEmail:o.advisorEmail,firmName:o.firmName,firmAddress:o.firmAddress,effectiveDate:(o.today||now()).slice(0,10),terms:emptyTerms()};
+  return {ownerName:c.owner,ownerTitle:'Owner',legalName:c.name,state,advisorName:o.advisorName,advisorEmail:o.advisorEmail,firmName:o.firmName,firmAddress:o.firmAddress,effectiveDate:(o.today||now()).slice(0,10),terms:{...emptyTerms(),successFeePct:DEFAULT_SUCCESS_FEE_PCT}};
 }
 /** Every blank that stops a letter from going to the owner. There are no default fees. */
 export function letterProblems(i:LetterInput):string[]{

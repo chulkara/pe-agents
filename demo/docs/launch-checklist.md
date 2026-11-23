@@ -7,7 +7,7 @@ Kalling has been validated end to end with fictional data only: the hosted sale 
 - **Engagement letter.** An attorney reviews the template, then a firm owner ticks "An attorney has reviewed the engagement letter template" in Firm settings. Until then every letter shows "Template pending legal review" ([engagement](engagement.md)).
 - **Listing NDA.** An attorney reviews the NDA text in `lib/brokerage.ts` ([brokerage](brokerage.md)).
 - **Brokerage licensing.** Confirm whether a business broker license is needed in New Jersey and New York for how Kalling operates, and get it before taking real engagements.
-- **Fees.** Decide the success fee, minimum, retainer, exclusivity, tail and termination terms that go into real letters. The rehearsal used placeholder numbers.
+- **Fees.** Success fee: 8% for now (decided November 23, 2026; new letters start there). Still to decide: minimum, fee basis, retainer, exclusivity, tail and termination terms. The rehearsal used placeholder numbers for those.
 - **Privacy and terms.** Publish a privacy notice and terms of use covering seller documents, buyer financing evidence, logged data-room reads and local AI processing.
 - **Professional coverage.** Decide on errors and omissions insurance for advisory work.
 
