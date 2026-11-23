@@ -6,7 +6,7 @@
 //   2. From demo/:  npm ci && npm run build
 //   3. Keep Ollama and the research computer running:
 //      node --experimental-strip-types scripts/kalling-worker.mjs install
-//   4. node e2e/hosted-sale.mjs run --confirm-fictional --prompt \
+//   4. node --experimental-strip-types e2e/hosted-sale.mjs run --confirm-fictional --prompt \
 //        --output "$HOME/Downloads/kalling-sale-rehearsal.json" \
 //        --shots "$HOME/Downloads/kalling-sale-rehearsal-shots"
 //
@@ -43,9 +43,12 @@ async function until(fn,ms=30000,every=500){const end=Date.now()+ms;for(;;){cons
 // A guided step: the runner says exactly what to do in the visible browser window and
 // watches the page until `done` reports the result. Human judgment stays human.
 async function guided(page,what,done,ms=15*60000){
-  log('\n  HAND: '+what+'\n  The browser window is open; the runner continues as soon as it sees the result.');
+  log('\n  HAND: '+what+'\n  Do it in the browser window, then type done here and press Enter.');
   report.guided.push({what,at:new Date().toISOString()});
-  return until(done,ms,1000);
+  // Only the word done counts, so a stray Enter pressed earlier cannot skip this step.
+  await new Promise(res=>{try{process.stdin.setRawMode?.(false);}catch{}process.stdin.resume();const on=d=>{if(/(^|\n)\s*done\s*(\r?\n|$)/i.test(String(d))){process.stdin.off('data',on);process.stdin.pause();res();}};process.stdin.on('data',on);});
+  // You confirmed it; check the page briefly, and continue with a note if the page wording differs.
+  return until(done,15000,1000).catch(()=>log('  (could not confirm this on the page; continuing because you typed done)'));
 }
 
 async function shoot(page,name){if(!shots)return;fs.mkdirSync(shots,{recursive:true});const p=path.join(shots,name+'.png');await page.screenshot({path:p,fullPage:name.includes('-full')});report.screenshots.push(name+'.png');}
@@ -76,11 +79,12 @@ async function startPreview(){
   return p;
 }
 
+let failShots=null;
 const step=async(name,fn)=>{
   if(!started){if(name===FROM)started=true;else{log('skip  '+name);return;}}
   log('\n== '+name);const t=Date.now();
   try{await fn();report.steps.push({name,ok:true,ms:Date.now()-t});}
-  catch(e){report.steps.push({name,ok:false,ms:Date.now()-t,error:String(e.message||e)});save();throw e;}
+  catch(e){report.steps.push({name,ok:false,ms:Date.now()-t,error:String(e.message||e)});await failShots?.().catch(()=>{});save();throw e;}
   save();
 };
 
@@ -106,9 +110,11 @@ const step=async(name,fn)=>{
   const advCtx=await mk(1440,900),selCtx=await mk(390,844),buyCtx=await mk(390,844),pubCtx=await mk(390,844);
   const adv=await advCtx.newPage(),sel=await selCtx.newPage(),buy=await buyCtx.newPage(),pub=await pubCtx.newPage();
   for(const [p,tag] of [[adv,'advisor'],[sel,'seller'],[buy,'buyer'],[pub,'public']])p.on('pageerror',e=>errs.push(tag+': '+e.message));
+  failShots=async()=>{const dir=path.join(os.homedir(),'Downloads','kalling-sale-rehearsal-failure');fs.mkdirSync(dir,{recursive:true});for(const [p,tag] of [[adv,'advisor'],[sel,'seller'],[buy,'buyer'],[pub,'public']]){await p.screenshot({path:path.join(dir,tag+'.png')}).catch(()=>{});fs.writeFileSync(path.join(dir,tag+'.txt'),p.url()+'\n\n'+(await p.locator('body').innerText().catch(()=>'')).slice(0,4000));}};
 
   const signIn=async(page,role,hash)=>{
     await page.goto(U+hash);await page.waitForTimeout(800);
+    if(hash==='#advisor'&&await page.locator('input[name=password]').count()===0){const acct=page.getByText('Accounts and cloud',{exact:true});if(await acct.count()){await acct.first().click();await page.waitForTimeout(1500);}}
     if(await page.locator('input[name=password]').count()===0)return; // already signed in
     await page.fill('input[name=email]',EMAILS[role]);await page.fill('input[name=password]',passwords[role]);
     await page.locator('form:has(input[name=password]) button[type=submit], form:has(input[name=password]) button:not([type=button])').first().click();
@@ -116,19 +122,27 @@ const step=async(name,fn)=>{
   };
   const tab=async name=>{await adv.getByRole('tab',{name:new RegExp('^'+name)}).click();await adv.waitForTimeout(400);};
   let portalLink='';
+  // The fictional seller account has more than one portal; after a reload, pick the rehearsal business.
+  const reloadSel=async()=>{await sel.reload();await sel.waitForTimeout(1200);const pick=sel.locator('.portal-pick',{hasText:'Russo Heating'});if(await pick.count()){await pick.first().click();await sel.waitForTimeout(1200);}};
+  // A reload drops the advisor app back to the account page; reopen the firm and the URL returns to the same deal and tab.
+  const reloadAdv=async()=>{await adv.reload();await adv.waitForTimeout(1200);const of=adv.locator('.cloud-firm',{hasText:'Fictional hosted validation A'}).getByRole('button',{name:'Open firm'});await until(async()=>(await of.count())>0||(await adv.locator('.deal-head h1').count())>0,30000);if(await of.count()){await of.click();await adv.waitForTimeout(1500);}};
 
   try{
 
-  if(FROM){
+  if(FROM)try{
     // Resuming mid-run: every role signs back in first, and the advisor reopens the deal.
+    log('  (resume: advisor signs in and opens the deal)');
     await signIn(adv,'owner_a','#advisor');
-    const open=adv.getByRole('button',{name:/Open workspace|Open this firm|Open/}).first();if(await open.count())await open.click().catch(()=>{});
+    const open=adv.locator('.cloud-firm',{hasText:'Fictional hosted validation A'}).getByRole('button',{name:'Open firm'});await until(async()=>(await open.count())>0,30000);await open.click();
     await until(async()=>(await adv.getByRole('button',{name:'Sellers',exact:true}).count())>0,30000);
     await adv.getByRole('button',{name:'Sellers',exact:true}).click();await adv.waitForTimeout(500);
-    const deal=adv.getByRole('button',{name:'Open Deal Room'}).first();if(await deal.count())await deal.click().catch(()=>{});
+    {const row=adv.locator('article.adv-row',{hasText:'Russo Heating'}).getByRole('button',{name:'Open Deal Room'}).first();await until(async()=>(await row.count())>0,20000).catch(()=>{});const deal=(await row.count())?row:adv.getByRole('button',{name:'Open Deal Room'}).first();if(await deal.count())await deal.click().catch(()=>{});}
+    log('  (resume: seller signs in)');
     await signIn(sel,'seller','#owner');
+    {await sel.waitForTimeout(1200);const pick=sel.locator('.portal-pick',{hasText:'Russo Heating'});if(await pick.count()){await pick.first().click();await sel.waitForTimeout(1200);}}
+    log('  (resume: buyer signs in)');
     await signIn(buy,'buyer','#/account');
-  }
+  }catch(e){log('Resume sign-in failed: '+(e.message||e));await failShots?.().catch(()=>{});save?.();throw e;}
 
   await step('public site is honest while intake is paused',async()=>{
     await pub.goto(U);await pub.waitForSelector('text=Sell your HVAC company');await noOverflow(pub,'home at 390');await shoot(pub,'public-home-390');
@@ -150,7 +164,7 @@ const step=async(name,fn)=>{
   await step('advisor signs in and the research computer is connected',async()=>{
     await signIn(adv,'owner_a','#advisor');
     await until(async()=>(await adv.getByText(/Fictional hosted validation A/).count())>0,30000);
-    const open=adv.getByRole('button',{name:/Open workspace|Open this firm|Open/}).first();
+    const open=adv.locator('.cloud-firm',{hasText:'Fictional hosted validation A'}).getByRole('button',{name:'Open firm'});
     if(await open.count())await open.click();
     await until(async()=>(await adv.getByRole('button',{name:'Sellers',exact:true}).count())>0,30000);
     await shoot(adv,'advisor-home-1440');
@@ -171,7 +185,13 @@ const step=async(name,fn)=>{
   });
 
   await step('engagement letter: blocked empty, then ready, both signatures',async()=>{
-    await adv.waitForSelector('.eng-letter');const L=adv.locator('.eng-letter');
+    await adv.waitForTimeout(1000);if(!(await adv.locator('.eng-letter').count()))await tab('Owner').catch(()=>{});
+    await until(async()=>(await adv.locator('.eng-letter').count())+(await adv.locator('.eng-link input').count())>0,30000);const L=adv.locator('.eng-letter');
+    const signedAlready=(await adv.locator('.eng-sign').count())>0;if(signedAlready)log('  (resume: the owner has already signed; going straight to the countersignature)');
+    if(!signedAlready){
+    {const relink=L.getByRole('button',{name:'Create a new link'});if(!(await adv.locator('.eng-link input').count())&&await relink.count()){log('  (resume: the letter is ready; creating a fresh owner link)');await relink.click();await until(async()=>(await adv.locator('.eng-link input').count())>0,30000);}}
+    if(await adv.locator('.eng-link input').count())log('  (resume: the letter is already ready for the owner; reusing it)');
+    else{
     if(!await L.getByRole('button',{name:'Ready for owner'}).isDisabled())fail('Empty fees must block the letter.');
     await L.getByLabel('Firm address').fill('1 Main Street, Green Brook, NJ 08812');
     await L.getByLabel('Success fee, %').fill('8');await L.getByLabel('Minimum success fee, $').fill('60000');
@@ -181,31 +201,43 @@ const step=async(name,fn)=>{
     await adv.waitForSelector('text=The letter is complete.');
     await L.getByRole('button',{name:'Ready for owner'}).click();
     await adv.waitForSelector('text=Send this link to the owner yourself');
+    }
     portalLink=await adv.inputValue('.eng-link input');
-    if(!portalLink.includes('#owner'))fail('No owner link produced.');
+    if(!/#(owner|portal=)/.test(portalLink))fail('No owner link produced.');
     portalLink=U+portalLink.slice(portalLink.indexOf('#'));
     // The seller signs in with their own hosted account and sees only the letter.
-    await sel.goto(portalLink);await sel.waitForTimeout(700);
+    await sel.goto('about:blank');await sel.goto(portalLink);await sel.waitForTimeout(700);
     if(await sel.locator('input[name=password]').count()){await sel.fill('input[name=email]',EMAILS.seller);await sel.fill('input[name=password]',passwords.seller);await sel.locator('form:has(input[name=password]) button').first().click();}
     await sel.waitForSelector('#portal-letter',{timeout:30000});
     if(await sel.locator('.portal-request').count())fail('Requests must stay hidden before signing.');
     await sweep(sel,'seller-letter');
     await sel.getByLabel(/I agree to sign/).check();await sel.getByLabel(/Type your full name/).fill('Pat Russo (fictional)');
     await sel.getByRole('button',{name:'Sign the letter'}).click();await sel.waitForSelector('text=will countersign');
-    await adv.reload();await adv.waitForSelector('.eng-sign');
+    }
+    await reloadAdv();await adv.waitForTimeout(1500);if(!(await adv.locator('.eng-sign').count()))await tab('Owner').catch(()=>{});await adv.waitForSelector('.eng-sign');
     await adv.locator('.eng-sign').getByLabel('I agree to sign electronically').check();
-    await adv.locator('.eng-sign').getByLabel(/to countersign/).fill('Dana Advisor (fictional)');
+    {const lab=(await adv.locator('.eng-sign label, .eng-sign .field').filter({hasText:/to countersign/}).first().innerText()).trim();const who=(lab.match(/Type (.+) to countersign/)||[])[1]||'Dana Advisor (fictional)';await adv.locator('.eng-sign').getByLabel(/to countersign/).fill(who);}
     await adv.locator('.eng-sign').getByRole('button',{name:'Countersign'}).click();
     await adv.waitForSelector('text=Countersigned. The owner');
-    await sel.reload();await sel.waitForSelector('.portal-request');
+    await reloadSel();await sel.waitForSelector('.portal-request');
   });
 
   await step('seller uploads fictional documents',async()=>{
     const FX=path.join(here,'fixtures');
     const up=async(title,files)=>{const r=sel.locator('.portal-request').filter({hasText:title}).first();
       if(!(await r.getAttribute('class')).includes('open'))await r.locator('.portal-request-head').click();
-      await r.locator('input[type=file]').setInputFiles(files.map(f=>path.join(FX,f)));await sel.waitForTimeout(900);
-      await r.getByRole('button',{name:'Send for review'}).click();await sel.waitForTimeout(500);};
+      const isSent=async()=>(await r.locator('.portal-sent').count())>0||/Sent for review|Complete/.test(await r.locator('.portal-request-head').innerText());
+      if(await isSent()){log('  (already sent: '+title+')');return;}
+      if(!(await r.getAttribute('class')).includes('open'))await r.locator('.portal-request-head').click();
+      // Upload only what is missing, and wait for every upload to finish before sending.
+      if((await r.locator('.portal-attached li').count())<files.length){
+        await r.locator('input[type=file]').setInputFiles(files.map(f=>path.join(FX,f)));
+        await until(async()=>(await r.locator('.portal-attached li').count())>=files.length&&(await r.locator('.portal-upload-bar').count())===0||(await r.locator('.portal-uploads li.failed').count())>0,120000);}
+      if(await r.locator('.portal-uploads li.failed').count())fail(title+' upload failed: '+(await r.locator('.portal-uploads li.failed').first().innerText()));
+      await r.getByRole('button',{name:'Send for review'}).click();
+      await until(async()=>(await isSent())||(await r.locator('.error-banner').count())>0,60000).catch(async e=>{log('  status line: '+(await r.locator('.portal-request-head').innerText()).replace(/\s+/g,' '));throw e;});
+      log('  sent: '+title);
+      if(await r.locator('.error-banner').count())fail(title+' could not be sent: '+(await r.locator('.error-banner').first().innerText()));};
     await up('Profit and loss statements',['pl-2023.pdf','pl-2024.pdf','pl-2025.pdf']);
     await up('Business tax returns',['tax-returns.pdf']);
     await up('Maintenance agreement list',['agreements.csv']);
@@ -216,7 +248,7 @@ const step=async(name,fn)=>{
   });
 
   await step('advisor accepts documents; text is read in the browser',async()=>{
-    await adv.reload();await adv.waitForSelector('.deal-head h1');await tab('Documents');
+    await reloadAdv();await adv.waitForSelector('.deal-head h1');await tab('Documents');
     for(let i=0;i<4;i++){const r=adv.locator('.portal-admin-request.submitted').first();if(!await r.count())break;
       await r.getByRole('button',{name:'Accept'}).click();await adv.waitForTimeout(900);}
     await until(async()=>(await adv.locator('text=Text read').count())>=4,90000);
@@ -230,7 +262,7 @@ const step=async(name,fn)=>{
     await shoot(adv,'recast-draft-1440');
     const skip=adv.getByRole('button',{name:'Accept supported, skip the rest'});
     if(await skip.count())await skip.click();
-    await adv.getByRole('button',{name:'Apply accepted lines'}).click();await adv.waitForSelector('text=Recast saved.');
+    await adv.getByRole('button',{name:'Apply accepted lines'}).click();await adv.waitForSelector('text=/Applied \\d+ lines? to the recast|Recast saved\\./');
   });
 
   await step('teaser draft, anonymity findings resolved, listing published',async()=>{
@@ -263,20 +295,20 @@ const step=async(name,fn)=>{
     await until(async()=>/Ready to release/.test(await adv.locator('.cim-checks').innerText()),30000);
     await adv.getByRole('button',{name:'Approve as advisor'}).click();
     await adv.getByRole('button',{name:'Send to owner for review'}).click();await adv.waitForSelector('text=Sent to the owner’s portal');
-    await sel.reload();await sel.waitForSelector('#portal-memo');await sweep(sel,'seller-memorandum');
+    await reloadSel();await sel.waitForSelector('#portal-memo');await sweep(sel,'seller-memorandum');
     await sel.getByRole('button',{name:'Approve the memorandum'}).click();await sel.waitForSelector('text=You approved version');
   });
 
   await step('data room approved by the owner and published',async()=>{
-    await adv.reload();await adv.waitForSelector('.deal-head h1');await tab('Data room');
+    await reloadAdv();await adv.waitForSelector('.deal-head h1');await tab('Data room');
     await adv.getByRole('button',{name:'Add memorandum'}).click();await adv.waitForSelector('text=Memorandum added');
     for(const f of ['pl-2025.pdf','tax-returns.pdf']){
       await adv.locator('.dr-choices li').filter({hasText:f}).getByRole('button',{name:'Add'}).click();
       await adv.getByRole('button',{name:'Add to data room'}).click();await adv.waitForSelector('text=Added. Send it to the owner');}
     await adv.getByRole('button',{name:'Send to owner for approval'}).click();await adv.waitForSelector('text=Sent to the owner.');
-    await sel.reload();await sel.waitForSelector('#portal-dataroom');
+    await reloadSel();await sel.waitForSelector('#portal-dataroom');
     await sel.getByRole('button',{name:/^Approve all/}).click();await sel.waitForSelector('text=Approved every document.');
-    await adv.reload();await adv.waitForSelector('.dr-status');
+    await reloadAdv();await adv.waitForSelector('.dr-status');
     await adv.getByRole('button',{name:'Publish data room'}).click();await adv.waitForSelector('text=The data room is open to approved buyers.');
     await sweep(adv,'advisor-dataroom');
   });
@@ -312,15 +344,20 @@ const step=async(name,fn)=>{
     await adv.getByRole('button',{name:'Buyers',exact:true}).click();await adv.waitForTimeout(600);
     const verify=adv.getByRole('button',{name:/Verify|Mark verified|Verified/}).first();
     if(await verify.count())await verify.click().catch(()=>{});
-    else await guided(adv,'Open the fictional buyer Alex Morgan and record a Verified review of the proof.',async()=>(await adv.getByText('Verified').count())>0);
+    else await guided(adv,'In Buyers, Evidence review, open the fictional buyer’s newest submission and record a Verified review (tick the reviewed-documents box).',async()=>(await adv.getByText('Verified').count())>0);
     const n=await sb.from('kalling_listings').select('number,status,sample').eq('status','Live').order('created_at',{ascending:false}).limit(1);
     const number=n.data?.[0]?.number;if(!number)fail('No live rehearsal listing found.');
     await buy.goto(U+'#/listings/'+number);await buy.waitForSelector('.ks-listing-head h1');
+    await buy.waitForTimeout(1500);const already=/Request received|You have access/.test(await buy.locator('.ks-access').innerText().catch(()=>''));if(already)log('  (resume: the NDA request already exists)');
+    if(!already){
     await buy.getByRole('button',{name:/Review and sign the NDA|Request the confidential details/}).first().click();
     await buy.waitForSelector('.ks-nda');
-    await buy.check('.ks-nda input[type=checkbox]');await buy.fill('.ks-nda input:not([type=checkbox])','Alex Morgan (fictional)');
-    await buy.getByRole('button',{name:'Sign and request access'}).click();await buy.waitForSelector('text=Request received');
-    await adv.reload();await adv.waitForSelector('.deal-head h1',{timeout:30000}).catch(async()=>{await adv.goto(U+'#advisor/today');});
+    await buy.check('.ks-nda input[type=checkbox]');{const lab=await buy.locator('.ks-nda .ks-field span').filter({hasText:'Type your full name to sign'}).first().innerText();await buy.fill('.ks-nda input:not([type=checkbox])',lab.replace(/^.*Type your full name to sign:\s*/,'').trim());}
+    await buy.getByRole('button',{name:'Sign and request access'}).click();
+    await until(async()=>/Request received|NDA signed|You have access/.test(await buy.locator('.ks-access').innerText())||(await buy.locator('.ks-access .ks-error').count())>0,30000).catch(async e=>{log('  buyer panel: '+(await buy.locator('.ks-access').innerText()).replace(/\s+/g,' ').slice(0,300));throw e;});
+    if(await buy.locator('.ks-access .ks-error').count())fail('NDA request failed: '+(await buy.locator('.ks-access .ks-error').innerText()));
+    }
+    await reloadAdv();await adv.waitForSelector('.deal-head h1',{timeout:30000}).catch(async()=>{await adv.goto(U+'#advisor/today');});
     const approve=adv.getByRole('button',{name:'Approve and share details'}).first();
     if(await approve.count())await approve.click();
     else{await adv.goto(U+'#advisor/buyers');await guided(adv,'Approve the fictional buyer’s NDA request for the rehearsal listing.',async()=>(await adv.getByText(/Approved/).count())>0);}
@@ -329,14 +366,18 @@ const step=async(name,fn)=>{
   });
 
   await step('buyer reads the data room with a watermark; reads are logged',async()=>{
+    if(!(await buy.locator('.ks-dr').count())){ // resume: open the live rehearsal listing first
+      const n=await sb.from('kalling_listings').select('number').eq('status','Live').order('created_at',{ascending:false}).limit(1);
+      const number=n.data?.[0]?.number;if(!number)fail('No live rehearsal listing found.');
+      await buy.goto(U+'#/listings/'+number);await buy.waitForSelector('.ks-dr',{timeout:30000});}
     await buy.locator('.ks-dr-folder li').filter({hasText:'Confidential memorandum'}).getByRole('button',{name:'Open'}).click();
     await buy.waitForSelector('.ks-viewer canvas',{timeout:60000});await buy.waitForTimeout(900);
     const stamp=await buy.locator('.ks-viewer-stamp').innerText();
-    if(!stamp.includes('Alex Morgan')||!stamp.includes(EMAILS.buyer))fail('The watermark must carry the buyer identity: '+stamp);
+    if(!/Alex Morgan|Fictional Acceptance Buyer/.test(stamp)||!stamp.includes(EMAILS.buyer))fail('The watermark must carry the buyer identity: '+stamp);
     await noOverflow(buy,'viewer at 390');await shoot(buy,'buyer-viewer-390');
     await buy.keyboard.press('Escape');await buy.waitForSelector('.ks-viewer',{state:'detached'});
     // The seller sees the read under an anonymous label, never the buyer's name.
-    await sel.reload();await sel.waitForSelector('#portal-opened',{timeout:30000});
+    await reloadSel();await sel.waitForSelector('#portal-opened',{timeout:30000});
     const opened=await sel.locator('#portal-opened').innerText();
     if(!/Buyer \d/.test(opened))fail('The owner log must show an anonymous label.');
     if(opened.includes('Alex'))fail('The owner log leaked a buyer name.');
@@ -364,14 +405,14 @@ const step=async(name,fn)=>{
   });
 
   await step('execution: sourced proposal reviewed in the app against the PDF',async()=>{
-    await adv.reload();await adv.waitForSelector('.deal-head h1').catch(()=>{});
+    await reloadAdv();await adv.waitForSelector('.deal-head h1').catch(()=>{});
     const exec=adv.getByRole('tab',{name:/Execution|Transaction/}).first();
     if(await exec.count())await exec.click();
     else await guided(adv,'Open the rehearsal deal’s execution workspace (the transaction created by the accepted offer).',async()=>(await adv.getByText(/Execution documents|execution/).count())>0);
     const confirm=adv.getByRole('button',{name:'Confirm permitted input snapshot'}).first();
     if(await confirm.count())await confirm.click().catch(()=>{});
     const start=adv.getByRole('button',{name:'Prepare a sourced proposal'}).first();
-    if(await start.count())await start.click();
+    if(await start.count()&&await start.isEnabled())await start.click(); // disabled until the permitted input snapshot is confirmed in this browser
     else await guided(adv,'In Optional sourced preparation, confirm the permitted input and start Prepare a sourced proposal.',async()=>(await adv.getByText(/Proposal for reviewer judgment|Waiting for the research computer|running/).count())>0);
     await until(async()=>(await adv.getByText('Proposal for reviewer judgment').count())>0,20*60000,2000);
     await shoot(adv,'execution-proposal-1440');
@@ -401,7 +442,7 @@ const step=async(name,fn)=>{
       async()=>(await sb.from('kalling_listings').select('status').eq('status','Sold').eq('sample',true).order('created_at',{ascending:false}).limit(1)).data?.length>0,120*60000);
     await sweep(adv,'execution-closed');
     await buy.goto(U+'#/account');await buy.waitForTimeout(800);await sweep(buy,'buyer-closed');
-    await sel.reload();await sel.waitForTimeout(800);await sweep(sel,'seller-closed');
+    await reloadSel();await sel.waitForTimeout(800);await sweep(sel,'seller-closed');
   });
 
   await step('final checks: intake still paused, no real rows, no page errors',async()=>{
