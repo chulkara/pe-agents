@@ -88,3 +88,22 @@ The 18 checks cover local-only readiness, confirmed Auth, exact fixture and empt
 The live report's `transport.actualAuthenticatedTransport` and `actualLocalInference` are true only for the normal hosted client and local transport on macOS. Injected test transports report false. PostgreSQL can corroborate job state, model metadata supplied by the worker, proposal-only output, revocation and audit history. It cannot independently attest to the physical hardware or rederive local model quality. This is not a hardware attestation or independent security audit.
 
 No paid integration or model API is added. The job uses the existing Supabase Free project and local hardware. Do not upgrade the project or add a provider to complete this check. The full hosted mobile sale rehearsal, interrupted active-job launchd recovery, attorney review, NJ/NY licensing, fees, SMTP, real contact details and public launch setup remain open. The separately accepted startup/reboot test does not extend the scope of this earlier isolated 18-check run.
+
+## Interrupted job check on your Mac
+
+The queue is built to survive a research computer that stops mid-draft: the worker saves a checkpoint, keeps a three-minute lease while it works, resumes its own lease after a quick restart, and lets another start reclaim the job once the lease expires. Automated tests cover this (`tests/worker.test.mjs`, `production/tests/agentWorkers.test.mjs`). This check confirms it on the real Mac against the hosted firm, using the fictional rehearsal deal.
+
+Watch the job in the Supabase SQL editor at each step. The query only reads:
+
+```sql
+select kind, status, attempts, max_attempts, lease_until < now() as lease_expired,
+       progress->>'stage' as stage, last_error, updated_at
+from public.kalling_agent_jobs order by created_at desc limit 3;
+```
+
+1. **Start a draft.** In the advisor workspace, open the fictional Russo deal and start a new draft, for example **Draft recast** on Valuation and recast. Wait until `tail -f ~/Library/Logs/Kalling/worker.log` shows `Started recast`.
+2. **Quick crash.** Kill the worker without warning: `launchctl kill SIGKILL gui/$(id -u)/com.kalling.worker`. macOS restarts it within about ten seconds. Expected: the job stays `running` with the same attempt count, the log shows the same job resuming, and the draft arrives once in Kalling.
+3. **Long stop.** Start another draft, then stop the worker so it does not come back: `launchctl bootout gui/$(id -u)/com.kalling.worker`. Wait four minutes. Expected: the query shows the job `running` with `lease_expired` true. Reinstall with `node --experimental-strip-types scripts/kalling-worker.mjs install`. Expected: the worker reclaims the job, `attempts` goes up by one, and the draft arrives once.
+4. **Sleep.** Start a third draft and close the lid for five minutes. Expected: after waking, the job either resumes or is reclaimed as in step 3, and the draft arrives once.
+
+Record the attempt counts, how long each recovery took, and whether any draft appeared twice. A draft that never arrives, appears twice, or a job stuck `running` after the worker is back for more than a few minutes is a failure to report. Only fictional rehearsal data is used, and nothing is sent outside the firm.
