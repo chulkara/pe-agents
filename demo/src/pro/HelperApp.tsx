@@ -11,8 +11,13 @@ const day=(s:string)=>new Date(s).toLocaleDateString(undefined,{month:'short',da
 const SKEY='kalling-helper-v1';
 const ss={get:()=>{try{return sessionStorage.getItem(SKEY)||'';}catch{return '';}},set:(v:string)=>{try{v?sessionStorage.setItem(SKEY,v):sessionStorage.removeItem(SKEY);}catch{/* private window */}}};
 const tokenFromHash=()=>new URLSearchParams(location.hash.split('?')[1]||'').get('token')||'';
-// The browser demo is used when this browser holds demo portals or no hosted project is configured.
-const isDemo=()=>{try{if(localStorage.getItem(LOCAL_PORTAL_KEY))return true;return !deviceConnection(localStorage.getItem(CONFIG_KEY),localStorage.getItem(DISCONNECTED_KEY)==='true');}catch{return true;}};
+// The browser demo is used only for a demo invitation, a demo helper already signed in on this tab,
+// or a device with no hosted project. Having opened the demo before never sends a real helper there.
+const isDemo=()=>{try{
+  const t=tokenFromHash(),local=JSON.parse(localStorage.getItem(LOCAL_PORTAL_KEY)||'null') as {helperInvites?:{token:string}[]}|null;
+  if(t)return !!local?.helperInvites?.some(i=>i.token===t);
+  if(ss.get()&&local)return true;
+  return !deviceConnection(localStorage.getItem(CONFIG_KEY),localStorage.getItem(DISCONNECTED_KEY)==='true');}catch{return true;}};
 
 /** A staff member's page: the records the owner asked them to gather, and nothing else. */
 export default function HelperApp(){
@@ -38,7 +43,7 @@ export default function HelperApp(){
         <label><span>Your email address</span><input name="email" type="email" required autoComplete="email"/></label>
         {!demo&&<label><span>Password{mode==='up'?', at least 12 characters':''}</span><input name="password" type="password" required minLength={mode==='up'?12:undefined} autoComplete={mode==='up'?'new-password':'current-password'}/></label>}
         {demo?<p className="pro-fine">Fictional demo in this browser. No password is needed and nothing is emailed.</p>:<p className="pro-fine">{mode==='in'?<>First time? <button type="button" className="pro-link-btn" onClick={()=>setMode('up')}>Create your login</button></>:<button type="button" className="pro-link-btn" onClick={()=>setMode('in')}>I already have a login</button>}</p>}
-        <button className="pro-btn pro-btn-primary" disabled={busy}>{mode==='up'?'Create login':token?'Sign in and accept':'Sign in'}</button>
+        <button className="pro-btn pro-btn-primary" disabled={busy||(!demo&&!client)}>{mode==='up'?'Create login':token?'Sign in and accept':'Sign in'}</button>
       </form>:home===null?<p className="pro-fine">Loading…</p>:!home.length?<p>No one has invited {email} yet. Ask the person who asked for your help to send you a new link.</p>
       :home.map(h=><article className="pro-card" key={h.helper.id}>
         <header><div><h3>{h.businessName}</h3><p>{h.ownerName} asked you to gather these records. Files you send go to {h.ownerName} first.</p></div><span className={'pro-status'+(h.expired?'':' on')}>{h.expired?'Access ended':'Until '+day(h.helper.expiresAt)}</span></header>

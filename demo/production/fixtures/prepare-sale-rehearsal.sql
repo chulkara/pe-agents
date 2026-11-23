@@ -4,13 +4,18 @@
 -- The rehearsal itself then runs the entire sale through the app's own screens.
 begin;
 do $fixture$
-declare s kalling_private.brokerage_settings; owner_id uuid; seller_id uuid; buyer_id uuid; specialist_id uuid; n integer;
+declare s kalling_private.brokerage_settings; owner_id uuid; seller_id uuid; buyer_id uuid; specialist_id uuid; owner_b_id uuid; n integer;
 begin
  select id into owner_id from auth.users where email='owner-a-20261114@kalling-validation.invalid' and email_confirmed_at is not null;
  select id into seller_id from auth.users where email='seller-20261114@kalling-validation.invalid' and email_confirmed_at is not null;
  select id into buyer_id from auth.users where email='buyer-20261114@kalling-validation.invalid' and email_confirmed_at is not null;
  select id into specialist_id from auth.users where email='specialist-20261114@kalling-validation.invalid' and email_confirmed_at is not null;
  if owner_id is null or seller_id is null or buyer_id is null or specialist_id is null then raise exception 'The confirmed fictional accounts from the foundation acceptance are required.'; end if;
+ -- The rehearsal also signs in as the buyer's CPA (specialist) and the seller's office manager (owner_b).
+ select id into owner_b_id from auth.users where email='owner-b-20261114@kalling-validation.invalid' and email_confirmed_at is not null;
+ if owner_b_id is null then raise exception 'The confirmed fictional owner_b account is required: it plays the seller''s office manager.'; end if;
+ if exists(select 1 from public.kalling_members m join kalling_private.brokerage_settings b on b.firm_id=m.firm_id where m.user_id in (specialist_id,owner_b_id)) then
+  raise exception 'The CPA and office-manager stand-ins must not be members of the brokerage firm.'; end if;
 
  select * into s from kalling_private.brokerage_settings;
  if s.firm_id is null then raise exception 'The fictional private brokerage from the buyer-access fixture must already be configured.'; end if;
@@ -29,6 +34,13 @@ begin
   insert into public.kalling_audit(firm_id,actor_id,event,detail)
   values(s.firm_id,owner_id,'Rehearsal reset the fictional buyer from Restricted to Registered',jsonb_build_object('buyer',buyer_id,'source','prepare-sale-rehearsal.sql'));
  end if;
+
+ -- Earlier rehearsals leave the fictional CPA and office manager appointed. Remove them, and their
+ -- shares and waiting files, so each rehearsal invites them afresh through the app.
+ update kalling_private.pro_grants set revoked_at=now() where revoked_at is null and professional_id in (select id from kalling_private.pro_people where email='specialist-20261114@kalling-validation.invalid' and status<>'Removed');
+ update kalling_private.pro_people set status='Removed' where email='specialist-20261114@kalling-validation.invalid' and status<>'Removed';
+ update kalling_private.helper_uploads set status='Withdrawn',decided_at=now(),owner_note='Reset before a rehearsal.' where status in ('Reserved','Waiting for owner') and helper_id in (select id from kalling_private.helper_people where email='owner-b-20261114@kalling-validation.invalid');
+ update kalling_private.helper_people set status='Removed',request_ids='{}' where email='owner-b-20261114@kalling-validation.invalid' and status<>'Removed';
 
  -- One fictional seller inquiry, exactly as the paused public form would have recorded it.
  -- The form itself stays closed; the rehearsal verifies that refusal in the browser first.
