@@ -1,0 +1,47 @@
+/* Party-appointed CPAs and attorneys. Inherits fonts and ink from the page it sits in. */
+.pro-panel{display:grid;gap:14px;margin-top:40px;padding-top:28px;border-top:1px solid var(--k-line,#ddd)}
+.pro-panel h2{margin:0}
+.pro-lede{margin:0;max-width:62ch;line-height:1.55}
+.pro-fine{margin:0;font-size:13px;color:var(--k-grey-2,#666)}
+.pro-error{margin:0;padding:10px 14px;border-radius:10px;background:#fdecec;color:#8a1c1c}
+.pro-ok{margin:0;padding:10px 14px;border-radius:10px;background:var(--k-peri-soft,#eef)}
+.pro-card{display:grid;gap:10px;padding:20px;border:1px solid var(--k-line,#ddd);border-radius:16px;background:var(--k-white,#fff)}
+.pro-card header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.pro-card h3{margin:0;font-size:20px}.pro-card h4{margin:6px 0 0;font-size:15px}
+.pro-card header p{margin:4px 0 0;color:var(--k-grey-1,#444);font-size:14px;overflow-wrap:anywhere}
+.pro-status{font-size:13px;padding:4px 12px;border-radius:999px;background:var(--k-peri-soft,#eef);white-space:nowrap}
+.pro-status.on{background:var(--k-green,#1f5c3f);color:#fff}
+.pro-shared{list-style:none;margin:0;padding:0}
+.pro-shared li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--k-line,#ddd)}
+.pro-shared li>span{display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}
+.pro-shared small,.pro-log small{color:var(--k-grey-2,#666);font-size:12px}
+.pro-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:end;margin-top:12px}
+.pro-form label{display:grid;gap:6px;font-size:14px}
+.pro-form input,.pro-form select{font:inherit;padding:10px 12px;border:1px solid var(--k-line,#ccc);border-radius:10px;background:#fff;min-width:0}
+.pro-signin{grid-template-columns:minmax(0,420px);margin:20px 0}
+.pro-btn{font:inherit;font-size:14px;padding:9px 16px;border-radius:999px;border:1px solid var(--k-black,#000);background:transparent;color:inherit;cursor:pointer;white-space:nowrap}
+.pro-btn-primary{background:var(--k-black,#000);color:#fff}
+.pro-btn:disabled{opacity:.45;cursor:not-allowed}
+.pro-link-btn{font:inherit;font-size:14px;background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;justify-self:start}
+.pro-remove{color:var(--k-purple,#5a2a82)}
+.pro-btn:focus-visible,.pro-link-btn:focus-visible,.pro-check input:focus-visible{outline:2px solid var(--k-peri,#7b8cff);outline-offset:2px}
+.pro-add summary,.pro-share summary,.pro-log summary{cursor:pointer;font-weight:500}
+.pro-share form{display:grid;gap:12px;margin-top:10px}
+.pro-share fieldset{border:0;padding:0;margin:0;display:grid;gap:6px}.pro-share legend{font-size:13px;color:var(--k-grey-2,#666);margin-bottom:4px}
+.pro-check{display:flex;gap:10px;align-items:flex-start;font-size:15px}.pro-check input{width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:var(--k-black,#000)}
+.pro-confirm{padding:12px;border-radius:10px;background:var(--k-peri-soft,#eef)}
+.pro-link{display:grid;gap:8px;padding:14px;border-radius:12px;background:var(--k-peri-soft,#eef)}.pro-link p{margin:0}
+.pro-link code{font-size:13px;overflow-wrap:anywhere;background:#fff;padding:8px 10px;border-radius:8px}
+.pro-link .pro-btn{justify-self:start}
+.pro-log ul{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px;font-size:14px}.pro-log li{display:grid}
+.pro-ack{display:grid;gap:10px;padding:14px;border-radius:12px;background:var(--k-peri-soft,#eef)}.pro-ack p{margin:0;line-height:1.55}.pro-ack .pro-btn{justify-self:start}
+.pro-confirm-remove{margin:0;font-size:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pro-portal{padding-top:40px;padding-bottom:80px;display:grid;gap:16px;max-width:820px}
+.pro-viewer{position:fixed;inset:16px;z-index:50;display:grid;grid-template-rows:auto 1fr;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
+.pro-viewer header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--k-line,#ddd)}.pro-viewer h3{margin:0;font-size:16px;overflow-wrap:anywhere}
+.pro-viewer iframe{width:100%;height:100%;border:0}
+@media (max-width:560px){.pro-shared li{flex-direction:column;align-items:flex-start}.pro-viewer{inset:0;border-radius:0}}
+.portal-pros{margin-top:48px}
+.pro-pages{overflow:auto;background:#f1f1f3;display:grid;justify-items:center;align-content:start;gap:12px;padding:12px}
+.pro-pages canvas,.pro-pages img{max-width:100%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.pro-share .pro-btn,.pro-form .pro-btn{justify-self:start}

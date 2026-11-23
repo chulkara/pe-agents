@@ -17,6 +17,10 @@ Kalling has been validated end to end with fictional data only: the hosted sale 
 - **Contact details.** Add a real contact email or phone number to the public site.
 - **Search visibility.** Remove `noindex` from `index.html` when the public site should appear in search.
 
+## Pending migration
+
+- Apply `production/migrations/20261123170000_kalling_professional_access.sql` before sellers or buyers use [CPA and attorney access](professional-access.md). Until then that panel shows a missing-function error in the hosted product.
+
 ## Data and switches (setup, in this order)
 
 1. **Separate test data.** Every listing is currently labeled a sample and every lead uses `@kalling-validation.invalid`. Decide whether real work starts in a fresh project or this one after removing the fictional firm, listings and accounts.

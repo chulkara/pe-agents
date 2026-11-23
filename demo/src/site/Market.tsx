@@ -10,6 +10,7 @@ import {verificationBadge} from '../../lib/buyerVerification';
 import {BuyerLenderPreparation} from '../buyer/LenderPreparation';
 import {BuyerAlerts} from '../buyer/Alerts';
 import {SbaCheck} from './SbaCheck';
+import {BuyerProfessionals} from '../pro/Professionals';
 import {BuyerVerification} from '../buyer/Verification';
 
 /** Listing card: where and what, then the asking price as the headline number. */
@@ -170,7 +171,7 @@ export function AccountPage({route}:{route:Route}){
         <section><h2>Saved listings</h2>{me.buyer.saved.length?<div className="ks-plates ks-plates-tight">{all.filter(l=>me.buyer.saved.includes(l.id)).map(l=><Nameplate key={l.id} l={l}/>)}</div>:<p className="ks-empty">Save listings to compare them here.</p>}</section>
 
         <section><h2>Your profile</h2><p>{me.buyer.type} · {me.buyer.funds} available · {me.buyer.regions.join(', ')||'any region'}</p><p className="ks-fine">Status: {me.buyer.status==='Verified'?'Legacy status. Review financing evidence below.':me.buyer.status==='Restricted'?'Restricted. Contact Kalling.':'Profile complete'}</p><a className="ks-btn" href={href('/account?next=profile')}>Edit profile</a></section>
-      </div><ExecutionWorkspace store={s.store.execution} watermark={me.buyer.name+' | '+me.buyer.email}/><BuyerOffers store={s.store} offers={me.offers} refresh={res.reload}/><BuyerAlerts store={s.store.alerts} listings={all}/><BuyerVerification store={s.store.verification} name={me.buyer.company||me.buyer.name}/><BuyerLenderPreparation store={s.store.lenders} listings={all} verificationRef={verificationBadge(proofs.data?.[0]).status==='Verified'?proofs.data?.[0]?.id:undefined}/><OpenedHistory room={s.room}/></>}
+      </div><ExecutionWorkspace store={s.store.execution} watermark={me.buyer.name+' | '+me.buyer.email}/><BuyerOffers store={s.store} offers={me.offers} refresh={res.reload}/><BuyerAlerts store={s.store.alerts} listings={all}/><BuyerVerification store={s.store.verification} name={me.buyer.company||me.buyer.name}/><BuyerLenderPreparation store={s.store.lenders} listings={all} verificationRef={verificationBadge(proofs.data?.[0]).status==='Verified'?proofs.data?.[0]?.id:undefined}/><OpenedHistory room={s.room}/><BuyerProfessionals/></>}
   </section>;
 }
 
