@@ -1,3 +1,10 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import * as C from '../lib/closingTimeline.ts';import {transactionFixture,advisor,conditionInput,fileInput,source} from './transaction-fixture.mjs';import {addFile} from '../lib/transactionFiles.ts';
 test('pre-qualification, a proposed representative and requested landlord consent cannot clear closing',()=>{for(const [kind,stage] of [['Financing','Pre-qualified'],['License','Plan proposed'],['Premises','Consent requested'],['Escrow','Requested']]){let {d,t}=transactionFixture();d=C.saveCondition(d,t,advisor,{...conditionInput(kind),stage});t=d.transactions[0];assert.equal(C.conditionCurrent(d,t,t.conditions[0]),false);assert.throws(()=>C.reviewCondition(d,t,advisor,{id:t.conditions[0].id,revision:1,professional:'Fictional counsel',note:'A preliminary statement cannot be treated as actual completion evidence.'}),/does not clear/);}});
 test('planning dates never rewrite source-based obligations; jurisdiction and exact lease confirmations stay explicit',()=>{let {d,t}=transactionFixture();t={...t,obligations:[{id:'due',deadline:{kind:'Date',date:'2026-12-15',timezone:'America/New_York'}}]};d.transactions=[t];d=C.setPlanningClose(d,t,advisor,'2027-01-15');assert.equal(d.transactions[0].obligations[0].deadline.date,'2026-12-15');assert.equal(d.transactions[0].planningClose,'2027-01-15');assert.throws(()=>C.saveCondition(d,d.transactions[0],advisor,{...conditionInput('Escrow'),details:{routingNumber:'123456789'}}),/outside/);});
+test('revising a condition without re-entering its source keeps the source',()=>{
+ const a={fileId:'f1',page:4,excerpt:'NJ license continuity confirmed.'},b={fileId:'f2',page:1,excerpt:'Second supporting page.'},n={fileId:'f3',page:6,excerpt:'Completion confirmed.'};
+ assert.deepEqual(C.revisedSources(null,[a,b]),[a,b]);
+ assert.deepEqual(C.revisedSources(n,[a,b]),[n,b]);
+ assert.deepEqual(C.revisedSources(n,undefined),[n]);
+ assert.deepEqual(C.revisedSources(null,undefined),[]);
+});
