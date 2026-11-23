@@ -1,4 +1,7 @@
 // Trusted byte validation only. No extraction, model or external service receives this file.
+// Authenticate every invocation through Auth before any reservation, Storage read
+// or server attestation. This supports current ES256 sessions without the legacy
+// Edge gateway verify_jwt check, which only understands legacy signing keys.
 import {inspectProof} from '../../../lib/buyerVerification.ts';
 type Env={url:string;publicKey:string;serverKey:string};
 export function verificationFileHandler(env:Env,request:typeof fetch=fetch){
@@ -13,13 +16,13 @@ export function verificationFileHandler(env:Env,request:typeof fetch=fetch){
     const auth=req.headers.get('authorization')||'';if(!/^Bearer \S+$/.test(auth))return response({error:'Sign in first'},401);
     try{
       const authHeaders={Authorization:auth,apikey:env.publicKey,'Content-Type':'application/json'};
-      const identity=await request(env.url+'/auth/v1/user',{headers:authHeaders});if(!identity.ok)return response({error:'Sign in first'},401);
+      const identity=await request(env.url+'/auth/v1/user',{headers:authHeaders,cache:'no-store'});if(!identity.ok)return response({error:'Sign in first'},401);
       const user=await identity.json();if(!user.id||!user.email_confirmed_at)return response({error:'Confirm your email first'},403);
       const body=await req.json();if(!/^[0-9a-f-]{36}$/i.test(body.fileId||''))return response({error:'Invalid file'},400);
       const reserve=await request(env.url+'/rest/v1/rpc/kalling_verification_prepare_validation',{method:'POST',headers:authHeaders,body:JSON.stringify({p_file:body.fileId})});
       if(!reserve.ok)return response({error:'Document access denied'},403);const meta=await reserve.json();
       if(!meta.path||meta.size>10*1024*1024||meta.size<1)return response({error:'Invalid reservation'},400);
-      const file=await request(env.url+'/storage/v1/object/authenticated/kalling-buyer-proof/'+meta.path.split('/').map(encodeURIComponent).join('/'),{headers:authHeaders,cache:'no-store'});
+      const file=await request(env.url+'/storage/v1/object/authenticated/kalling-buyer-proof/'+meta.path.split('/').map(encodeURIComponent).join('/')+'?cacheNonce='+crypto.randomUUID(),{headers:authHeaders,cache:'no-store'});
       if(!file.ok)return response({error:'Upload unavailable'},409);
       const reported=Number(file.headers.get('content-length'));if(reported>10*1024*1024)return response({error:'File too large'},400);
       const bytes=await file.arrayBuffer();const proof=await inspectProof(new File([bytes],meta.name,{type:meta.mime}));

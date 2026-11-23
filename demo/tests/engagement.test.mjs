@@ -23,6 +23,11 @@ test('qualifying moves a lead to Qualified; not a fit needs a reason and moves i
   w2=E.markNotFit(w2,id,'Owner is not ready to sell','Wants to wait two years','K');assert.equal(dealStage(w2.companies[0]),'Lost');assert.equal(w2.companies[0].qualification.notFit,'Owner is not ready to sell');
 });
 
+test('new letters start at the 8% default success fee; every other fee term stays blank',()=>{
+  const d=E.letterDefaults({id:'c',name:'Russo Heating & Air',owner:'Pat Russo',state:'NJ'},{advisorName:'Karan C',advisorEmail:'a@kalling.test',firmName:'Kalling',firmAddress:'1 Main Street, Green Brook, NJ 08812',today:'2026-11-12'});
+  assert.equal(d.terms.successFeePct,8);assert.equal(E.DEFAULT_SUCCESS_FEE_PCT,8);assert.equal(d.terms.successFeeMin,null);assert.equal(d.terms.feeBasis,'');
+  const p=E.letterProblems(d);assert.ok(p.some(x=>/minimum success fee/.test(x)),'the letter is still blocked until the advisor completes the terms');assert.ok(!p.some(x=>/success fee percentage/.test(x)));
+});
 test('the letter cannot be rendered with empty fees, and the same input gives the same text',()=>{
   const i=input();i.terms=E.emptyTerms();
   const p=E.letterProblems(i);for(const re of [/success fee percentage/,/minimum success fee/,/how the success fee/,/retainer/,/exclusivity/,/tail period/,/termination notice/,/expenses/])assert.ok(p.some(x=>re.test(x)),String(re));

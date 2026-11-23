@@ -7,7 +7,7 @@ import {possessive,buyerStages,portalProgress,unread,type Contact,type DocReques
 import {inviteLink,type PortalStore,type RequestInput} from '../lib/portalStore';
 import SellerPortal,{usePortal,FileRow,Messages,fmtDate} from './SellerPortal';
 
-export type PortalContext={store:PortalStore|null;helpDefault:Contact;canWrite:boolean;local:boolean};
+export type PortalContext={store:PortalStore|null;helpDefault:Contact;canWrite:boolean;local:boolean;pros?:import('../lib/professionalStore').ProfessionalStore};
 const Ctx=createContext<PortalContext>({store:null,helpDefault:{name:'',email:''},canWrite:false,local:true});
 export const PortalProvider=Ctx.Provider;
 export const PortalContextRef=Ctx;

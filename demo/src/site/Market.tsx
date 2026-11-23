@@ -9,6 +9,8 @@ import {TermsEditor,BuyerOffers} from '../buyer/Offers';
 import {verificationBadge} from '../../lib/buyerVerification';
 import {BuyerLenderPreparation} from '../buyer/LenderPreparation';
 import {BuyerAlerts} from '../buyer/Alerts';
+import {SbaCheck} from './SbaCheck';
+import {BuyerProfessionals} from '../pro/Professionals';
 import {BuyerVerification} from '../buyer/Verification';
 
 /** Listing card: where and what, then the asking price as the headline number. */
@@ -30,7 +32,7 @@ export function ListingsPage({route}:{route:Route}){
   const {store}=useSession();const res=useAsync(()=>store.listings(),[store]);
   const q=route.query;const [f,setF]=useState<ListingFilter>({q:q.get('q')||'',state:(q.get('state') as 'NJ'|'NY')||'',region:(q.get('region') as Region)||'',focus:(q.get('focus') as Focus)||'',maxPrice:Number(q.get('max'))||0,recurringOnly:q.get('recurring')==='1',sort:(q.get('sort') as ListingFilter['sort'])||'newest'});
   useEffect(()=>{const p=new URLSearchParams();if(f.q)p.set('q',f.q);if(f.state)p.set('state',f.state);if(f.region)p.set('region',f.region);if(f.focus)p.set('focus',f.focus);if(f.maxPrice)p.set('max',String(f.maxPrice));if(f.recurringOnly)p.set('recurring','1');if(f.sort&&f.sort!=='newest')p.set('sort',f.sort);history.replaceState(null,'','#/listings'+(p.size?'?'+p:''));},[f]);
-  const list=filterListings(res.data||[],f),open=list.filter(l=>l.status!=='Sold'),sold=list.filter(l=>l.status==='Sold');
+  const list=filterListings(res.data||[],f),open=list.filter(l=>l.status!=='Sold'),sold=list.filter(l=>l.status==='Sold'&&!l.sample);
   return <>
     <section className="ks-wrap ks-page-head"><h1 className="ks-display ks-display-s">HVAC companies for sale</h1><p>Every listing is anonymous. Create a buyer profile and sign a listing’s NDA to request the company name, financials and documents.</p></section>
     <div className="ks-wrap ks-market">
@@ -55,9 +57,9 @@ export function ListingsPage({route}:{route:Route}){
 }
 
 export function ListingPage({id}:{id:string}){
-  const s=useSession();const res=useAsync(()=>Promise.all([s.store.listing(id),s.store.me(),s.store.questions()]),[s.store,id]);const stories=useAsync(()=>s.store.execution.publicCases(),[s.store]);
+  const s=useSession();const res=useAsync(()=>Promise.all([s.store.listing(id),s.store.me().catch(()=>null),s.store.questions(undefined).catch(()=>[])]),[s.store,id]);const stories=useAsync(()=>s.store.execution.publicCases(),[s.store]);
   const [error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[showNda,setShowNda]=useState(false);
-  if(res.error)return <section className="ks-wrap ks-page-head"><h1>Listing not available</h1><p>{res.error}</p><a className="ks-btn" href={href('/listings')}>Browse listings</a></section>;
+  if(res.error)return <section className="ks-wrap ks-page-head"><h1>Listing not available</h1><p>{/not available|withdrawn|sold/i.test(res.error)?res.error:'This listing can\u2019t be shown right now. It may have been withdrawn, or something went wrong on our side. Try again in a moment.'}</p><a className="ks-btn" href={href('/listings')}>Browse listings</a></section>;
   if(!res.data)return <section className="ks-wrap ks-page-head"><p>Loading…</p></section>;
   const [l,me,qs]=res.data,saved=me?.buyer.saved.includes(l.id),approved=l.access==='Approved'&&!!l.confidential.businessName,mult=(l.askingPrice/l.sde).toFixed(1);
   const offers=me?.offers.filter(o=>o.listingId===l.id)||[],questions=qs.filter(q=>q.listingId===l.id);
@@ -76,6 +78,7 @@ export function ListingPage({id}:{id:string}){
         {l.growth.length>0&&<><h2>Room to grow</h2><ul className="ks-checklist">{l.growth.map(h=><li key={h}>{h}</li>)}</ul></>}
         <h2>Operations</h2>
         <dl className="ks-specs"><div><dt>Employees</dt><dd>{l.employees}</dd></div><div><dt>Field technicians</dt><dd>{l.technicians}</dd></div><div><dt>Maintenance agreements</dt><dd>{l.agreements.toLocaleString()}</dd></div><div><dt>Service and maintenance revenue</dt><dd>{l.recurringPct}%</dd></div><div><dt>Residential share</dt><dd>{l.residentialPct}%</dd></div><div><dt>Service vehicles</dt><dd>{l.vehicles}</dd></div><div><dt>Facility</dt><dd>{l.realEstate}</dd></div><div><dt>Seller financing</dt><dd>{l.sellerFinancing?'Considered for qualified buyers':'Not offered'}</dd></div></dl>
+        {['Live','Under LOI'].includes(l.status)&&<SbaCheck key={l.id} price={l.askingPrice} sde={l.sde} sellerFinancing={l.sellerFinancing}/>}
         {approved&&<section className="ks-confidential"><h2>Confidential details</h2><p className="ks-fine">Shared under your signed NDA. Don’t contact the business, its staff or customers directly.</p><dl className="ks-specs"><div><dt>Business</dt><dd>{l.confidential.businessName}</dd></div><div><dt>Location</dt><dd>{l.confidential.city}</dd></div>{l.confidential.website&&<div><dt>Website</dt><dd>{l.confidential.website}</dd></div>}</dl><p className="ks-prose">{l.confidential.details}</p></section>}
         {approved&&<BuyerDataRoom room={s.room} listingId={l.id} questions={questions} onAsked={res.reload}/>}
         {approved&&<section className="ks-qa"><h2>Questions for the advisor</h2>{questions.filter(q=>!q.itemId||q.side==='advisor').map(q=><div key={q.id} className={'ks-q '+q.side}><p>{q.body}</p><small>{q.side==='buyer'?'You':q.author} · {new Date(q.createdAt).toLocaleDateString()}</small></div>)}
@@ -168,7 +171,7 @@ export function AccountPage({route}:{route:Route}){
         <section><h2>Saved listings</h2>{me.buyer.saved.length?<div className="ks-plates ks-plates-tight">{all.filter(l=>me.buyer.saved.includes(l.id)).map(l=><Nameplate key={l.id} l={l}/>)}</div>:<p className="ks-empty">Save listings to compare them here.</p>}</section>
 
         <section><h2>Your profile</h2><p>{me.buyer.type} · {me.buyer.funds} available · {me.buyer.regions.join(', ')||'any region'}</p><p className="ks-fine">Status: {me.buyer.status==='Verified'?'Legacy status. Review financing evidence below.':me.buyer.status==='Restricted'?'Restricted. Contact Kalling.':'Profile complete'}</p><a className="ks-btn" href={href('/account?next=profile')}>Edit profile</a></section>
-      </div><ExecutionWorkspace store={s.store.execution} watermark={me.buyer.name+' | '+me.buyer.email}/><BuyerOffers store={s.store} offers={me.offers} refresh={res.reload}/><BuyerAlerts store={s.store.alerts} listings={all}/><BuyerVerification store={s.store.verification} name={me.buyer.company||me.buyer.name}/><BuyerLenderPreparation store={s.store.lenders} listings={all} verificationRef={verificationBadge(proofs.data?.[0]).status==='Verified'?proofs.data?.[0]?.id:undefined}/><OpenedHistory room={s.room}/></>}
+      </div><ExecutionWorkspace store={s.store.execution} watermark={me.buyer.name+' | '+me.buyer.email}/><BuyerOffers store={s.store} offers={me.offers} refresh={res.reload}/><BuyerAlerts store={s.store.alerts} listings={all}/><BuyerVerification store={s.store.verification} name={me.buyer.company||me.buyer.name}/><BuyerLenderPreparation store={s.store.lenders} listings={all} verificationRef={verificationBadge(proofs.data?.[0]).status==='Verified'?proofs.data?.[0]?.id:undefined}/><OpenedHistory room={s.room}/><BuyerProfessionals/></>}
   </section>;
 }
 

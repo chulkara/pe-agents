@@ -2,3 +2,32 @@
 @media(max-width:650px){.ex-panel{padding:18px 14px;border-radius:12px}.ex-grid,.ex-facts{grid-template-columns:minmax(0,1fr)}.ex-workspace fieldset{padding:14px 10px}.ex-head{gap:8px}.ex-head h2{font-size:30px}.ex-document{padding:12px}.ex-files .ex-button{flex:1}.ex-workspace .ex-button{font-size:12px}.ex-summary{gap:10px}.ex-number{font-size:36px}}
 
 .ex-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--ex-line);border-bottom:1px solid var(--ex-line);padding:20px 0;margin:20px 0 24px;gap:20px}.ex-metrics dt{font:11px "Zalando Sans Variable",sans-serif;color:#655b71;line-height:1.4}.ex-metrics dd{font:clamp(25px,3vw,39px) "Forum",Georgia,serif;letter-spacing:-.025em;margin:9px 0 0;overflow-wrap:anywhere}@media(max-width:650px){.ex-metrics{grid-template-columns:minmax(0,1fr);gap:16px}.ex-metrics>div+div{border-top:1px solid var(--ex-line);padding-top:12px}}
+.ex-claim{background:#fff}.ex-claim>small{display:block;color:#6a626f;font-size:12px;margin-top:4px}
+.ex-evidence{border-top:1px dashed var(--ex-line)!important;margin-top:10px!important}
+.ex-evidence-head{font-size:12px;color:#635b6b;margin:4px 0 8px}
+.ex-evidence-text{background:var(--ex-tint);border-radius:10px;padding:14px 16px;font-size:13px;line-height:1.6;white-space:pre-wrap}
+.ex-evidence-text mark{background:#A7B2F7;color:#19141e;padding:1px 2px;border-radius:3px}
+.ex-evidence-text em{display:block;margin-top:8px;color:#762c27;font-style:normal;font-weight:600}
+.ex-judgment{border-top:1px solid var(--ex-line);margin-top:20px;padding-top:6px}
+.ex-judgment-standing{background:var(--ex-tint);border-radius:10px;padding:12px 14px;font-size:14px}
+.ex-judgment-pick{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+.ex-judgment-pick label{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:9px 16px;border:1px solid var(--ex-line);border-radius:24px;font-size:13px;cursor:pointer}
+.ex-judgment-pick label.on{background:var(--ex-purple);color:#fff;border-color:var(--ex-purple)}
+.ex-judgment-pick input{position:absolute;inset:-1px;width:auto;height:auto;opacity:0;margin:0;cursor:pointer}
+.ex-judgment-pick label:has(input:focus-visible){outline:3px solid var(--ex-peri);outline-offset:3px}
+.ex-judgment-act{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.ex-judgment-act small{font-size:12px;color:#635b6b;flex:1;min-width:200px}
+.ex-judgment-history{margin-top:8px}
+/* Save feedback that stays visible wherever the form is on the page. */
+.ex-toast-region{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;width:min(560px,calc(100vw - 32px));pointer-events:none}
+.ex-toast{display:flex;align-items:center;gap:10px;margin:0;padding:12px 16px;border-radius:12px;background:var(--ex-green,#1F4D36);color:#fff;font-size:14px;line-height:1.4;box-shadow:0 8px 24px rgba(25,20,30,.18);animation:ex-toast-in .18s ease-out}
+.ex-toast svg{flex:none}
+.ex-toast-error{background:#8a1f1f}
+@keyframes ex-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.ex-toast{animation:none}}
+/* What is left before closing, shown first on the Closing tab. */
+.ex-readiness{border-left:4px solid var(--ex-purple)}
+.ex-readiness.ex-ready{border-left-color:var(--ex-green)}
+.ex-steps{margin:8px 0 0;padding-left:22px;display:grid;gap:10px}
+.ex-steps li{line-height:1.45}
+.ex-where{display:inline-block;margin-right:8px;padding:1px 8px;border-radius:10px;background:var(--ex-tint);color:var(--ex-purple);font-size:12px;font-weight:600;vertical-align:1px}
+.ex-hint{font-size:13px;color:#5b5563;margin:4px 0 8px}

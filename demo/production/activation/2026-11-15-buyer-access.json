@@ -1,0 +1,163 @@
+{
+  "date": "2026-11-15",
+  "project": "ymbciapnzdmymtthevjp",
+  "source_commit": "1a8bb8f46f8335a7b97ef6d8e8c4f4208fe2644c",
+  "fixture_source_commit": "3d4da9d80fbd15979782adfe63d57b4706211f31",
+  "recorded_migrations": 26,
+  "migration": {
+    "source": "20261115200805_kalling_buyer_access_guards.sql",
+    "sha256": "57ca65e4cb43300dc09ab9732801d62b81cd259c0bde2f39c0b43492af708133",
+    "hosted_version": "20261115203609",
+    "name": "kalling_buyer_access_guards",
+    "status": "applied"
+  },
+  "edge_function": {
+    "name": "kalling-verification-file",
+    "status": "ACTIVE",
+    "version": 2,
+    "verify_jwt": false,
+    "authentication": "Mandatory Auth user lookup and confirmed email inside the handler before all private operations; ES256 supported",
+    "observed_public_signing_algorithm": "ES256",
+    "bundle_sha256": "668d64c8947789d1d5fc7c0573f41945968ea356ca7a53ff647403d571188d44",
+    "ezbr_sha256": "7f44482edb187db9bd97e78a07779131bf2a24b85a9b89039cf25c66a8d8f607",
+    "server_credential_retrieved": false
+  },
+  "verification": {
+    "local_tests_passed": 519,
+    "build": "passed",
+    "protocol_simulated_checks": 65,
+    "source_ci_run": 43758922326,
+    "source_ci_result": "success",
+    "fixture_ci_run": 43759554971,
+    "fixture_ci_result": "success",
+    "browser_flows": [
+      "deal-flow",
+      "seller-flow",
+      "execution-flow"
+    ],
+    "phone_viewer_width": 390,
+    "watermark_on_every_downloaded_page": "passed",
+    "held_viewer_permission_recheck": "passed_on_focus",
+    "hosted_rollback_sql_checks": 17,
+    "hosted_public_http_checks": 8,
+    "extra_http_denials": {
+      "invalid_jwt": 401,
+      "unrelated_origin": 403
+    },
+    "authenticated_buyer_http_acceptance": "passed_user_reported",
+    "clean_snapshot_setup": {
+      "source_snapshot": "8a70d235cfd08944a6a3dc8102915d0aed71143e",
+      "reported_local_setup_failures": [
+        "pdf-lib package absent",
+        "lib/brokerage.ts absent in the old ZIP"
+      ],
+      "resolution": "Use the complete checked source in a separate folder and npm ci; preserve the existing project and reports",
+      "locked_install": "passed",
+      "module_resolution": "passed",
+      "offline_stop": "Expected foundation-report guard with an intentionally absent report; no credentials, Auth requests or fixture writes"
+    },
+    "post_setup_anonymous_status_and_lead_refusal": "passed"
+  },
+  "private_pilot": {
+    "fixture_manifest": "buyer-access-fixture.json",
+    "fixture": "de32971b-33ca-4f94-b185-882b72a02b11",
+    "firm": "07941ca2-4b03-4890-8c0b-24b2803d25d0",
+    "listing": "451c96c8-134e-428a-be39-9890fc05dc2b",
+    "listing_number": "KL-910015",
+    "public_intake_open": false,
+    "invited_pilot_buyers": 2,
+    "post_setup": {
+      "buyers": 0,
+      "leads": 0,
+      "non_sample_listings": 0,
+      "alert_drafts": 0,
+      "missing_kalling_rls": 0,
+      "kalling_tables": 57,
+      "public_buckets": 0
+    },
+    "fixture_script_sha256": "1f209e00ee755527fdbb7015f08a8df1c07655fe05d32f7a36d5e7039f61059c",
+    "fixture_state": "buyer_acceptance_completed_and_closed",
+    "post_acceptance": {
+      "listing": "Withdrawn",
+      "room": "Unpublished",
+      "portal": "Closed",
+      "buyer": "Restricted",
+      "latestProof": "Withdrawn",
+      "member": "Inactive viewer",
+      "remainingTestSessions": 0,
+      "publicIntakeOpen": false
+    }
+  },
+  "advisors": {
+    "health_findings": 0,
+    "security_categories": [
+      "rls_enabled_no_policy",
+      "anon_security_definer_function_executable",
+      "authenticated_security_definer_function_executable",
+      "auth_leaked_password_protection"
+    ],
+    "independent_security_audit": false
+  },
+  "frontend": {
+    "state": "draft review branch; not deployed to Pages"
+  },
+  "remaining": [
+    "Execution-file handover transport",
+    "Real Mac model job",
+    "Complete hosted mobile sale rehearsal",
+    "Attorney review",
+    "Licensing",
+    "Fee decision",
+    "SMTP",
+    "Contact information and public launch setup"
+  ],
+  "authenticated_acceptance": {
+    "reported_on": "2026-11-15",
+    "reporting_timezone": "America/New_York",
+    "status": "passed_user_reported",
+    "checks_passed": 65,
+    "runner_source_snapshot": "8a70d235cfd08944a6a3dc8102915d0aed71143e",
+    "result_source": "Karan confirmed Finished 65 buyer-access checks in chat; complete local JSON report not imported",
+    "local_report": "$HOME/Downloads/kalling-buyer-access-acceptance.json",
+    "coverage": [
+      "Six password grants and confirmed hosted identities",
+      "Trusted byte-validator attestation and rejected mismatched bytes",
+      "Immutable proof retry and private proof access",
+      "Current reviewer authorization and immediate role downgrade",
+      "Exact-file verification, private-note separation and anonymous seller badge",
+      "Exact current listing NDA and separate advisor approval",
+      "Logged metadata and byte reads, signed-link refusal and after-LOI lock",
+      "Buyer identity stamped into every downloaded PDF page",
+      "Same valid buyer JWT retained during buyer restriction, NDA revocation, owner removal and replacement tests",
+      "Anonymous seller engagement, denied-open history and fixture/session cleanup"
+    ],
+    "independent_hosted_confirmation": {
+      "method": "Read-only query restricted to the known fictional listing, company, portal and accounts; no credentials, tokens or stored bytes retrieved",
+      "checked_at": "2026-11-16T04:17:12.72251+00:00",
+      "matched_listing": 1,
+      "listing_status": "Withdrawn",
+      "closed_portals": 1,
+      "active_portals": 0,
+      "room_status": "Unpublished",
+      "buyer_status": "Restricted",
+      "latest_proof_status": "Withdrawn",
+      "proof_submissions": 2,
+      "attested_proof_files": 1,
+      "unattested_reserved_proof_files": 1,
+      "verification_events": 1,
+      "stored_room_files": 3,
+      "denied_room_opens": 5,
+      "member_revoked": true,
+      "remaining_test_sessions": 0,
+      "public_intake_open": false,
+      "leads": 0,
+      "alert_drafts": 0,
+      "non_sample_listings": 0
+    },
+    "limitations": [
+      "Full local JSON not imported",
+      "SQL metadata corroborates retained state, not HTTP byte comparisons or PDF contents",
+      "Real hosted mobile-browser watermark rendering remains for the full-sale rehearsal"
+    ]
+  }
+}

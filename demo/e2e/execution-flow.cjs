@@ -30,6 +30,22 @@ if(!['127.0.0.1','localhost'].includes(new URL(U).hostname))throw Error('Executi
         console.log('PASS: '+surface+' at '+width+'px.');
       }
     }
+    // In-app proposal review: evidence shown in the source, and a recorded judgment that persists.
+    await page.locator('#surface').selectOption('advisor');
+    await page.locator('#width').selectOption('1440');
+    await frame.getByText('Proposal for reviewer judgment').waitFor();
+    await frame.locator('.ex-evidence summary').first().click();
+    await frame.locator('.ex-evidence-text mark').first().waitFor();
+    assert.equal(await frame.locator('.ex-evidence-text mark').first().innerText(),'Approved SDE: USD 500,000. Revenue: USD 3,000,000.');
+    await frame.getByText('No judgment is recorded for this proposal yet').waitFor();
+    await frame.getByRole('button',{name:'Record reviewed judgment'}).click();
+    await frame.locator('.ex-judgment-standing').waitFor();
+    assert.match(await frame.locator('.ex-judgment-standing').innerText(),/^Reviewed by /);
+    await page.locator('#surface').selectOption('owner');
+    await page.locator('#surface').selectOption('advisor');
+    await frame.locator('.ex-judgment-standing').waitFor();
+    assert.match(await frame.locator('.ex-judgment-standing').innerText(),/^Reviewed by /,'the judgment survives a reload');
+    console.log('PASS: in-app proposal judgment recorded against the marked source and kept.');
     assert.deepEqual(errors,[],'Unexpected browser page errors');
     await page.getByRole('button',{name:'Restore previous demo',exact:true}).click();
   }finally{await browser.close();}

@@ -148,10 +148,12 @@ export function addFile(db:PortalDb,a:Actor,requestId:string,f:{id?:string;name:
   return {db:linkFile({...db,files:[...db.files,file]},a,requestId,file.id),file,duplicate:false};
 }
 export function linkFile(db:PortalDb,a:Actor,requestId:string,fileId:string):PortalDb{
-  const r=a.side==='seller'?sellerRequest(db,a,requestId):db.requests.find(x=>x.id===requestId);require_(r,'Request not found.');
+  const r=db.requests.find(x=>x.id===requestId);require_(r,'Request not found.');
+  if(a.side==='seller'){const p=portalOf(db,r.portalId);sellerOf(a,p);require_(!p.requestsHidden,'Documents open after the engagement letter is signed.');}else firmWriter(a);
   const f=db.files.find(x=>x.id===fileId&&x.portalId===r.portalId&&x.status==='stored');require_(f,'That document is not available in this portal.');
   if(r.fileIds.includes(fileId))return db;
-  return {...db,requests:db.requests.map(x=>x===r?{...r,fileIds:[...r.fileIds,fileId],status:['Open','Needs changes'].includes(r.status)?'In progress':r.status,updatedAt:now()}:x)};
+  if(a.side==='seller')require_(!['Accepted','Not applicable'].includes(r.status),'This request is already complete.');
+  return {...db,requests:db.requests.map(x=>x===r?{...r,fileIds:[...r.fileIds,fileId],status:'In progress',reviewNote:['Accepted','Submitted'].includes(r.status)?'':r.reviewNote,submittedAt:undefined,updatedAt:now()}:x)};
 }
 export function unlinkFile(db:PortalDb,a:Actor,requestId:string,fileId:string):PortalDb{
   const r=sellerRequest(db,a,requestId);require_(r.status!=='Submitted','This request was sent for review. Message your contact to change it.');
@@ -170,7 +172,7 @@ export function bundle(db:PortalDb,a:Actor,portalId:string,team:string[]):Portal
   const requests=seller&&portal.requestsHidden?[]:db.requests.filter(r=>r.portalId===portalId);
   const letters=(db.letters||[]).filter(l=>l.portalId===portalId&&(!seller||l.status!=='Draft')).sort((x,y)=>y.version-x.version);
   const reviews=(db.reviews||[]).filter(r=>r.portalId===portalId).sort((x,y)=>y.version-x.version),answers=(db.answers||[]).find(x=>x.portalId===portalId);
-  return {answers,reviews,letters,portal,buyers:db.buyers.filter(b=>b.portalId===portalId),requests,files:db.files.filter(f=>f.portalId===portalId&&f.status==='stored'),messages:db.messages.filter(m=>m.portalId===portalId),steps:db.steps.filter(s=>s.portalId===portalId),access:{team,seller:portal.status==='Active'?[portal.ownerEmail]:[]},side:a.side,canEdit:a.side==='firm'?a.canWrite!==false:portal.status==='Active'};
+  return {answers,reviews,letters,portal,buyers:db.buyers.filter(b=>b.portalId===portalId),requests,files:seller&&portal.requestsHidden?[]:db.files.filter(f=>f.portalId===portalId&&f.status==='stored'),messages:db.messages.filter(m=>m.portalId===portalId),steps:db.steps.filter(s=>s.portalId===portalId),access:{team,seller:portal.status==='Active'?[portal.ownerEmail]:[]},side:a.side,canEdit:a.side==='firm'?a.canWrite!==false:portal.status==='Active'};
 }
 
 /** Progress the owner sees at the top of their portal. */

@@ -12,3 +12,17 @@ export function recordClose(d:TxDb,t:Transaction,a:ExecutionActor,p:CloseInput){
  return {...next,listings:next.listings.map(l=>l.id===t.listingId?{...l,status:'Sold',updatedAt:close.at}:l),access:next.access.map(x=>x.listingId===t.listingId&&x.buyerId!==t.buyerId?{...x,status:'Declined',decisionNote:'The acquisition has closed.'}:x),alertOutbox:next.alertOutbox?.map(m=>m.items.some(i=>i.id===t.listingId)&&!['Provider accepted','Simulated'].includes(m.status)?{...m,status:'Suppressed',notice:'This listing has sold.'}:m)} as TxDb;
 }
 export function correctClose(d:TxDb,t:Transaction,a:ExecutionActor,p:{date:string;amounts:ClosingAmounts;evidence:CloseRecord['evidence'];note:string}){requireTx(txAdmin(a)&&t.state==='Closed','Only a firm owner or administrator can correct a closed record.');validateClosingAmounts(p.amounts);reviewSources(d,t,p.evidence);closingAmountEvidence(p.amounts,p.evidence);safeText(p.note,30,2000);requireTx(dateOnly(p.date)&&p.date<=new Date().toISOString().slice(0,10),'Record an actual closing date.');const previous=t.closes.at(-1)!;const corrected={...structuredClone(previous),...structuredClone(p),version:previous.version+1,by:actorName(a),at:new Date().toISOString(),correctionReason:p.note};return putTransaction(d,{...t,closes:[...t.closes,corrected],cases:t.cases.map(c=>c.status==='Published'||c.status==='Approved'?{...c,status:'Withdrawn' as const,delivery:c.delivery?{...c.delivery,status:'Cancelled' as const}:undefined}:c)},a,'Closing record corrected',p.note);}
+/** Turns the closing check's blocker list into steps an advisor can act on, naming the tab and the exact missing piece. Blockers that are condition or request titles are diagnosed from the record itself. */
+export type BlockerStep={where:'LOI'|'Diligence'|'Closing';text:string};
+export function blockerSteps(t:Transaction,blockers:string[]):BlockerStep[]{
+ const cleared:Record<string,string[]>={Financing:['Funding confirmed','Not required (reviewed)'],Escrow:['Receipt confirmed','Not required (reviewed)'],License:['Continuity confirmed'],Premises:['Consent received','No consent required (reviewed)'],'Purchase agreement':['Completion confirmed'],'Other closing':['Confirmed','Not required (reviewed)']};
+ return blockers.map(b=>{
+  const c=t.conditions.find(c=>c.title===b);
+  if(c){const need=!cleared[c.kind]?.includes(c.stage)?`move it to a completed stage (now “${c.stage}”)`:!c.sources.length?'add a source: document, page and exact passage, then confirm again':c.review?.revision!==c.revision?`record the professional’s confirmation on revision ${c.revision}`:'refresh its source to the current document version';return {where:'Closing',text:`${c.title}: ${need}.`};}
+  const items=t.items.filter(i=>i.title===b);
+  if(items.length){const open=items.filter(i=>!['Resolved','Not applicable'].includes(i.status)||i.review?.revision!==i.revision);return {where:'Diligence',text:`${b}: ${open.length>1?open.length+' copies need':'needs'} a Resolved or Not applicable decision on the current revision${items.length>1?' (duplicates count separately)':''}.`};}
+  if(/LOI|obligation/i.test(b))return {where:'LOI',text:b};
+  if(/diligence/i.test(b))return {where:'Diligence',text:b};
+  return {where:'Closing',text:b};
+ });
+}
