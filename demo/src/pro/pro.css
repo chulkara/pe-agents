@@ -45,3 +45,16 @@
 .pro-pages{overflow:auto;background:#f1f1f3;display:grid;justify-items:center;align-content:start;gap:12px;padding:12px}
 .pro-pages canvas,.pro-pages img{max-width:100%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .pro-share .pro-btn,.pro-form .pro-btn{justify-self:start}
+.pro-count{display:inline-block;margin-left:12px;vertical-align:middle;font-size:13px;font-weight:500;padding:3px 10px;border-radius:999px;background:var(--k-black,#000);color:#fff}
+.pro-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pro-actions input{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--k-line,#ccc);border-radius:10px;min-width:0;width:12em}
+.pro-sub{display:block;color:var(--k-grey-2,#666);font-size:13px;margin-top:2px}
+.pro-check span{min-width:0;overflow-wrap:anywhere}
+.pro-wait{align-items:flex-start!important}
+.pro-helper{margin:0 auto;padding:32px 16px 80px}
+.pro-request{display:grid;gap:8px;padding-top:14px;border-top:1px solid var(--k-line,#ddd)}
+.pro-request h4{margin:0;font-size:17px}.pro-request>p{margin:0;line-height:1.5}
+.pro-upload{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end}
+.pro-upload label{display:grid;gap:6px;font-size:14px;min-width:0}
+.pro-upload input{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--k-line,#ccc);border-radius:10px;min-width:0;max-width:100%}
+.pro-upload .pro-btn{justify-self:start}.pro-upload .pro-fine{grid-column:1/-1}

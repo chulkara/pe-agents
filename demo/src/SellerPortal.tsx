@@ -1,6 +1,8 @@
 import {ExecutionWorkspace} from './execution/ExecutionWorkspace';
 import {PartyProfessionals} from './pro/Professionals';
 import type {ProfessionalStore} from '../lib/professionalStore';
+import type {HelperStore} from '../lib/helperStore';
+import {OwnerHelpers} from './pro/Helpers';
 import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Check,ChevronDown,CircleHelp,Download,FileText,Lock,Mail,MessageSquare,Phone,Send,Upload,Users,X,Loader2,ListChecks,FolderOpen,AlertTriangle,Paperclip} from 'lucide-react';
 import {possessive,portalProgress,privacyReminder,requestOrder,unread,type DocRequest,type PortalBundle,type PortalFile,type Buyer} from '../lib/portal';
@@ -29,7 +31,7 @@ export function usePortal(store:PortalStore,portalId:string){
   return {b,error,refresh};
 }
 
-export default function SellerPortal({store,portalId,preview=false,top,room,pros}:{store:PortalStore;portalId:string;preview?:boolean;top?:ReactNode;room?:DataRoomStore;pros?:ProfessionalStore}){
+export default function SellerPortal({store,portalId,preview=false,top,room,pros,helpers}:{store:PortalStore;portalId:string;preview?:boolean;top?:ReactNode;room?:DataRoomStore;pros?:ProfessionalStore;helpers?:HelperStore}){
   const {b,error,refresh}=usePortal(store,portalId);
   const seenOnce=useRef(false),[openState,setOpenState]=useState<string|null>(null),setOpenId=(id:string)=>setOpenState(id);
   useEffect(()=>{if(b&&!preview&&!seenOnce.current){seenOnce.current=true;void store.seen(portalId).catch(()=>{});}},[b,preview,store,portalId]);
@@ -84,6 +86,7 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
         </section>
       </aside>
     </div>
+    {!gated&&!preview&&helpers&&b.side==='seller'&&<div className="portal-pros"><OwnerHelpers store={helpers} portalId={portalId} requests={b.requests} refresh={refresh}/></div>}
     {!gated&&!preview&&pros&&b.side==='seller'&&<div className="portal-pros"><PartyProfessionals store={pros} side="seller"/></div>}
     {!preview&&<nav className="portal-mobilebar" aria-label="Quick actions"><a href="#portal-messages" onClick={jump}><MessageSquare size={18}/>Messages{newMessages?<em>{newMessages}</em>:null}</a><button type="button" onClick={upload} disabled={readOnly||gated||!b.requests.length}><Upload size={18}/>Upload</button></nav>}
   </div>;

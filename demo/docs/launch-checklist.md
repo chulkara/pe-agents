@@ -20,6 +20,7 @@ Kalling has been validated end to end with fictional data only: the hosted sale 
 ## Pending migration
 
 - Apply `production/migrations/20261123170000_kalling_professional_access.sql` before sellers or buyers use [CPA and attorney access](professional-access.md). Until then that panel shows a missing-function error in the hosted product.
+- Apply `production/migrations/20261123190000_kalling_seller_helpers.sql` (after the one above) for [seller staff helpers](seller-helpers.md) and the advisor's view of each side's CPA and attorney.
 
 ## Data and switches (setup, in this order)
 

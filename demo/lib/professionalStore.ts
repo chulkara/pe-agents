@@ -26,6 +26,8 @@ export interface ProfessionalStore{
   accept(token:string):Promise<void>;
   acknowledge(id:string):Promise<void>;
   open(grantId:string):Promise<ProOpened>;
+  // The brokerage's read-only view
+  advisorList(portalId:string,companyId?:string):Promise<P.AdvisorPro[]>;
 }
 
 type KV={getItem(k:string):string|null;setItem(k:string,v:string):void};
@@ -49,6 +51,7 @@ export function localProfessionalStore(o:{party?:PartyIdentity;pro?:P.ProViewer;
     async home(){return P.professionalHome(read(),pro());},
     async accept(t){apply(d=>P.acceptProfessional(d,pro(),t));},
     async acknowledge(id){apply(d=>P.acknowledge(d,pro(),id));},
+    async advisorList(p,c){return P.advisorProfessionals(read(),p,c);},
     async open(grantId){
       const d=read(),out=P.openForProfessional(d,pro(),grantId);write(out.db);
       if(!out.allowed)throw Error('This document is no longer shared with you.');
@@ -75,6 +78,7 @@ export function cloudProfessionalStore(client:SupabaseClient,side:'seller'|'buye
     async home(){return call<ProHome>('kalling_pro_home');},
     async accept(t){await call('kalling_pro_accept',{p_token:t});},
     async acknowledge(id){await call('kalling_pro_acknowledge',{p_id:id});},
+    async advisorList(p){return call<P.AdvisorPro[]>('kalling_pro_advisor_list',{p_portal:p});},
     async open(grantId){
       const o=await call<{allowed:boolean;bucket:string;path:string;name:string;mime:string;watermark:string}>('kalling_pro_open',{p_grant:grantId});
       if(!o.allowed)throw Error('This document is no longer shared with you.');

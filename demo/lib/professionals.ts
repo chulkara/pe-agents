@@ -143,3 +143,14 @@ export function partyProfessionals(db:ProDb,p:Party){
 
 export const professionalWatermark=(pro:Pick<Professional,'name'|'email'|'role'|'partyName'>,at=new Date())=>`${pro.name}, ${pro.email}, ${pro.role} for ${pro.partyName}, ${at.toISOString().slice(0,10)}. Confidential, Kalling`;
 export type {RoomItem,ExecutionFile,Transaction};
+
+export type AdvisorPro={side:'seller'|'buyer';partyName:string;name:string;email:string;firm:string;role:ProRole;status:'Invited'|'Active'|'Expired';expiresAt:string};
+/** The brokerage's read-only view: who each party appointed. Never what was shared or opened. */
+export function advisorProfessionals(db:ProDb,portalId:string,companyId?:string):AdvisorPro[]{
+  const listings=new Set(db.listings.filter(l=>l.portalId===portalId||(companyId&&l.companyId===companyId)).map(l=>l.id));
+  for(const r of db.rooms||[])if(r.portalId===portalId)listings.add(r.listingId);
+  const buyers=new Set([...db.access.filter(a=>a.status==='Approved'&&listings.has(a.listingId)).map(a=>a.buyerId),...(db.transactions||[]).filter(t=>t.portalId===portalId).map(t=>t.buyerId)]);
+  return (db.professionals||[]).filter(x=>x.status!=='Removed'&&(x.side==='seller'?x.partyKey===portalId:buyers.has(x.partyKey)))
+    .map(x=>({side:x.side,partyName:x.partyName,name:x.name,email:x.email,firm:x.firm,role:x.role,status:Date.parse(x.expiresAt)<=Date.now()?'Expired' as const:x.status as 'Invited'|'Active',expiresAt:x.expiresAt}))
+    .sort((a,b)=>a.side===b.side?a.partyName.localeCompare(b.partyName):a.side==='seller'?-1:1);
+}

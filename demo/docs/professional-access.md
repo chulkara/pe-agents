@@ -8,6 +8,7 @@ A seller or buyer can give their own CPA or attorney a private login. The party,
 - **The professional signs in.** At `#/professional`, with the invited email address. In the hosted product they create their own password and confirm their email; the invitation only works for that email, once. Before anything is listed, they agree to keep the documents confidential.
 - **The party shares document by document.** The picker lists only what the party can open themselves right now: data-room documents and closing documents shared with them. Buyers confirm that the professional is bound to confidentiality and that they remain responsible under the listing NDA (clause 2 already allows sharing with advisors).
 - **Access is re-checked as the party, every time.** If the party can no longer open a document (the room is unpublished, the buyer is restricted, a newer version replaces it, the brokerage withdraws a closing-document share), the professional loses it at once. Stopping a share, removing the professional or expiry also end access immediately.
+- **The brokerage sees who, not what.** The deal room's Owner tab lists each side's professionals (name, role, firm, status). What a party shares with them and when they open it stays private.
 - **The party sees every open.** Each open is logged, allowed or denied, and listed under the professional's activity. Every page carries the professional's name, email, role, client and date as a watermark.
 
 ## Security model (hosted)
@@ -24,4 +25,3 @@ Migration `20261123170000_kalling_professional_access.sql`:
 - The seller's raw uploads in the owner portal that are not in the data room or the closing workspace. Add them to the data room or closing documents to share them.
 - Previews cover PDFs and images. Spreadsheets show a message asking for a PDF.
 - No downloads; professionals read in the watermarked viewer.
-- The brokerage does not see the professionals list. Decide whether advisors should see who each party has appointed.

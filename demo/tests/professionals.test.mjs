@@ -61,3 +61,12 @@ test('a seller manages their own professionals; the other side cannot touch them
   assert.equal(P.partyProfessionals(d,buyer).length,0);assert.equal(P.partyProfessionals(d,seller)[0].grants.length,1);
   assert.match(P.professionalWatermark({name:'Seller CPA',email:'scpa@pro.invalid',role:'CPA',partyName:'Fictional Owner'}),/CPA for Fictional Owner/);
 });
+
+test('the brokerage sees who each party appointed, never what they shared',()=>{
+  let {d,buyer,seller}=world();
+  d=P.addProfessional(d,seller,{name:'Seller CPA',email:'scpa@pro.invalid',firm:'Fictional & Co',role:'CPA'}).db;
+  const b=P.addProfessional(d,buyer,{name:'Buyer Attorney',email:'blaw@pro.invalid',firm:'',role:'Attorney'});d=P.grantDocuments(b.db,buyer,b.id,[{source:'dataroom',id:'room-pl'}],true);
+  const list=P.advisorProfessionals(d,'portal-1');
+  assert.deepEqual(list.map(x=>[x.side,x.role,x.name]),[['seller','CPA','Seller CPA'],['buyer','Attorney','Buyer Attorney']]);
+  assert.ok(list.every(x=>!('grants' in x)));assert.equal(P.advisorProfessionals(d,'another-portal').length,0);
+});

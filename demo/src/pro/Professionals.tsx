@@ -128,3 +128,16 @@ function DocPages({doc}:{doc:{name:string;mime:string;bytes:ArrayBuffer}}){
     return()=>{live=false;};},[doc]);
   return <div className="pro-pages" ref={box} aria-busy={state==='loading'}>{state==='unsupported'&&<p className="pro-fine">This file type can’t be previewed here. Ask your client for a PDF.</p>}{state==='error'&&<p className="pro-error">This document could not be displayed.</p>}</div>;
 }
+
+/** Advisor's deal room: who the seller and buyers have appointed. Contact details only; shares and activity stay private. */
+export function AdvisorProfessionals({store,portalId,companyId}:{store:ProfessionalStore;portalId:string;companyId?:string}){
+  const [rows,setRows]=useState<import('../../lib/professionals').AdvisorPro[]|null>(null),[error,setError]=useState('');
+  useEffect(()=>{let live=true;void store.advisorList(portalId,companyId).then(r=>{if(live)setRows(r);}).catch(e=>{if(live){setError((e as Error).message);setRows([]);}});return()=>{live=false;};},[store,portalId,companyId]);
+  return <section className="pro-panel pro-advisor" aria-labelledby="pro-adv-h">
+    <h2 id="pro-adv-h">Each side’s CPA and attorney</h2>
+    <p className="pro-fine">Appointed by the seller or a buyer for their own advice. You see who they are so you can coordinate; what each party shares with them stays between them.</p>
+    {error&&<p className="pro-error" role="alert">{error}</p>}
+    {rows===null?<p className="pro-fine">Loading…</p>:!rows.length?<p className="pro-fine">No one appointed yet.</p>:
+    <ul className="pro-shared">{rows.map((r,i)=><li key={i}><span>{r.name}, {r.role}{r.firm?', '+r.firm:''}<small>{r.side==='seller'?'Seller':'Buyer'}: {r.partyName}. {r.email}</small></span><span className={'pro-status'+(r.status==='Active'?' on':'')}>{r.status==='Invited'?'Invited':r.status==='Expired'?'Expired':'Active'}</span></li>)}</ul>}
+  </section>;
+}
