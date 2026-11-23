@@ -10,7 +10,8 @@
 //        --output "$HOME/Downloads/kalling-sale-rehearsal.json" \
 //        --shots "$HOME/Downloads/kalling-sale-rehearsal-shots"
 //
-// Three passwords are read with hidden prompts (owner_a as the advisor, seller, buyer);
+// Five passwords are read with hidden prompts (owner_a as the advisor, seller, buyer,
+// specialist as the buyer's CPA, owner_b as the seller's office manager);
 // --accounts <file> outside the repository works like the other hosted runners. Nothing
 // is emailed, no model other than the local research computer is called, and every step
 // that cannot be driven automatically turns into a guided prompt that waits for you.
@@ -26,8 +27,9 @@ const here=path.dirname(fileURLToPath(import.meta.url)),demo=path.join(here,'..'
 const args=process.argv.slice(2);
 const flag=n=>args.includes(n);
 const opt=(n,d='')=>{const i=args.indexOf(n);return i>=0&&args[i+1]?args[i+1]:d;};
-const ROLES=['owner_a','seller','buyer'];
-const EMAILS={owner_a:'owner-a-20261114@kalling-validation.invalid',seller:'seller-20261114@kalling-validation.invalid',buyer:'buyer-20261114@kalling-validation.invalid'};
+// specialist plays the buyer's CPA; owner_b (fictional firm B, no role in firm A) plays the seller's office manager.
+const ROLES=['owner_a','seller','buyer','specialist','owner_b'];
+const EMAILS={owner_a:'owner-a-20261114@kalling-validation.invalid',seller:'seller-20261114@kalling-validation.invalid',buyer:'buyer-20261114@kalling-validation.invalid',specialist:'specialist-20261114@kalling-validation.invalid',owner_b:'owner-b-20261114@kalling-validation.invalid'};
 const WIDTHS=[390,1024,1440];
 const report={mode:'hosted-sale-rehearsal',project:deployedCloudProject.url,startedAt:new Date().toISOString(),runtime:'',steps:[],guided:[],screenshots:[],result:'incomplete'};
 const out=opt('--output',path.join(os.homedir(),'Downloads','kalling-sale-rehearsal.json'));
@@ -67,7 +69,7 @@ async function collectAccounts(){
     const raw=JSON.parse(fs.readFileSync(abs,'utf8'));
     return Object.fromEntries(ROLES.map(r=>{const a=raw[r];if(!a?.password||a.email!==EMAILS[r])fail('Accounts file must hold '+r+' with email '+EMAILS[r]);return [r,a.password];}));
   }
-  log('Enter the three fictional account passwords. Input stays hidden and is never saved.');
+  log('Enter the five fictional account passwords. Input stays hidden and is never saved.');
   const o={};for(const r of ROLES)o[r]=await readHiddenPassword(r+' ('+EMAILS[r]+'): ');
   return o;
 }
@@ -107,10 +109,10 @@ const step=async(name,fn)=>{
   const mk=async(w,h)=>{const c=await browser.newContext({viewport:{width:w,height:h}});return c;};
   // Separate sessions: each context keeps its own cookies and storage, so the advisor,
   // seller and buyer are signed in at the same time with their own tokens.
-  const advCtx=await mk(1440,900),selCtx=await mk(390,844),buyCtx=await mk(390,844),pubCtx=await mk(390,844);
-  const adv=await advCtx.newPage(),sel=await selCtx.newPage(),buy=await buyCtx.newPage(),pub=await pubCtx.newPage();
-  for(const [p,tag] of [[adv,'advisor'],[sel,'seller'],[buy,'buyer'],[pub,'public']])p.on('pageerror',e=>errs.push(tag+': '+e.message));
-  failShots=async()=>{const dir=path.join(os.homedir(),'Downloads','kalling-sale-rehearsal-failure');fs.mkdirSync(dir,{recursive:true});for(const [p,tag] of [[adv,'advisor'],[sel,'seller'],[buy,'buyer'],[pub,'public']]){await p.screenshot({path:path.join(dir,tag+'.png')}).catch(()=>{});fs.writeFileSync(path.join(dir,tag+'.txt'),p.url()+'\n\n'+(await p.locator('body').innerText().catch(()=>'')).slice(0,4000));}};
+  const advCtx=await mk(1440,900),selCtx=await mk(390,844),buyCtx=await mk(390,844),pubCtx=await mk(390,844),cpaCtx=await mk(1024,900),hlpCtx=await mk(390,844);
+  const adv=await advCtx.newPage(),sel=await selCtx.newPage(),buy=await buyCtx.newPage(),pub=await pubCtx.newPage(),cpa=await cpaCtx.newPage(),hlp=await hlpCtx.newPage();
+  for(const [p,tag] of [[adv,'advisor'],[sel,'seller'],[buy,'buyer'],[pub,'public'],[cpa,'cpa'],[hlp,'helper']])p.on('pageerror',e=>errs.push(tag+': '+e.message));
+  failShots=async()=>{const dir=path.join(os.homedir(),'Downloads','kalling-sale-rehearsal-failure');fs.mkdirSync(dir,{recursive:true});for(const [p,tag] of [[adv,'advisor'],[sel,'seller'],[buy,'buyer'],[pub,'public'],[cpa,'cpa'],[hlp,'helper']]){await p.screenshot({path:path.join(dir,tag+'.png')}).catch(()=>{});fs.writeFileSync(path.join(dir,tag+'.txt'),p.url()+'\n\n'+(await p.locator('body').innerText().catch(()=>'')).slice(0,4000));}};
 
   const signIn=async(page,role,hash)=>{
     await page.goto(U+hash);await page.waitForTimeout(800);
@@ -122,6 +124,33 @@ const step=async(name,fn)=>{
   };
   const tab=async name=>{await adv.getByRole('tab',{name:new RegExp('^'+name)}).click();await adv.waitForTimeout(400);};
   let portalLink='';
+
+  // Party-appointed professionals and staff helpers. Hosted invitation links are shown once, so an
+  // unaccepted or expired invitation from an earlier attempt is removed and issued again.
+  const inviteFresh=async(scope,email,fill)=>{
+    const card=()=>scope.locator('.pro-card',{hasText:email});
+    if(await card().count()&&/not yet accepted|expired/i.test(await card().locator('.pro-status').innerText())){
+      await card().locator('.pro-remove').click();await card().getByRole('button',{name:'Remove',exact:true}).click();
+      await until(async()=>!(await card().count()),30000);}
+    if(await card().count()){log('  (already active from an earlier attempt: '+email+')');return '';}
+    const add=scope.locator('details.pro-add');if((await add.getAttribute('open'))===null)await add.locator('summary').click();
+    await fill(add);await add.locator('button.pro-btn-primary').click();
+    await until(async()=>(await scope.locator('.pro-link code').count())>0,30000);
+    const link=(await scope.locator('.pro-link code').innerText()).trim();
+    if(!link.startsWith(U))fail('The invitation link should open this site: '+link);
+    return link.slice(U.length);
+  };
+  // The advisor's direct client signs in once to corroborate what the brokerage can and cannot read.
+  let advisorRead=false;
+  const asAdvisor=async()=>{if(advisorRead)return;const {error}=await sb.auth.signInWithPassword({email:EMAILS.owner_a,password:passwords.owner_a});if(error)fail('Advisor read-only sign-in failed: '+error.message);advisorRead=true;};
+  const gatheredFiles=async()=>{await asAdvisor();const r=await sb.from('kalling_portal_files').select('id').ilike('uploader_name','%(gathered by %');if(r.error)fail(r.error.message);return r.data.length;};
+  const openRehearsalDeal=async()=>{
+    if(await adv.getByRole('tab',{name:/^Owner/}).count())return;
+    await reloadAdv();if(await adv.getByRole('tab',{name:/^Owner/}).count())return;
+    await adv.getByRole('button',{name:'Sellers',exact:true}).click();await adv.waitForTimeout(500);
+    await adv.locator('article.adv-row',{hasText:'Russo Heating'}).getByRole('button',{name:'Open Deal Room'}).first().click();
+    await until(async()=>(await adv.getByRole('tab',{name:/^Owner/}).count())>0,30000);
+  };
   // The fictional seller account has more than one portal; after a reload, pick the rehearsal business.
   const reloadSel=async()=>{await sel.reload();await sel.waitForTimeout(1200);const pick=sel.locator('.portal-pick',{hasText:'Russo Heating'});if(await pick.count()){await pick.first().click();await sel.waitForTimeout(1200);}};
   // A reload drops the advisor app back to the account page; reopen the firm and the URL returns to the same deal and tab.
@@ -382,6 +411,87 @@ const step=async(name,fn)=>{
     if(!/Buyer \d/.test(opened))fail('The owner log must show an anonymous label.');
     if(opened.includes('Alex'))fail('The owner log leaked a buyer name.');
     await shoot(sel,'seller-opened-390');
+  });
+
+  await step('buyer appoints a CPA who reads one shared document; stopping the share ends it',async()=>{
+    await buy.goto(U+'#/account');await buy.waitForSelector('#pro-h',{timeout:30000});
+    const panel=buy.locator('section[aria-labelledby=pro-h]');
+    const link=await inviteFresh(panel,EMAILS.specialist,async f=>{await f.locator('input[name=name]').fill('Fictional Rehearsal CPA');await f.locator('input[name=email]').fill(EMAILS.specialist);await f.locator('input[name=firm]').fill('Fictional & Co (rehearsal)');await f.locator('select[name=role]').selectOption('CPA');});
+    const card=panel.locator('.pro-card',{hasText:EMAILS.specialist}),memo=card.locator('.pro-shared li',{hasText:'Confidential memorandum'});
+    if(!(await memo.count())){ // share exactly the document the buyer just read, and nothing else
+      const share=card.locator('details.pro-share');if((await share.getAttribute('open'))===null)await share.locator('summary').click();
+      const box=share.locator('label.pro-check',{hasText:'Confidential memorandum'}).locator('input');
+      await until(async()=>(await box.count())>0,20000);await box.first().check();
+      if(!(await share.locator('button.pro-btn-primary').isDisabled()))fail('Sharing must wait for the NDA confirmation.');
+      await share.locator('.pro-confirm input').check();await share.locator('button.pro-btn-primary').click();
+      await until(async()=>(await memo.count())>0,30000);}
+    await sweep(buy,'buyer-professionals');
+    // The CPA signs in on their own page, with their own confirmed account.
+    await signIn(cpa,'specialist',link||'#/professional');
+    await until(async()=>(await cpa.locator('.pro-ack,.pro-shared li').count())>0,30000);
+    if(await cpa.locator('.pro-ack').count()){
+      if(await cpa.locator('.pro-shared li').count())fail('Documents must stay hidden until the CPA agrees to confidentiality.');
+      await cpa.locator('.pro-ack input').check();await cpa.locator('.pro-ack button').click();}
+    const row=cpa.locator('.pro-shared li',{hasText:'Confidential memorandum'});await until(async()=>(await row.count())>0,30000);
+    if(await cpa.locator('.pro-shared li').count()!==1)fail('The CPA should see exactly the one shared document.');
+    await row.getByRole('button',{name:'Open'}).click();
+    await cpa.waitForSelector('.pro-pages canvas',{timeout:60000});await cpa.waitForTimeout(900);
+    await sweep(cpa,'cpa-viewer');
+    await cpa.locator('.pro-viewer header button').click();
+    // The buyer sees the open, then stops sharing, and the CPA loses the document.
+    await buy.reload();await buy.waitForSelector('#pro-h',{timeout:30000});
+    await card.locator('details.pro-log summary').click();
+    if(!/Opened[^\n]*Confidential memorandum/.test(await card.locator('details.pro-log').innerText()))fail('The buyer must see that the CPA opened the memorandum.');
+    await memo.getByRole('button',{name:'Stop sharing'}).click();await until(async()=>!(await memo.count()),30000);
+    await cpa.reload();await until(async()=>/Nothing shared yet/.test(await cpa.locator('body').innerText()),30000);
+    await shoot(cpa,'cpa-after-stop-1024');
+  });
+
+  await step('advisor sees who the buyer appointed, not what was shared',async()=>{
+    await openRehearsalDeal();await tab('Owner');await adv.waitForSelector('#pro-adv-h',{timeout:30000});
+    await until(async()=>(await adv.locator('.pro-advisor').innerText()).includes('Fictional Rehearsal CPA'),30000);
+    const t=await adv.locator('.pro-advisor').innerText();
+    if(t.includes('Confidential memorandum')||/Opened/.test(t))fail('The advisor view must not show what the buyer shared or when it was opened.');
+    await adv.locator('.pro-advisor').scrollIntoViewIfNeeded();await shoot(adv,'advisor-professionals-1440');
+  });
+
+  await step('owner adds a staff helper; nothing they send reaches the brokerage until the owner approves',async()=>{
+    await reloadSel();await sel.waitForSelector('#helpers-h',{timeout:30000});
+    const panel=sel.locator('section[aria-labelledby=helpers-h]');
+    const link=await inviteFresh(panel,EMAILS.owner_b,async f=>{await f.locator('input[name=name]').fill('Fictional Rehearsal Office Manager');await f.locator('input[name=email]').fill(EMAILS.owner_b);});
+    const card=panel.locator('.pro-card',{hasText:EMAILS.owner_b}),share=card.locator('details.pro-share');
+    if((await share.getAttribute('open'))===null)await share.locator('summary').click();
+    if(!(await share.locator('label.pro-check').count())){
+      await guided(adv,'The seller portal has no open document request to hand to a helper. In this deal room, add a document request named “Fictional vehicle log” (any description), then type done.',
+        async()=>{await reloadSel();const sh=sel.locator('section[aria-labelledby=helpers-h] .pro-card',{hasText:EMAILS.owner_b}).locator('details.pro-share');if((await sh.getAttribute('open'))===null)await sh.locator('summary').click();return (await sh.locator('label.pro-check').count())>0;});}
+    let title='';const picked=share.locator('label.pro-check:has(input:checked)');
+    if(await picked.count())title=(await picked.first().locator('span').innerText()).split('\n')[0].trim();
+    else{const first=share.locator('label.pro-check').first();title=(await first.locator('span').innerText()).split('\n')[0].trim();
+      await first.locator('input').check();await share.locator('button.pro-btn-primary').click();
+      await until(async()=>/Saved\./.test(await panel.locator('.pro-ok').innerText().catch(()=>'')),30000);}
+    log('  helper works on: '+title);
+    const baseline=await gatheredFiles();
+    // The helper signs in on their own page and sees that one request, nothing about the sale.
+    await signIn(hlp,'owner_b',link||'#helper');
+    const req=hlp.locator('.pro-request',{hasText:title});await until(async()=>(await req.count())>0,30000);
+    const body=await hlp.locator('body').innerText();
+    for(const re of [/\bBuyer \d\b/,/Under LOI/,/asking price/i,/Confidential memorandum/,/Fictional Rehearsal CPA/])if(re.test(body))fail('The helper page shows sale details ('+re+').');
+    const sent=req.locator('.pro-shared li',{hasText:'fictional-vehicle-log.pdf'});
+    if(!(await sent.count())){
+      const file=path.join(os.tmpdir(),'fictional-vehicle-log.pdf');
+      fs.writeFileSync(file,'%PDF-1.4\n% Fictional rehearsal record '+new Date().toISOString()+'\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n');
+      await req.locator('input[type=file]').setInputFiles(file);await req.locator('input[name=note]').fill('Fictional rehearsal record from the office manager');
+      await req.locator('button.pro-btn-primary').click();await until(async()=>(await sent.count())>0,60000);}
+    await sweep(hlp,'helper-page');
+    if(/Approved/.test(await sent.first().innerText())){log('  (already approved in an earlier attempt)');return;}
+    if(await gatheredFiles()!==baseline)fail('The brokerage could see a helper file before the owner approved it.');
+    // The owner reviews and approves; only then does it become a portal file the brokerage can read.
+    await reloadSel();const wait=sel.locator('.pro-wait',{hasText:'fictional-vehicle-log.pdf'});await until(async()=>(await wait.count())>0,30000);
+    await shoot(sel,'seller-helper-waiting-390');
+    await wait.getByRole('button',{name:'Approve'}).click();
+    await until(async()=>/Approved\./.test(await sel.locator('section[aria-labelledby=helpers-h] .pro-ok').innerText().catch(()=>'')),30000);
+    const after=await gatheredFiles();if(after!==baseline+1)fail('After approval the brokerage should see exactly one new gathered file, found '+(after-baseline)+'.');
+    await hlp.reload();await until(async()=>/Approved/.test(await hlp.locator('.pro-request',{hasText:title}).innerText()),30000);
   });
 
   await step('offer, seller acceptance, Under LOI',async()=>{

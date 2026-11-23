@@ -14,10 +14,15 @@ test('sale rehearsal fixture resets a Restricted fictional buyer, logs the reset
   await s.db.exec(await readFile(new URL('../fixtures/prepare-buyer-access.sql',import.meta.url),'utf8'));
   await s.db.query("insert into public.kalling_buyers(user_id,email,name,type,funds,experience,status) values($1,$2,'Fictional Acceptance Buyer','Owner-operator','$500K to $1M','Fictional experience for the rehearsal test.','Restricted')",[s.buyer,fictionalEmails.buyer]);
   const sql=await readFile(new URL('../fixtures/prepare-sale-rehearsal.sql',import.meta.url),'utf8');
+  // A CPA appointment left over from an earlier rehearsal, with an open share.
+  const pro=(await s.db.query("insert into kalling_private.pro_people(side,party_key,party_name,name,email,role,status,created_by,expires_at) values('buyer',gen_random_uuid(),'Fictional Buyer','Fictional Rehearsal CPA',$1,'CPA','Active',$2,now()+interval '30 days') returning id",[fictionalEmails.specialist,s.buyer])).rows[0].id;
+  await s.db.query("insert into kalling_private.pro_grants(professional_id,source,doc_id,doc_name,granted_by) values($1,'dataroom',gen_random_uuid(),'Confidential memorandum',$2)",[pro,s.buyer]);
   const out=(await s.db.exec(sql)).at(-1).rows[0].sale_rehearsal_fixture;
   assert.equal(out.status,'prepared');assert.equal(out.buyerStatus,'Registered');assert.equal(out.intakeOpen,false);
   const audit=(await s.db.query("select count(*)::int n from public.kalling_audit where event like 'Rehearsal reset the fictional buyer%'")).rows[0].n;assert.equal(audit,1);
   // Running it again changes nothing and logs nothing new.
+  assert.equal((await s.db.query('select status from kalling_private.pro_people where id=$1',[pro])).rows[0].status,'Removed','an earlier rehearsal CPA is removed so the run invites afresh');
+  assert.equal((await s.db.query('select count(*)::int n from kalling_private.pro_grants where professional_id=$1 and revoked_at is null',[pro])).rows[0].n,0);
   const again=(await s.db.exec(sql)).at(-1).rows[0].sale_rehearsal_fixture;assert.equal(again.buyerStatus,'Registered');
   assert.equal((await s.db.query("select count(*)::int n from public.kalling_audit where event like 'Rehearsal reset the fictional buyer%'")).rows[0].n,1);
   assert.equal((await s.db.query("select count(*)::int n from public.kalling_leads where email=$1 and status='New'",[fictionalEmails.seller])).rows[0].n,1);
