@@ -17,3 +17,10 @@
 .ex-judgment-pick label:has(input:focus-visible){outline:3px solid var(--ex-peri);outline-offset:3px}
 .ex-judgment-act{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.ex-judgment-act small{font-size:12px;color:#635b6b;flex:1;min-width:200px}
 .ex-judgment-history{margin-top:8px}
+/* Save feedback that stays visible wherever the form is on the page. */
+.ex-toast-region{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;width:min(560px,calc(100vw - 32px));pointer-events:none}
+.ex-toast{display:flex;align-items:center;gap:10px;margin:0;padding:12px 16px;border-radius:12px;background:var(--ex-green,#1F4D36);color:#fff;font-size:14px;line-height:1.4;box-shadow:0 8px 24px rgba(25,20,30,.18);animation:ex-toast-in .18s ease-out}
+.ex-toast svg{flex:none}
+.ex-toast-error{background:#8a1f1f}
+@keyframes ex-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.ex-toast{animation:none}}
