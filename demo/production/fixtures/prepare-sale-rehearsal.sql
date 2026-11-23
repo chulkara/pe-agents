@@ -22,6 +22,14 @@ begin
  -- The buyer and specialist keep private-pilot registration; no one else can register.
  update kalling_private.brokerage_settings set pilot_buyers=(select array_agg(distinct x) from unnest(pilot_buyers||array[buyer_id,specialist_id]) x);
 
+ -- Earlier access-guard tests can leave the fictional buyer Restricted, which blocks NDA requests
+ -- mid-rehearsal. Reset it here, in the open, and record the reset in the firm's activity log.
+ if exists(select 1 from public.kalling_buyers where user_id=buyer_id and status='Restricted') then
+  update public.kalling_buyers set status='Registered' where user_id=buyer_id;
+  insert into public.kalling_audit(firm_id,actor_id,event,detail)
+  values(s.firm_id,owner_id,'Rehearsal reset the fictional buyer from Restricted to Registered',jsonb_build_object('buyer',buyer_id,'source','prepare-sale-rehearsal.sql'));
+ end if;
+
  -- One fictional seller inquiry, exactly as the paused public form would have recorded it.
  -- The form itself stays closed; the rehearsal verifies that refusal in the browser first.
  if not exists(select 1 from public.kalling_leads where email='seller-20261114@kalling-validation.invalid' and status='New') then
@@ -38,4 +46,5 @@ select json_build_object('mode','sale-rehearsal','status','prepared',
  'lead',(select id from public.kalling_leads where email='seller-20261114@kalling-validation.invalid' and status='New'),
  'intakeOpen',(select intake_open from kalling_private.brokerage_settings),
  'pilotBuyers',(select cardinality(pilot_buyers) from kalling_private.brokerage_settings),
- 'nonSampleListings',(select count(*) from public.kalling_listings where not sample)) as sale_rehearsal_fixture;
+ 'nonSampleListings',(select count(*) from public.kalling_listings where not sample),
+ 'buyerStatus',(select b.status from public.kalling_buyers b join auth.users u on u.id=b.user_id where u.email='buyer-20261114@kalling-validation.invalid')) as sale_rehearsal_fixture;
