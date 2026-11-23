@@ -185,6 +185,28 @@ Before execution HTTP acceptance, check the same metadata-before-bytes contract 
 
 The replacement-document smoke test separately checks owner reapproval and rejection of the previous buyer ticket inside a rollback-only SQL transaction. It transfers no file bytes, and its temporary house configuration is never visible outside that transaction. The later 65-check Mac run covers actual buyer proof and data-room transport. Closing-file handover, real Mac inference and the complete hosted mobile rehearsal remain subsequent steps.
 
+## Hosted sale rehearsal, November 20 to 22, 2026
+
+Karan ran the [sale rehearsal](sale-rehearsal.md) against the hosted firm from his Mac, with the local Qwen worker (`qwen3:4b`) paired to the firm. The final run reported **Result: passed**. The run was resumed many times with `--from`, so the saved report only records the last resumed segment (the final checks). The earlier steps are evidenced by hosted state, not by one continuous report.
+
+A fictional HVAC sale went end to end: owner inquiry, engagement letter signed and countersigned, documents uploaded and accepted, local recast, teaser and memorandum drafts, the published sample listing, buyer financing evidence verified, NDA approved, watermarked data-room reads, a $1.1M letter-of-intent offer shared and preferred by the owner, the execution transaction, a sourced proposal, financial diligence, five closing conditions and a recorded close. Transaction `217f9a17` is Closed at revision 32 and its listing reads Sold. Intake stayed paused and every listing is labeled a sample.
+
+The proposal review was done in the browser. The proposal's quotation was found in the stored source text. Karan recorded **Changes needed**: the permitted passage was only the P&L heading, so the proposed question was grounded but generic. After later transaction changes the app marked the proposal stale and kept the judgment.
+
+The app's guards behaved as intended: countersignature and NDA signing require the exact stated name; a Restricted buyer cannot request a listing; buyer registration stays closed while intake is paused; a submitted diligence response needs a source; the close is refused until every condition is confirmed on its current revision with a current source and a current completion package.
+
+### What needs work in the product
+
+1. Saves don't clearly confirm. A diligence request was saved twice because of it.
+2. Revising a closing condition lost its source. License and Purchase agreement both lost theirs and had to be revised again. This looks like a real bug.
+3. The rehearsal setup doesn't reset buyer status. The fictional buyer was left Restricted by older tests and was reset to Registered with a direct SQL update, so that change is not in the firm's activity log.
+4. The closing flow is long and hard to follow. It took about 30 actions, and the closing-blockers list only appears when something fails. Showing it from the start would help.
+5. Hidden prerequisites: the sourced-preparation document list only shows documents that were linked into the transaction and reviewed first, and the confirmed input snapshot is lost when the page reloads.
+6. Reloading as the advisor drops you back at the firm picker, so you lose your place in the deal.
+7. The AI's proposal was generic because its only permitted input was the P&L's title line.
+
+The rehearsal runner (`e2e/hosted-sale.mjs`) needed fixes during the run, mostly stale assumptions: old fictional names and messages, resumed runs breaking on reloads and multiple seller portals, uploads sent before they finished, and guided steps ending early. Guided steps now wait for you to type `done`.
+
 ## Advisory findings
 
 The closing-file handover change preserves the same advisory categories and zero health findings. Its reviewer-only file-audit RPC adds one expected authenticated SECURITY DEFINER entry for review. See [the handover activation record](../production/activation/2026-11-16-handover.json). This is not an independent security audit.
