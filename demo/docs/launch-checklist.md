@@ -17,10 +17,9 @@ Kalling has been validated end to end with fictional data only: the hosted sale 
 - **Contact details.** Add a real contact email or phone number to the public site.
 - **Search visibility.** Remove `noindex` from `index.html` when the public site should appear in search.
 
-## Pending migration
+## Migrations
 
-- Apply `production/migrations/20261123170000_kalling_professional_access.sql` before sellers or buyers use [CPA and attorney access](professional-access.md). Until then that panel shows a missing-function error in the hosted product.
-- Apply `production/migrations/20261123190000_kalling_seller_helpers.sql` (after the one above) for [seller staff helpers](seller-helpers.md) and the advisor's view of each side's CPA and attorney.
+- Applied November 23, 2026 in the SQL editor and recorded in the migration ledger: `20261123170000_kalling_professional_access` and `20261123190000_kalling_seller_helpers`. Check returned 11 professional functions, 11 helper functions and 3 storage policies, as expected. No migrations are pending.
 
 ## Data and switches (setup, in this order)
 

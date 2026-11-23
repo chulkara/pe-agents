@@ -207,6 +207,12 @@ The app's guards behaved as intended: countersignature and NDA signing require t
 
 The rehearsal runner (`e2e/hosted-sale.mjs`) needed fixes during the run, mostly stale assumptions: old fictional names and messages, resumed runs breaking on reloads and multiple seller portals, uploads sent before they finished, and guided steps ending early. Guided steps now wait for you to type `done`.
 
+## CPA, attorney and staff helper access, November 23, 2026
+
+Karan applied `20261123170000_kalling_professional_access.sql` and `20261123190000_kalling_seller_helpers.sql` to `ymbciapnzdmymtthevjp` in order through the SQL editor, then added both to `supabase_migrations.schema_migrations`. The read-only check returned 11 `kalling_pro_*` functions, 11 `kalling_helper_*` functions and the 3 storage policies (`kalling_pro_read`, `kalling_helper_upload`, `kalling_helper_read`). PR #1 merged to `main` the same day and the Pages deploy passed.
+
+What this confirms: the database objects exist as written. What it does not yet confirm: the hosted flows themselves (invitation, confirmed sign-in, sharing, reading through Storage, owner approval of a helper file). Those are covered by the PGlite tests, which simulate Auth and Storage; check them with fictional accounts during the next hosted rehearsal before any real seller or buyer uses them.
+
 ## Advisory findings
 
 The closing-file handover change preserves the same advisory categories and zero health findings. Its reviewer-only file-audit RPC adds one expected authenticated SECURITY DEFINER entry for review. See [the handover activation record](../production/activation/2026-11-16-handover.json). This is not an independent security audit.
