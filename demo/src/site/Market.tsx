@@ -9,6 +9,7 @@ import {TermsEditor,BuyerOffers} from '../buyer/Offers';
 import {verificationBadge} from '../../lib/buyerVerification';
 import {BuyerLenderPreparation} from '../buyer/LenderPreparation';
 import {BuyerAlerts} from '../buyer/Alerts';
+import {SbaCheck} from './SbaCheck';
 import {BuyerVerification} from '../buyer/Verification';
 
 /** Listing card: where and what, then the asking price as the headline number. */
@@ -76,6 +77,7 @@ export function ListingPage({id}:{id:string}){
         {l.growth.length>0&&<><h2>Room to grow</h2><ul className="ks-checklist">{l.growth.map(h=><li key={h}>{h}</li>)}</ul></>}
         <h2>Operations</h2>
         <dl className="ks-specs"><div><dt>Employees</dt><dd>{l.employees}</dd></div><div><dt>Field technicians</dt><dd>{l.technicians}</dd></div><div><dt>Maintenance agreements</dt><dd>{l.agreements.toLocaleString()}</dd></div><div><dt>Service and maintenance revenue</dt><dd>{l.recurringPct}%</dd></div><div><dt>Residential share</dt><dd>{l.residentialPct}%</dd></div><div><dt>Service vehicles</dt><dd>{l.vehicles}</dd></div><div><dt>Facility</dt><dd>{l.realEstate}</dd></div><div><dt>Seller financing</dt><dd>{l.sellerFinancing?'Considered for qualified buyers':'Not offered'}</dd></div></dl>
+        {['Live','Under LOI'].includes(l.status)&&<SbaCheck key={l.id} price={l.askingPrice} sde={l.sde} sellerFinancing={l.sellerFinancing}/>}
         {approved&&<section className="ks-confidential"><h2>Confidential details</h2><p className="ks-fine">Shared under your signed NDA. Don’t contact the business, its staff or customers directly.</p><dl className="ks-specs"><div><dt>Business</dt><dd>{l.confidential.businessName}</dd></div><div><dt>Location</dt><dd>{l.confidential.city}</dd></div>{l.confidential.website&&<div><dt>Website</dt><dd>{l.confidential.website}</dd></div>}</dl><p className="ks-prose">{l.confidential.details}</p></section>}
         {approved&&<BuyerDataRoom room={s.room} listingId={l.id} questions={questions} onAsked={res.reload}/>}
         {approved&&<section className="ks-qa"><h2>Questions for the advisor</h2>{questions.filter(q=>!q.itemId||q.side==='advisor').map(q=><div key={q.id} className={'ks-q '+q.side}><p>{q.body}</p><small>{q.side==='buyer'?'You':q.author} · {new Date(q.createdAt).toLocaleDateString()}</small></div>)}

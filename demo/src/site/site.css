@@ -299,3 +299,23 @@ a:hover>.ks-arrow,a:hover .ks-arrow{transform:translate(2px,-2px)}
 .ks-history{margin-top:32px}.ks-history ul{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}.ks-history li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.ks-history small{color:var(--ink2)}
 @media print{.ks-viewer{display:none}}
 @media (max-width:640px){.ks-dr{padding:20px}.ks-viewer-bar,.ks-viewer-ask{padding:10px 16px}.ks-viewer-body{padding:12px}.ks-dr-folder li{flex-wrap:wrap}}
+/* SBA financing check on a listing */
+.ks-sba{margin-top:40px;display:grid;gap:16px}
+.ks-sba-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.ks-sba-result{display:flex;align-items:center;gap:24px;padding:20px 24px;border-radius:var(--r);background:var(--mist)}
+.ks-sba-result.ok{background:var(--green);background-image:var(--grain);color:#fff}
+.ks-sba-result p{margin:0;font-size:16px}
+.ks-sba-dscr{display:flex;flex-direction:column;font-size:44px!important;font-weight:500;letter-spacing:-.03em;line-height:1;white-space:nowrap}
+.ks-sba-dscr span{font-family:var(--f2);font-size:13px;font-weight:400;letter-spacing:0;opacity:.75;margin-top:6px}
+.ks-sba-issues{margin:0;padding-left:20px;font-size:15px;color:var(--ink2)}
+@media (max-width:900px){.ks-sba-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.ks-sba-grid{grid-template-columns:1fr}.ks-sba-result{flex-direction:column;align-items:flex-start;gap:10px}}
+/* Add-back finder on the valuation results */
+.ks-addbacks{display:grid;gap:14px;padding-top:8px}
+.ks-addback{display:grid;gap:6px;font-size:15px}
+.ks-addback>span{display:flex;justify-content:space-between;gap:12px}
+.ks-addback b{font-weight:500;font-variant-numeric:tabular-nums}
+.ks-addback input[type=range]{width:100%;accent-color:var(--green);margin:0;min-height:28px}
+.ks-addback small{color:var(--ink2);font-size:13px;line-height:1.5}
+.ks-addback-result{display:grid;gap:10px;justify-items:start;padding:16px;border-radius:12px;background:#fff}
+.ks-addback-result p{margin:0}.ks-addback-result b{font-weight:600}

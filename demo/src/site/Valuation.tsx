@@ -1,4 +1,5 @@
 import {useMemo,useState,type FormEvent} from 'react';
+import {AddBackFinder} from './AddBackFinder';
 import {estimateHvacValue,money,valuationSources,type HvacInputs,type Valuation} from '../../lib/hvacValuation';
 import {regions,type Region} from '../../lib/brokerage';
 import {useSession,href,Arrow} from './BrokerSite';
@@ -74,6 +75,7 @@ export function ValuePage(){
           <p className="ks-value-band">{v.band}. Starting range before adjustments, then:</p>
           <ul className="ks-adjust">{v.adjustments.map(a=><li key={a.label} className={a.effect>0?'up':'down'}><span>{a.label}</span><b>{a.effect>0?'+':'−'}{Math.abs(a.effect).toFixed(2)}×</b><small>{a.why}</small></li>)}</ul>
           {v.warnings.map(w=><p key={w} className="ks-warn">{w}</p>)}
+          <AddBackFinder inputs={inputs} onApply={t=>setInputs(x=>({...x,addBacks:(x.addBacks||0)+t}))}/>
           <h2>What would raise it</h2>
           <ul className="ks-ready">{v.readiness.map(r=><li key={r.label}><span>{r.label}</span><span className="ks-meter" aria-label={`${r.score} of 5`}>{[1,2,3,4,5].map(n=><i key={n} className={n<=r.score?'on':''}/>)}</span>{r.score<4&&<small>{r.tip}</small>}</li>)}</ul>
           <p className="ks-fine">This estimate uses public industry ranges. It is not an appraisal or an offer. Sources: {valuationSources.map((s,i)=><a key={s.url} href={s.url} target="_blank" rel="noreferrer">{s.title}{i<valuationSources.length-1?'; ':''}</a>)}.</p>
