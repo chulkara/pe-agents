@@ -101,7 +101,7 @@ select kind, status, attempts, max_attempts, lease_until < now() as lease_expire
 from public.kalling_agent_jobs order by created_at desc limit 3;
 ```
 
-1. **Start a draft.** In the advisor workspace, open the fictional Russo deal and start a new draft, for example **Draft recast** on Valuation and recast. Wait until `tail -f ~/Library/Logs/Kalling/worker.log` shows `Started recast`.
+1. **Start a draft.** In the advisor workspace, open a fictional deal and start a new draft, for example **Draft recast** on Valuation and recast. If the Russo deal is closed and its drafts are unavailable, run `prepare-sale-rehearsal.sql` and qualify the new fictional inquiry to get a fresh deal. Wait until `tail -f ~/Library/Logs/Kalling/worker.log` shows `Started recast`.
 2. **Quick crash.** Kill the worker without warning: `launchctl kill SIGKILL gui/$(id -u)/com.kalling.worker`. macOS restarts it within about ten seconds. Expected: the job stays `running` with the same attempt count, the log shows the same job resuming, and the draft arrives once in Kalling.
 3. **Long stop.** Start another draft, then stop the worker so it does not come back: `launchctl bootout gui/$(id -u)/com.kalling.worker`. Wait four minutes. Expected: the query shows the job `running` with `lease_expired` true. Reinstall with `node --experimental-strip-types scripts/kalling-worker.mjs install`. Expected: the worker reclaims the job, `attempts` goes up by one, and the draft arrives once.
 4. **Sleep.** Start a third draft and close the lid for five minutes. Expected: after waking, the job either resumes or is reclaimed as in step 3, and the draft arrives once.
