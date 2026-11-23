@@ -24,3 +24,10 @@
 .ex-toast-error{background:#8a1f1f}
 @keyframes ex-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.ex-toast{animation:none}}
+/* What is left before closing, shown first on the Closing tab. */
+.ex-readiness{border-left:4px solid var(--ex-purple)}
+.ex-readiness.ex-ready{border-left-color:var(--ex-green)}
+.ex-steps{margin:8px 0 0;padding-left:22px;display:grid;gap:10px}
+.ex-steps li{line-height:1.45}
+.ex-where{display:inline-block;margin-right:8px;padding:1px 8px;border-radius:10px;background:var(--ex-tint);color:var(--ex-purple);font-size:12px;font-weight:600;vertical-align:1px}
+.ex-hint{font-size:13px;color:#5b5563;margin:4px 0 8px}

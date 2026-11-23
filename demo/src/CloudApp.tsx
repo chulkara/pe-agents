@@ -5,6 +5,10 @@ import CloudConsole from './CloudConsole';
 import { CONFIG_KEY, DISCONNECTED_KEY, deviceConnection, clientFor, validateCloudConfig, emptyCloudWorkspace, readCloudWorkspace, writeCloudWorkspace, rpc, type CloudConfig, type CloudRecord, type CloudFirm, type Membership } from '../lib/cloud';
 import type { Workspace as Data } from '../lib/domain';
 import './cloud.css';
+const OPEN_FIRM_KEY='kalling-open-firm-v1';
+function rememberFirm(user:string,firm:string){try{sessionStorage.setItem(OPEN_FIRM_KEY,user+':'+firm);}catch{/* storage unavailable: a reload returns to the account page */}}
+function rememberedFirm(user:string){try{const v=sessionStorage.getItem(OPEN_FIRM_KEY)||'';return v.startsWith(user+':')?v.slice(user.length+1):'';}catch{return '';}}
+function forgetFirm(){try{sessionStorage.removeItem(OPEN_FIRM_KEY);}catch{/* nothing to clear */}}
 export default function CloudApp() {
     const [view, setView] = useState<'demo' | 'account' | 'workspace'>('demo'), [client, setClient] = useState<SupabaseClient | null>(null), [user, setUser] = useState<User | null>(null), [firms, setFirms] = useState<CloudFirm[]>([]), [members, setMembers] = useState<Membership[]>([]), [record, setRecord] = useState<CloudRecord | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState(''), [mode, setMode] = useState('Sign in'), [connection, setConnection] = useState<CloudConfig>({ url: '', publishableKey: '' }), [checked, setChecked] = useState(false);
     const identity = useRef(''), explicitDemo = useRef(false), refreshSequence = useRef(0);
@@ -29,12 +33,16 @@ export default function CloudApp() {
     } identity.current = data.user.id; setUser(data.user); if(!explicitDemo.current)setView(v=>v==='demo'?'account':v); const list = await c.from('kalling_firms').select('id,name').order('created_at'); if (list.error)
         throw Error('Cloud database is not ready: ' + list.error.message); const mem = await c.from('kalling_members').select('*').eq('user_id', data.user.id).eq('active', true); if (mem.error)
         throw Error(mem.error.message); if (sequence !== refreshSequence.current)
-        return; setFirms(list.data || []); setMembers(mem.data || []); }
+        return; setFirms(list.data || []); setMembers(mem.data || []);
+        // A reload returns to the firm this tab had open, so the advisor keeps their place in the deal.
+        const last = rememberedFirm(data.user.id), lm = last && !explicitDemo.current ? (mem.data || []).find(m => m.firm_id === last) : undefined;
+        if (lm) { const r = await readCloudWorkspace(c, lm.firm_id, lm.role).catch(() => null); if (r && sequence === refreshSequence.current && identity.current === data.user.id) { setRecord(r); setView('workspace'); } } }
     useEffect(() => { if (!client)
         return; void refresh(client).catch(e => setError(e.message)); const { data } = client.auth.onAuthStateChange((event, session) => { if (event === 'SIGNED_OUT' || (event === 'SIGNED_IN' && identity.current && session?.user.id !== identity.current)) {
         setRecord(null);
         setView('account');
     } if (event === 'SIGNED_OUT') {
+        forgetFirm();
         refreshSequence.current++;
         identity.current = '';
         setUser(null);
@@ -55,7 +63,7 @@ export default function CloudApp() {
     async function openFirm(firm: string) { if (!client)
         return; const m = members.find(m => m.firm_id === firm); if (!m)
         throw Error('Membership unavailable. Refresh your firms.'); const account = identity.current; const r = await readCloudWorkspace(client, firm, m.role); if (identity.current !== account || !account)
-        throw Error('Account changed. Select your firm again.'); setRecord(r); setView('workspace'); }
+        throw Error('Account changed. Select your firm again.'); rememberFirm(account, firm); setRecord(r); setView('workspace'); }
     async function saveCloud(data: Data, reason: string) { if (!client || !record)
         throw Error('Sign in and select a firm.'); const account = identity.current; const version = await writeCloudWorkspace(client, record, data, reason); if (identity.current !== account || !account)
         throw Error('Account changed during save. Reopen the firm to check its latest revision.'); setRecord({ ...record, data, version }); return true; }
@@ -72,7 +80,7 @@ export default function CloudApp() {
             throw Error(error.message);
         await refresh();
     } }); }
-    const account = () => { explicitDemo.current=false;setView('account'); setError(''); if (client)
+    const account = () => { explicitDemo.current=false;forgetFirm();setView('account'); setError(''); if (client)
         void act(() => refresh()); };
     if (view === 'demo')
         return <Workspace openAccount={account}/>;
