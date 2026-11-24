@@ -549,7 +549,7 @@ const step=async(name,fn)=>{
 
   await step('execution: sourced proposal reviewed in the app against the PDF',async()=>{
     await reloadAdv();await adv.waitForSelector('.deal-head h1').catch(()=>{});
-    const exec=adv.getByRole('tab',{name:/Execution|Transaction/}).first();
+    const exec=adv.getByRole('tab',{name:/^LOI|Execution|Transaction/}).first(); // the deal room shows execution under LOI, Diligence and Closing
     if(await exec.count())await exec.click();
     else await guided(adv,'Open the rehearsal deal’s execution workspace (the transaction created by the accepted offer).',async()=>(await adv.getByText(/Execution documents|execution/).count())>0);
     const confirm=adv.getByRole('button',{name:'Confirm permitted input snapshot'}).first();
