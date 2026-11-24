@@ -19,7 +19,7 @@ Kalling has been validated end to end with fictional data only: the hosted sale 
 
 ## Migrations
 
-- Applied November 23, 2026 in the SQL editor and recorded in the migration ledger: `20261123170000_kalling_professional_access` and `20261123190000_kalling_seller_helpers`. Check returned 11 professional functions, 11 helper functions and 3 storage policies, as expected. No migrations are pending.
+- Applied November 23, 2026 in the SQL editor and recorded in the migration ledger: `20261123170000_kalling_professional_access` and `20261123190000_kalling_seller_helpers`. Check returned 11 professional functions, 11 helper functions and 3 storage policies, as expected. Pending: `20261124051000_kalling_pro_helper_read_operations` (found by the second rehearsal: Storage's file-details lookup was refused for CPA reads and helper previews). It also removes the temporary read logger used to diagnose it.
 
 ## Data and switches (setup, in this order)
 
