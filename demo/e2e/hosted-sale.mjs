@@ -161,7 +161,7 @@ const step=async(name,fn)=>{
     if(await of.count()){log('  (advisor window was on the account page; reopening the firm)');await of.click();}
     else{const back=adv.getByRole('button',{name:'Return to firm workspace'});if(await back.count()){log('  (advisor window was on the account page; returning to the firm)');await back.click();}}
     await until(async()=>(await adv.getByRole('button',{name:'Buyers',exact:true}).count())>0,30000);};
-  const reloadAdv=async()=>{await adv.reload();await adv.waitForTimeout(1200);const of=adv.locator('.cloud-firm',{hasText:'Fictional hosted validation A'}).getByRole('button',{name:'Open firm'});await until(async()=>(await of.count())>0||(await adv.locator('.deal-head h1').count())>0,30000);if(await of.count()){await of.click();await adv.waitForTimeout(1500);}};
+  const reloadAdv=async()=>{await adv.reload();await adv.waitForTimeout(1200);const of=adv.locator('.cloud-firm',{hasText:'Fictional hosted validation A'}).getByRole('button',{name:'Open firm'});await until(async()=>(await of.count())>0||(await adv.locator('.deal-head h1').count())>0||(await adv.getByRole('button',{name:'Buyers',exact:true}).count())>0,30000);if(await of.count()){await of.click();await adv.waitForTimeout(1500);}}; // a reload can land on the firm picker, a deal, or any workspace page
 
   try{
 
@@ -385,13 +385,17 @@ const step=async(name,fn)=>{
       if(await submit.count())await submit.click();
       await buy.waitForTimeout(800);
     }else{
-      await guided(buy,'On the buyer account page, add the fictional proof file (any rehearsal PDF) and submit it for review.',async()=>(await buy.getByText(/Submitted|In review/).count())>0);
+      // On a resumed run the evidence may already be sent or verified; then there is nothing to do here.
+      await buy.waitForTimeout(1500);const evid=await buy.locator('section,div.panel,.buyer-panel').filter({hasText:'Financing evidence'}).first().innerText().catch(()=>'');
+      if(/Verified|In review|Submitted/.test(evid))log('  (resume: the buyer’s financing evidence is already sent)');
+      else await guided(buy,'On the buyer account page, add the fictional proof file (any rehearsal PDF) and submit it for review.',async()=>(await buy.getByText(/Submitted|In review/).count())>0);
     }
     await shoot(buy,'buyer-verification-390');
     // Advisor verifies, then the buyer signs the listing NDA.
     await ensureFirm();await adv.getByRole('button',{name:'Buyers',exact:true}).click();await adv.waitForTimeout(600);
     const verify=adv.getByRole('button',{name:/Verify|Mark verified|Verified/}).first();
     if(await verify.count())await verify.click().catch(()=>{});
+    else if(/\bVerified\b/.test(await buy.locator('section,div.panel,.buyer-panel').filter({hasText:'Financing evidence'}).first().innerText().catch(()=>'')))log('  (resume: the buyer’s evidence is already verified)');
     else await guided(adv,'In Buyers, Evidence review, open the fictional buyer’s newest submission and record a Verified review (tick the reviewed-documents box).',async()=>(await adv.getByText('Verified').count())>0);
     const n=await sb.from('kalling_listings').select('number,status,sample').eq('status','Live').order('created_at',{ascending:false}).limit(1);
     const number=n.data?.[0]?.number;if(!number)fail('No live rehearsal listing found.');
@@ -405,10 +409,13 @@ const step=async(name,fn)=>{
     await until(async()=>/Request received|NDA signed|You have access/.test(await buy.locator('.ks-access').innerText())||(await buy.locator('.ks-access .ks-error').count())>0,30000).catch(async e=>{log('  buyer panel: '+(await buy.locator('.ks-access').innerText()).replace(/\s+/g,' ').slice(0,300));throw e;});
     if(await buy.locator('.ks-access .ks-error').count())fail('NDA request failed: '+(await buy.locator('.ks-access .ks-error').innerText()));
     }
-    await reloadAdv();await adv.waitForSelector('.deal-head h1',{timeout:30000}).catch(async()=>{await adv.goto(U+'#advisor/today');});
+    // Approve the NDA request on the Buyers page, wherever the advisor window was left.
+    await reloadAdv();await ensureFirm();await adv.getByRole('button',{name:'Buyers',exact:true}).click();await adv.waitForTimeout(800);
+    {const t=adv.getByRole('tab',{name:/^NDA requests/});if(await t.count()){await t.click();await adv.waitForTimeout(800);}}
     const approve=adv.getByRole('button',{name:'Approve and share details'}).first();
-    if(await approve.count())await approve.click();
-    else{await adv.goto(U+'#advisor/buyers');await guided(adv,'Approve the fictional buyer’s NDA request for the rehearsal listing.',async()=>(await adv.getByText(/Approved/).count())>0);}
+    await until(async()=>(await approve.count())>0,15000).catch(()=>{});
+    if(await approve.count()){await approve.click();await adv.waitForTimeout(1500);}
+    else await guided(adv,'In Buyers, NDA requests, approve the fictional buyer’s request for the rehearsal listing (Approve and share details).',async()=>(await adv.getByText(/Approved/).count())>0);
     await buy.reload();await buy.waitForSelector('.ks-dr',{timeout:30000});
     await sweep(buy,'buyer-listing');
   });
