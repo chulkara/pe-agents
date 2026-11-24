@@ -38,6 +38,7 @@ test('helper files wait for the owner and the brokerage cannot read them before 
  assert.equal(await read(s.owner,upload.path),0,'brokerage cannot read a waiting helper file');
  assert.equal(await read(s.buyer,upload.path),0);
  assert.equal(await read(s.seller,upload.path),1,'the owner can preview it');assert.equal(await read(s.seller,upload.path,'object.sign'),0);
+ assert.equal(await read(s.seller,upload.path,'object.get_authenticated_info'),1,'Storage looks up the file details before the download');
  assert.equal((await s.as(s.owner,'select * from public.kalling_portal_files where portal_id=$1',[s.portal])).length,0);
  await assert.rejects(s.one(s.owner,'select public.kalling_helper_decide($1,$2,$3)',[upload.id,'Approved','']),/Only the business owner/);
  await s.one(s.seller,'select public.kalling_helper_decide($1,$2,$3)',[upload.id,'Approved','']);

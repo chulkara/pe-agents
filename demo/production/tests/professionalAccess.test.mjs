@@ -37,6 +37,8 @@ test('nothing opens before the confidentiality acknowledgment; then a logged, sh
  const o=await s.one(pro(),'select public.kalling_pro_open($1)',[g.id]);assert.equal(o.allowed,true);assert.equal(o.bucket,'kalling-execution');assert.match(o.watermark,/CPA for Fictional Buyer/);
  assert.equal((await storage(pro(),o.path)).length,1);
  assert.equal((await storage(pro(),o.path,'object.sign')).length,0,'no signed URLs');
+ assert.equal((await storage(pro(),o.path,'object.get_authenticated_info')).length,1,'Storage looks up the file details before the download');
+ assert.equal((await storage(pro(),o.path,'object.list')).length,0,'no listing');
  assert.equal((await storage(s.other,o.path)).length,0,'another user cannot reuse the ticket');
  assert.equal((await s.one(s.other,'select public.kalling_pro_open($1)',[g.id])).allowed,false);
  const views=(await s.one(s.buyer,'select public.kalling_pro_party_list($1)',['buyer']))[0].views;assert.equal(views[0].event,'opened');
