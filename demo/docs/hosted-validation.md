@@ -213,6 +213,31 @@ Karan applied `20261123170000_kalling_professional_access.sql` and `202611231900
 
 What this confirms: the database objects exist as written. What it does not yet confirm: the hosted flows themselves (invitation, confirmed sign-in, sharing, reading through Storage, owner approval of a helper file). Those are covered by the PGlite tests, which simulate Auth and Storage; check them with fictional accounts during the next hosted rehearsal before any real seller or buyer uses them.
 
+## Second hosted sale rehearsal, November 23 to 24, 2026
+
+Karan ran the [sale rehearsal](sale-rehearsal.md) again from his Mac against `ymbciapnzdmymtthevjp`, now with the CPA, advisor-view and staff-helper steps added. The final run reported **Result: passed** on `main` at `1b6abbe`. As before, the run was resumed with `--from`, so the saved report records only the last segment: the sourced proposal, diligence and closing (about 28 minutes of guided work), and the final checks. Earlier steps are evidenced by hosted state and the screenshots in the private run folder.
+
+What it covered beyond the first rehearsal:
+
+- The buyer appointed a fictional CPA, who read one shared document through the hosted viewer. Stopping the share ended access.
+- The advisor saw who the buyer appointed, but not what was shared.
+- The owner added a fictional office manager as a staff helper. The helper's upload waited for the owner and reached the brokerage only after approval.
+- The sourced proposal quoted `Legal and professional fees 46,000 (40,000 one-time settlement)` from `pl-2025.pdf`, page 1. The runner found the quotation in the stored source text. Karan recorded **Changes needed**: the P&L already states the one-time settlement; ask what the remaining $6,000 covers and whether the settlement could recur. The proposal is more specific than the first rehearsal's.
+- The deal closed from the fictional signed LOI and a six-page fictional closing statement. Financing and escrow were Not required (reviewed), the license and purchase agreement were confirmed, and the premises needed no consent. The close was recorded at $1,100,000.00 cash and the listing reads Sold. Intake stayed paused and no unlabeled rows or page errors appeared.
+
+Problems found and fixed during the run, all merged to `main`:
+
+1. CPA reads failed with Storage 400 `NoSuchKey`. Hosted Storage checks `object.get_authenticated_info` before `object.get_authenticated`, and the read policies allowed only the second. Fixed by `20261124051000_kalling_pro_helper_read_operations` (PR #13), applied and recorded.
+2. Several owner data rooms rendered the same `portal-dataroom` and `portal-opened` ids (PR #10).
+3. A failed agent assignment offered only Try again. It now also offers Start a new assignment (PR #14).
+4. A CI race in the execution-flow test (PR #14), and runner fixes for request matching, resumed runs and invitation loading (PRs #6 to #9, #12).
+
+Still to check:
+
+1. The seller's Interested buyers card still read Offer made, "Your contact will walk you through it", after the listing was Sold. This looks stale.
+2. The closed-state screenshots capture only the first viewport, so they don't show the buyer and seller handover views in full. Take full-page captures for those views next time.
+3. Closing remains long: about 30 actions, plus a separate closing-evidence upload that is easy to miss, because the citation list shows only documents already uploaded to the transaction.
+
 ## Advisory findings
 
 The closing-file handover change preserves the same advisory categories and zero health findings. Its reviewer-only file-audit RPC adds one expected authenticated SECURITY DEFINER entry for review. See [the handover activation record](../production/activation/2026-11-16-handover.json). This is not an independent security audit.
