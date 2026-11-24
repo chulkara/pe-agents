@@ -252,6 +252,10 @@ const step=async(name,fn)=>{
   });
 
   await step('seller uploads fictional documents',async()=>{
+    // On any upload problem, print exactly what the request shows: status, per-file upload messages, attached files, errors.
+    const uploadState=async(r,title)=>{const txt=async sel=>(await r.locator(sel).allInnerTexts().catch(()=>[])).map(x=>x.replace(/\s+/g,' ').trim());
+      const st={title,status:(await r.locator('.portal-request-head').innerText().catch(()=>'')).replace(/\s+/g,' '),uploads:await txt('.portal-uploads li'),attached:await txt('.portal-attached li'),errors:await txt('.error-banner'),reusable:await txt('.portal-reuse option')};
+      log('  upload state: '+JSON.stringify(st));report.uploadState=st;save();};
     const FX=path.join(here,'fixtures');
     const up=async(title,files)=>{const r=sel.locator('.portal-request').filter({hasText:title}).first();
       if(!(await r.getAttribute('class')).includes('open'))await r.locator('.portal-request-head').click();
@@ -261,10 +265,12 @@ const step=async(name,fn)=>{
       // Upload only what is missing, and wait for every upload to finish before sending.
       if((await r.locator('.portal-attached li').count())<files.length){
         await r.locator('input[type=file]').setInputFiles(files.map(f=>path.join(FX,f)));
-        await until(async()=>(await r.locator('.portal-attached li').count())>=files.length&&(await r.locator('.portal-upload-bar').count())===0||(await r.locator('.portal-uploads li.failed').count())>0,120000);}
-      if(await r.locator('.portal-uploads li.failed').count())fail(title+' upload failed: '+(await r.locator('.portal-uploads li.failed').first().innerText()));
+        // Wait for each upload's own result (saved, linked or failed), then for the files to show as attached.
+        await until(async()=>(await r.locator('.portal-uploads li.ok, .portal-uploads li.failed').count())>=files.length,120000).catch(async e=>{await uploadState(r,title);throw e;});
+        if(await r.locator('.portal-uploads li.failed').count())fail(title+' upload failed: '+(await r.locator('.portal-uploads li.failed').first().innerText()));
+        await until(async()=>(await r.locator('.portal-attached li').count())>=files.length,30000).catch(async e=>{await uploadState(r,title);fail(title+': the upload reported success but the file is not attached to the request. See the upload state above.');});}
       await r.getByRole('button',{name:'Send for review'}).click();
-      await until(async()=>(await isSent())||(await r.locator('.error-banner').count())>0,60000).catch(async e=>{log('  status line: '+(await r.locator('.portal-request-head').innerText()).replace(/\s+/g,' '));throw e;});
+      await until(async()=>(await isSent())||(await r.locator('.error-banner').count())>0,60000).catch(async e=>{await uploadState(r,title);throw e;});
       log('  sent: '+title);
       if(await r.locator('.error-banner').count())fail(title+' could not be sent: '+(await r.locator('.error-banner').first().innerText()));};
     await up('Profit and loss statements',['pl-2023.pdf','pl-2024.pdf','pl-2025.pdf']);
