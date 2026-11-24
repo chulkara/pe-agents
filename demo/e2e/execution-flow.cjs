@@ -43,7 +43,7 @@ if(!['127.0.0.1','localhost'].includes(new URL(U).hostname))throw Error('Executi
     assert.match(await frame.locator('.ex-judgment-standing').innerText(),/^Reviewed by /);
     await page.locator('#surface').selectOption('owner');
     await page.locator('#surface').selectOption('advisor');
-    await frame.locator('.ex-judgment-standing').waitFor();
+    await frame.locator('.ex-judgment-standing').waitFor().catch(async e=>{console.log('DIAG frame text:\n'+(await frame.locator('body').innerText().catch(x=>'no frame: '+x.message)).slice(0,4000));console.log('DIAG time '+new Date().toISOString());throw e;});
     assert.match(await frame.locator('.ex-judgment-standing').innerText(),/^Reviewed by /,'the judgment survives a reload');
     console.log('PASS: in-app proposal judgment recorded against the marked source and kept.');
     assert.deepEqual(errors,[],'Unexpected browser page errors');
