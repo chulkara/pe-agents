@@ -41,8 +41,11 @@ if(!['127.0.0.1','localhost'].includes(new URL(U).hostname))throw Error('Executi
     await frame.getByRole('button',{name:'Record reviewed judgment'}).click();
     await frame.locator('.ex-judgment-standing').waitFor();
     assert.match(await frame.locator('.ex-judgment-standing').innerText(),/^Reviewed by /);
+    // Switch views one at a time: on a slow runner a second switch can be overtaken by the first view finishing its load.
     await page.locator('#surface').selectOption('owner');
+    await frame.getByText('Proposal for reviewer judgment').waitFor({state:'detached'}); // the owner view has replaced the advisor view
     await page.locator('#surface').selectOption('advisor');
+    await frame.getByText('Proposal for reviewer judgment').waitFor();
     await frame.locator('.ex-judgment-standing').waitFor();
     assert.match(await frame.locator('.ex-judgment-standing').innerText(),/^Reviewed by /,'the judgment survives a reload');
     console.log('PASS: in-app proposal judgment recorded against the marked source and kept.');

@@ -60,7 +60,8 @@ export function AgentRunPanel(p:PanelProps){
     const b=backend!;
     if(pending&&(!job||job.status==='missing'))return <button className="btn primary" disabled={locked} onClick={()=>void act(async()=>{await b.submit(p.kind,await p.packetFor(latest.id));})}><Play size={15}/>Send to research computer</button>;
     if(pending&&job&&activeStatuses.includes(job.status))return <button className="btn" disabled={locked} onClick={()=>void act(async()=>{await b.cancel(job);await p.onCancelled(latest.id);})}><X size={15}/>Cancel</button>;
-    if(pending&&job?.status==='failed')return <button className="btn primary" disabled={locked} onClick={()=>void act(async()=>{await b.retry(job,await p.packetFor(latest.id));})}><RotateCcw size={15}/>Try again</button>;
+    // A failed attempt can be retried as-is, or set aside so a new assignment starts from the current input.
+    if(pending&&job?.status==='failed')return <span className="agent-run-actions"><button className="btn primary" disabled={locked} onClick={()=>void act(async()=>{await b.retry(job,await p.packetFor(latest.id));})}><RotateCcw size={15}/>Try again</button>{p.canStart&&<button className="btn" disabled={locked} onClick={()=>void act(async()=>{await p.onCancelled(latest.id);const packet=await p.start();await b.submit(p.kind,packet);})}><Play size={15}/>Start a new assignment</button>}</span>;
     if(pending&&job?.status==='succeeded')return <span className="agent-run-importing"><Loader2 size={15} className="spin"/>Bringing the result in…</span>;
     return <button className="btn primary" disabled={locked||!p.canStart} onClick={()=>void act(async()=>{const packet=await p.start();await b.submit(p.kind,packet);})}>{working?<Loader2 size={15} className="spin"/>:<Cpu size={15}/>}{p.startLabel}</button>;
   }
