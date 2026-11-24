@@ -130,13 +130,17 @@ const step=async(name,fn)=>{
   // unaccepted or expired invitation from an earlier attempt is removed and issued again.
   const inviteFresh=async(scope,email,fill)=>{
     const card=()=>scope.locator('.pro-card',{hasText:email});
+    // Wait for the list to load: until then an existing appointment looks absent and a second invitation is refused.
+    await until(async()=>!(await scope.getByText('Loading…',{exact:true}).count()),30000);await scope.page().waitForTimeout(300);
+    {const err=scope.locator('.pro-error');if(await err.count())fail('The list did not load: '+(await err.first().innerText()));}
     if(await card().count()&&/not yet accepted|expired/i.test(await card().locator('.pro-status').innerText())){
       await card().locator('.pro-remove').click();await card().getByRole('button',{name:'Remove',exact:true}).click();
       await until(async()=>!(await card().count()),30000);}
     if(await card().count()){log('  (already active from an earlier attempt: '+email+')');return '';}
     const add=scope.locator('details.pro-add');if((await add.getAttribute('open'))===null)await add.locator('summary').click();
     await fill(add);await add.locator('button.pro-btn-primary').click();
-    await until(async()=>(await scope.locator('.pro-link code').count())>0,30000);
+    await until(async()=>(await scope.locator('.pro-link code').count())>0||(await scope.locator('.pro-error').count())>0,30000);
+    if(await scope.locator('.pro-error').count())fail('Adding '+email+' was refused: '+(await scope.locator('.pro-error').first().innerText()));
     const link=(await scope.locator('.pro-link code').innerText()).trim();
     if(!link.startsWith(U))fail('The invitation link should open this site: '+link);
     return link.slice(U.length);
