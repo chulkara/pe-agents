@@ -583,9 +583,9 @@ const step=async(name,fn)=>{
   await step('diligence, closing and handover (guided, verified by state)',async()=>{
     await guided(adv,'Work the fictional transaction through diligence and the closing timeline to Closed, as the advisor, with the seller and buyer windows for their approvals. Every control stays in the app; the runner watches the listing until it reads Sold.',
       async()=>(await sb.from('kalling_listings').select('status').eq('status','Sold').eq('sample',true).order('created_at',{ascending:false}).limit(1)).data?.length>0,120*60000);
-    await sweep(adv,'execution-closed');
-    await buy.goto(U+'#/account');await buy.waitForTimeout(800);await sweep(buy,'buyer-closed');
-    await reloadSel();await sel.waitForTimeout(800);await sweep(sel,'seller-closed');
+    await sweep(adv,'execution-closed');await shoot(adv,'execution-closed-full');
+    await buy.goto(U+'#/account');await buy.waitForTimeout(800);await sweep(buy,'buyer-closed');await shoot(buy,'buyer-closed-full');
+    await reloadSel();await sel.waitForTimeout(800);await sweep(sel,'seller-closed');await shoot(sel,'seller-closed-full');
   });
 
   await step('final checks: intake still paused, no real rows, no page errors',async()=>{
