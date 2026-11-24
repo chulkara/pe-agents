@@ -5,6 +5,8 @@ import type {HelperStore} from '../lib/helperStore';
 import {OwnerHelpers} from './pro/Helpers';
 import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Check,ChevronDown,CircleHelp,Download,FileText,Lock,Mail,MessageSquare,Phone,Send,Upload,Users,X,Loader2,ListChecks,FolderOpen,AlertTriangle,Paperclip} from 'lucide-react';
+import {buyerStanding} from '../lib/buyerStanding';
+import type {Transaction} from '../lib/transactions';
 import {possessive,portalProgress,privacyReminder,requestOrder,unread,type DocRequest,type PortalBundle,type PortalFile,type Buyer} from '../lib/portal';
 import type {PortalStore} from '../lib/portalStore';
 import './portal.css';
@@ -33,6 +35,9 @@ export function usePortal(store:PortalStore,portalId:string){
 
 export default function SellerPortal({store,portalId,preview=false,top,room,pros,helpers}:{store:PortalStore;portalId:string;preview?:boolean;top?:ReactNode;room?:DataRoomStore;pros?:ProfessionalStore;helpers?:HelperStore}){
   const {b,error,refresh}=usePortal(store,portalId);
+  // The transaction, not the stored stage, says what happened after an offer was chosen.
+  const [txs,setTxs]=useState<Transaction[]>([]);
+  useEffect(()=>{let live=true;const load=()=>store.execution.list().then(r=>{if(live)setTxs(r.map(x=>x.transaction).filter(t=>t.portalId===portalId));}).catch(()=>{/* execution may not be active */});void load();const t=setInterval(()=>{if(document.visibilityState!=='hidden')void load();},20000);return()=>{live=false;clearInterval(t);};},[store,portalId]);
   const seenOnce=useRef(false),[openState,setOpenState]=useState<string|null>(null),setOpenId=(id:string)=>setOpenState(id);
   useEffect(()=>{if(b&&!preview&&!seenOnce.current){seenOnce.current=true;void store.seen(portalId).catch(()=>{});}},[b,preview,store,portalId]);
   if(!b)return <div className="portal-shell"><div className="portal-loading">{error?<p role="alert" className="error-banner">{error}</p>:<><Loader2 className="spin"/>Opening your portal…</>}</div></div>;
@@ -75,7 +80,7 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
         {!gated&&<OwnerOfferComparison store={store} portalId={portalId} readOnly={readOnly}/>}
         {!gated&&<AboutBusiness b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
         <section id="portal-buyers" className="portal-section"><h2>Interested buyers</h2>
-          {b.buyers.length?<div className="portal-buyers">{b.buyers.map(x=><article key={x.id}><div className="portal-buyer-head"><h3>{x.name}</h3><VerificationPill badge={x.verification}/><span className={'k-pill '+(x.stage==='Offer made'?'k-pill-green':x.stage==='Under NDA'||x.stage==='Reviewing information'?'k-pill-peri':'')}>{x.stage}</span></div>{x.summary&&<p>{x.summary}</p>}<small>{stageHelp[x.stage]} Updated {fmtDate(x.updatedAt)}.</small></article>)}</div>:<p className="portal-empty">No buyers are listed yet. {p.firmName} adds buyers here as conversations begin.</p>}
+          {b.buyers.length?<div className="portal-buyers">{b.buyers.map(x=>{const st=buyerStanding(x,txs,stageHelp[x.stage]);return <article key={x.id}><div className="portal-buyer-head"><h3>{x.name}</h3><VerificationPill badge={x.verification}/><span className={'k-pill'+(st.tone?' k-pill-'+st.tone:'')}>{st.label}</span></div>{x.summary&&<p>{x.summary}</p>}<small>{st.help} Updated {fmtDate(x.updatedAt)}.</small></article>;})}</div>:<p className="portal-empty">No buyers are listed yet. {p.firmName} adds buyers here as conversations begin.</p>}
         </section>
       </main>
       <aside className="portal-side">

@@ -234,7 +234,7 @@ Problems found and fixed during the run, all merged to `main`:
 
 Still to check:
 
-1. The seller's Interested buyers card still read Offer made, "Your contact will walk you through it", after the listing was Sold. This looks stale.
+1. The seller's Interested buyers card still read Offer made, "Your contact will walk you through it", after the listing was Sold. The card now follows the execution transaction: the chosen buyer reads Working toward closing, then Bought the business with the closing date, and every other buyer reads Sale closed. Confirm this on the next hosted run.
 2. The closed-state screenshots capture only the first viewport, so they don't show the buyer and seller handover views in full. Take full-page captures for those views next time.
 3. Closing remains long: about 30 actions, plus a separate closing-evidence upload that is easy to miss, because the citation list shows only documents already uploaded to the transaction.
 
