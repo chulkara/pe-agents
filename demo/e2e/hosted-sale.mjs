@@ -122,7 +122,8 @@ const step=async(name,fn)=>{
     await page.locator('form:has(input[name=password]) button[type=submit], form:has(input[name=password]) button:not([type=button])').first().click();
     await until(async()=>!(await page.locator('input[name=password]').count()),30000);
   };
-  const tab=async name=>{await adv.getByRole('tab',{name:new RegExp('^'+name)}).click();await adv.waitForTimeout(400);};
+  // Switch deal-room tabs; if the window left the deal (account page, another page), reopen the firm and the rehearsal deal first.
+  const tab=async name=>{const t=adv.getByRole('tab',{name:new RegExp('^'+name)});if(!(await t.count())){await ensureFirm();await openRehearsalDeal();}await t.click();await adv.waitForTimeout(400);};
   let portalLink='';
 
   // Party-appointed professionals and staff helpers. Hosted invitation links are shown once, so an
@@ -154,6 +155,12 @@ const step=async(name,fn)=>{
   // The fictional seller account has more than one portal; after a reload, pick the rehearsal business.
   const reloadSel=async()=>{await sel.reload();await sel.waitForTimeout(1200);const pick=sel.locator('.portal-pick',{hasText:'Russo Heating'});if(await pick.count()){await pick.first().click();await sel.waitForTimeout(1200);}};
   // A reload drops the advisor app back to the account page; reopen the firm and the URL returns to the same deal and tab.
+  // If the advisor window is on the firm account page (someone opened Accounts, or a long pause refreshed the session), reopen the firm.
+  const ensureFirm=async()=>{const of=adv.locator('.cloud-firm',{hasText:'Fictional hosted validation A'}).getByRole('button',{name:'Open firm'});
+    if(await adv.getByRole('button',{name:'Buyers',exact:true}).count())return;
+    if(await of.count()){log('  (advisor window was on the account page; reopening the firm)');await of.click();}
+    else{const back=adv.getByRole('button',{name:'Return to firm workspace'});if(await back.count()){log('  (advisor window was on the account page; returning to the firm)');await back.click();}}
+    await until(async()=>(await adv.getByRole('button',{name:'Buyers',exact:true}).count())>0,30000);};
   const reloadAdv=async()=>{await adv.reload();await adv.waitForTimeout(1200);const of=adv.locator('.cloud-firm',{hasText:'Fictional hosted validation A'}).getByRole('button',{name:'Open firm'});await until(async()=>(await of.count())>0||(await adv.locator('.deal-head h1').count())>0,30000);if(await of.count()){await of.click();await adv.waitForTimeout(1500);}};
 
   try{
@@ -382,7 +389,7 @@ const step=async(name,fn)=>{
     }
     await shoot(buy,'buyer-verification-390');
     // Advisor verifies, then the buyer signs the listing NDA.
-    await adv.getByRole('button',{name:'Buyers',exact:true}).click();await adv.waitForTimeout(600);
+    await ensureFirm();await adv.getByRole('button',{name:'Buyers',exact:true}).click();await adv.waitForTimeout(600);
     const verify=adv.getByRole('button',{name:/Verify|Mark verified|Verified/}).first();
     if(await verify.count())await verify.click().catch(()=>{});
     else await guided(adv,'In Buyers, Evidence review, open the fictional buyer’s newest submission and record a Verified review (tick the reviewed-documents box).',async()=>(await adv.getByText('Verified').count())>0);
