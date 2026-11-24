@@ -354,7 +354,7 @@ const step=async(name,fn)=>{
       await adv.locator('.dr-choices li').filter({hasText:f}).getByRole('button',{name:'Add'}).click();
       await adv.getByRole('button',{name:'Add to data room'}).click();await adv.waitForSelector('text=Added. Send it to the owner');}
     await adv.getByRole('button',{name:'Send to owner for approval'}).click();await adv.waitForSelector('text=Sent to the owner.');
-    await reloadSel();await sel.waitForSelector('#portal-dataroom');
+    await reloadSel();await sel.waitForSelector('#portal-dataroom');await sel.locator('#portal-dataroom').scrollIntoViewIfNeeded();
     await sel.getByRole('button',{name:/^Approve all/}).click();await sel.waitForSelector('text=Approved every document.');
     await reloadAdv();await adv.waitForSelector('.dr-status');
     await adv.getByRole('button',{name:'Publish data room'}).click();await adv.waitForSelector('text=The data room is open to approved buyers.');
@@ -432,8 +432,11 @@ const step=async(name,fn)=>{
     await noOverflow(buy,'viewer at 390');await shoot(buy,'buyer-viewer-390');
     await buy.keyboard.press('Escape');await buy.waitForSelector('.ks-viewer',{state:'detached'});
     // The seller sees the read under an anonymous label, never the buyer's name.
+    // The fictional seller's portal can also hold an earlier rehearsal's room; read the one for this listing.
+    const live=await sb.from('kalling_listings').select('number').eq('status','Live').order('created_at',{ascending:false}).limit(1);const current=live.data?.[0]?.number;
     await reloadSel();await sel.waitForSelector('#portal-opened',{timeout:30000});
-    const opened=await sel.locator('#portal-opened').innerText();
+    const openedSec=current&&await sel.locator(`section[data-listing="${current}"]`).count()?sel.locator(`section[data-listing="${current}"]`):sel.locator('#portal-opened');
+    const opened=await openedSec.first().innerText();
     if(!/Buyer \d/.test(opened))fail('The owner log must show an anonymous label.');
     if(opened.includes('Alex'))fail('The owner log leaked a buyer name.');
     await shoot(sel,'seller-opened-390');
