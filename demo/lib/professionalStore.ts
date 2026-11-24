@@ -6,7 +6,7 @@ import {emptyRoomDb} from './dataRoom.ts';
 import {LOCAL_BROKER_KEY} from './brokerStore.ts';
 import {indexedBytes,LOCAL_PORTAL_KEY,type ByteStore} from './portalStore.ts';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {downloadPrivateFile} from './privateStorage.ts';
+import {downloadPrivateFile,storageResultSummary} from './privateStorage.ts';
 
 export type PartyView=ReturnType<typeof P.partyProfessionals>[number];
 export type ProHome=ReturnType<typeof P.professionalHome>;
@@ -82,7 +82,10 @@ export function cloudProfessionalStore(client:SupabaseClient,side:'seller'|'buye
     async open(grantId){
       const o=await call<{allowed:boolean;bucket:string;path:string;name:string;mime:string;watermark:string}>('kalling_pro_open',{p_grant:grantId});
       if(!o.allowed)throw Error('This document is no longer shared with you.');
-      const {data,error}=await downloadPrivateFile(client,o.bucket,o.path);if(error||!data)throw Error('This document could not be loaded. Try again.');
+      // One retry covers a request that races the new read ticket; a second failure says what storage answered.
+      let r=await downloadPrivateFile(client,o.bucket,o.path);
+      if(r.error||!r.data){await new Promise(res=>setTimeout(res,1200));r=await downloadPrivateFile(client,o.bucket,o.path);}
+      const {data,error}=r;if(error||!data){const sum=storageResultSummary(r),msg=String((error as {message?:string}|null)?.message||'').slice(0,120);throw Error('This document could not be loaded. Try again. (Storage '+(sum.httpStatus??'no status')+(sum.code?' '+sum.code:'')+(msg?': '+msg:'')+')');}
       return {blob:new Blob([data],{type:o.mime||data.type}),name:o.name,watermark:o.watermark};
     },
   };
