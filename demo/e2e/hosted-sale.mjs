@@ -257,7 +257,8 @@ const step=async(name,fn)=>{
       const st={title,status:(await r.locator('.portal-request-head').innerText().catch(()=>'')).replace(/\s+/g,' '),uploads:await txt('.portal-uploads li'),attached:await txt('.portal-attached li'),errors:await txt('.error-banner'),reusable:await txt('.portal-reuse option')};
       log('  upload state: '+JSON.stringify(st));report.uploadState=st;save();};
     const FX=path.join(here,'fixtures');
-    const up=async(title,files)=>{const r=sel.locator('.portal-request').filter({hasText:title}).first();
+    // Match the request by its heading only: descriptions mention other requests ("tax returns confirm the profit and loss statements").
+    const up=async(title,files)=>{const r=sel.locator('.portal-request').filter({has:sel.locator('.portal-request-head',{hasText:title})}).first();
       if(!(await r.getAttribute('class')).includes('open'))await r.locator('.portal-request-head').click();
       const isSent=async()=>(await r.locator('.portal-sent').count())>0||/Sent for review|Complete/.test(await r.locator('.portal-request-head').innerText());
       if(await isSent()){log('  (already sent: '+title+')');return;}
@@ -336,8 +337,13 @@ const step=async(name,fn)=>{
 
   await step('data room approved by the owner and published',async()=>{
     await reloadAdv();await adv.waitForSelector('.deal-head h1');await tab('Data room');
-    await adv.getByRole('button',{name:'Add memorandum'}).click();await adv.waitForSelector('text=Memorandum added');
-    for(const f of ['pl-2025.pdf','tax-returns.pdf']){
+    {const addMemo=adv.getByRole('button',{name:'Add memorandum'});await adv.waitForTimeout(1200);
+     if(await addMemo.count()){await addMemo.click();await adv.waitForSelector('text=Memorandum added');}else log('  (memorandum already in the data room)');}
+    // A run resumed after the November 23 request-matching bug has no tax-returns.pdf in the portal; use the 2024 P&L then, and say so.
+    const second=(await adv.locator('.dr-choices li').filter({hasText:'tax-returns.pdf'}).count())?'tax-returns.pdf':'pl-2024.pdf';
+    if(second!=='tax-returns.pdf'){log('  (tax-returns.pdf is not in this portal; adding pl-2024.pdf as the second financial document)');report.notes=[...(report.notes||[]),'Data room used pl-2024.pdf because tax-returns.pdf was filed under the wrong request by the pre-fix runner.'];}
+    for(const f of ['pl-2025.pdf',second]){
+      if(!(await adv.locator('.dr-choices li').filter({hasText:f}).count())&&(await adv.locator('#main-content').innerText()).includes(f)){log('  (already in the data room: '+f+')');continue;}
       await adv.locator('.dr-choices li').filter({hasText:f}).getByRole('button',{name:'Add'}).click();
       await adv.getByRole('button',{name:'Add to data room'}).click();await adv.waitForSelector('text=Added. Send it to the owner');}
     await adv.getByRole('button',{name:'Send to owner for approval'}).click();await adv.waitForSelector('text=Sent to the owner.');
