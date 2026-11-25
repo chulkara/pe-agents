@@ -12,6 +12,7 @@ import {cimPdfBlob} from './cimEditor';
 import {useAdvisor} from './data';
 import {PortalContextRef} from '../OwnerPortalAdmin';
 import {Button,StatusPill,Panel,EmptyState,Field} from '../design/ui';
+import {AskRoom} from '../AskRoom';
 
 type P={c:Company;listing?:Listing;pe?:{portal:Portal;bundle?:PortalBundle};readOnly:boolean;onLive:(live:boolean)=>void;goListing:()=>void};
 const when=(s:string)=>new Date(s).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
@@ -39,7 +40,8 @@ export default function DataRoomTab(p:P){
   const nameOf=(id:string)=>r?.buyers.find(x=>x.buyerId===id)?.name||x.d?.buyers.find(y=>y.id===id)?.name||'A buyer';
   const approvedBuyers=(x.d?.requests||[]).filter(a=>a.listingId===listing.id&&a.status==='Approved').map(a=>x.d!.buyers.find(y=>y.id===a.buyerId)).filter(Boolean);
   const log=items.map(it=>({item:it.displayName,entries:(r?.engagement||[]).filter(g=>g.itemId===it.id&&(g.opens||g.downloads)).map(g=>({label:r!.buyers.find(y=>y.buyerId===g.buyerId)?.label||'A buyer',opens:g.opens,last:g.last,downloaded:g.downloads>0}))})).filter(x=>x.entries.length);
-  const summary=summaryText(log);
+  const summary=summaryText(log,undefined,r?.searchQuestionCount);
+  const searchRoom=x.room.mode==='local'?x.room:undefined;
   return <div className="dr">
     <div className="dr-status" role="status" aria-live="polite">
       <StatusPill tone={status==='Published'?'green':status==='Proposed'?'peri':'plain'}>{status==='Published'?'Open to approved buyers':status==='Proposed'?'With the owner for approval':status==='Unpublished'?'Closed to buyers':'Draft, not shared'}</StatusPill>
@@ -52,6 +54,15 @@ export default function DataRoomTab(p:P){
     </div>
     {pending>0&&status==='Published'&&<p className="dr-note">Changed documents are hidden from buyers until the owner approves them again.</p>}
     {msg&&<p className="dr-ok" role="status">{msg}</p>}{err&&<p className="dr-err" role="alert">{err}</p>}
+
+    {searchRoom&&items.length>0&&<AskRoom key={JSON.stringify(items.map(i=>[i.id,i.changedAt,i.ownerStatus]))}
+      search={question=>searchRoom.search(listing.id,question)} buttonClass="k-button"/>}
+    {!!r?.searches.length&&<details className="dr-search-history">
+      <summary>Buyer searches</summary>
+      <ul>{r.searches.slice(0,20).map(search=><li key={`${search.at}:${search.question}`}>
+        <span>{search.question}</span><small>{when(search.at)}</small>
+      </li>)}</ul>
+    </details>}
 
     <Panel title="Documents in the data room">
       {!items.length?<p className="dr-empty">Nothing here yet. Add accepted owner documents below.</p>:

@@ -8,14 +8,15 @@ import {indexedBytes,type ByteStore} from './portalStore.ts';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import type {Viewer} from './brokerage.ts';
 import {downloadPrivateFile} from './privateStorage.ts';
+import {extractText} from './extract.ts';
+import {searchRoom,type RoomSearchDocument,type RoomSearchResult} from './askRoom.ts';
 
 export type ItemInput=Parameters<typeof D.saveItem>[2];
-export type AdvisorRoom={room?:D.Room;items:D.RoomItem[];engagement:D.Engagement[];buyers:{buyerId:string;name:string;label:string;documents:number;seconds:number;last:string}[];loi:D.LoiGrant[]};
+export type AdvisorRoom={room?:D.Room;items:D.RoomItem[];engagement:D.Engagement[];buyers:{buyerId:string;name:string;label:string;documents:number;seconds:number;last:string}[];loi:D.LoiGrant[];searches:{question:string;at:string}[];searchQuestionCount:number};
 export type OwnerRoom={listingId:string;listingNumber:string;room:D.Room;items:D.RoomItem[];log:ReturnType<typeof D.ownerLog>;summary:string};
-export type BuyerRoom=ReturnType<typeof D.buyerItems>;
+export type BuyerRoom=ReturnType<typeof D.buyerItems>&{revision?:string};
 export type Opened={ticket:string;blob:Blob;item:Pick<D.RoomItem,'id'|'displayName'|'mime'|'allowDownload'|'fileName'>;watermark:string};
-export interface DataRoomStore{
-  mode:'local'|'cloud';
+interface CommonDataRoomStore{
   room(listingId:string):Promise<AdvisorRoom>;
   saveItem(i:ItemInput):Promise<string>;
   removeItem(id:string):Promise<void>;
@@ -30,17 +31,42 @@ export interface DataRoomStore{
   history():Promise<ReturnType<typeof D.buyerHistory>>;
   ask(itemId:string,page:number,body:string):Promise<void>;
 }
+type LocalDataRoomStore=CommonDataRoomStore&{mode:'local';search(listingId:string,question:string):Promise<RoomSearchResult[]>};
+type CloudDataRoomStore=CommonDataRoomStore&{mode:'cloud'};
+export type DataRoomStore=LocalDataRoomStore|CloudDataRoomStore;
+
+const sameFile=(current:D.RoomItem|undefined,original:D.RoomItem)=>
+  current?.fileId===original.fileId&&current.fileName===original.fileName&&current.mime===original.mime;
+
+async function searchablePages(item:D.RoomItem,blob:Blob):Promise<RoomSearchDocument['pages']>{
+  // The viewer treats a CSV as one table and an XLSX as one page per sheet.
+  const sheet=/\.xlsx$/i.test(item.fileName)||item.mime.includes('spreadsheetml');
+  if(!sheet&&(/\.csv$/i.test(item.fileName)||item.mime.includes('csv')))return [{page:1,text:await blob.slice(0,400_000).text()}];
+  const name=sheet?'document.xlsx':item.fileName;
+  const extract=await extractText(item.fileId,new Uint8Array(await blob.arrayBuffer()),name,item.mime);
+  return extract.pages;
+}
 
 type KV={getItem(k:string):string|null;setItem(k:string,v:string):void};
-export function localDataRoomStore(viewer:Viewer,o:{kv?:KV;bytes?:ByteStore}={}):DataRoomStore{
+export function localDataRoomStore(viewer:Viewer,o:{kv?:KV;bytes?:ByteStore}={}):LocalDataRoomStore{
   const kv=o.kv||localStorage;let bytes=o.bytes;const files=()=>bytes||(bytes=indexedBytes());
   const read=():D.FullDb=>{try{const v=JSON.parse(kv.getItem(LOCAL_BROKER_KEY)||'null');if(v&&Array.isArray(v.listings))return {...B.emptyBrokerDb(),...D.emptyRoomDb(),...v};}catch{/* reset */}return {...B.emptyBrokerDb(),...D.emptyRoomDb(),listings:sampleListings};};
   const write=(db:D.FullDb)=>kv.setItem(LOCAL_BROKER_KEY,JSON.stringify(db));
   const apply=async(fn:(db:D.FullDb)=>D.FullDb)=>{write(fn(read()));};
+  const searchItems=(db:D.FullDb,listingId:string)=>{
+    const items=(db.roomItems||[]).filter(item=>item.listingId===listingId);
+    if(viewer.kind==='advisor')return new Map(items.filter(item=>item.ownerStatus!=='Removed').map(item=>[item.id,item]));
+    const allowed=D.buyerItems(db,viewer,listingId);
+    if(!allowed.tier)throw Error('You do not have access to this data room.');
+    const open=new Set(allowed.items.filter(item=>item.open).map(item=>item.id));
+    return new Map(items.filter(item=>open.has(item.id)).map(item=>[item.id,item]));
+  };
   return {
     mode:'local',
     async room(listingId){if(viewer.kind!=='advisor')throw Error('Only a Kalling advisor can do this.');const db=read();
       return {room:(db.rooms||[]).find(r=>r.listingId===listingId),items:(db.roomItems||[]).filter(i=>i.listingId===listingId),engagement:D.engagement(db,listingId),loi:(db.loiGrants||[]).filter(g=>g.listingId===listingId),
+        searches:(db.roomSearches||[]).filter(event=>event.listingId===listingId).map(({question,at})=>({question,at})).reverse(),
+        searchQuestionCount:D.searchQuestionCount(db,listingId),
         buyers:D.buyerEngagement(db,listingId).map(e=>{const b=db.buyers.find(x=>x.id===e.buyerId);return {...e,name:b?.name||'A buyer',label:b?B.anonymousBuyerLabel(db,b,listingId):'A buyer'};})};},
     async saveItem(i){const out=D.saveItem(read(),viewer,i);write(out.db);return out.id;},
     async removeItem(id){await apply(db=>D.removeItem(db,viewer,id));},
@@ -49,7 +75,36 @@ export function localDataRoomStore(viewer:Viewer,o:{kv?:KV;bytes?:ByteStore}={})
     async ownerRooms(portalIds){const db=read();return (db.rooms||[]).filter(r=>portalIds.includes(r.portalId)&&r.status!=='Draft').map(r=>({listingId:r.listingId,listingNumber:db.listings.find(l=>l.id===r.listingId)?.number||'',room:r,items:(db.roomItems||[]).filter(i=>i.listingId===r.listingId),log:D.ownerLog(db,r.listingId),summary:D.weeklySummary(db,r.listingId)}));},
     async ownerDecide(ids,d,n,p){await apply(db=>D.ownerDecide(db,ids,d,n,p));},
     async setWeeklySummary(l,on,p){await apply(db=>D.setWeeklySummary(db,l,on,p));},
-    async buyerRoom(listingId){return D.buyerItems(read(),viewer,listingId);},
+    async buyerRoom(listingId){
+      const db=read(),room=D.buyerItems(db,viewer,listingId);
+      const open=new Set(room.items.filter(item=>item.open).map(item=>item.id));
+      const revisions=(db.roomItems||[]).filter(item=>open.has(item.id)).map(item=>[item.id,item.changedAt,item.displayName]).sort();
+      return {...room,revision:JSON.stringify(revisions)};
+    },
+    async search(listingId,question){
+      const text=question.trim().slice(0,3000);
+      if(text.length<2)throw Error('Write a question to search the data room.');
+      const candidates=searchItems(read(),listingId);
+      const extracted:{item:D.RoomItem;pages:RoomSearchDocument['pages']}[]=[];
+      for(const [id,item] of candidates){
+        if(!sameFile(searchItems(read(),listingId).get(id),item))continue;
+        const blob=await files().get(item.fileId);
+        if(!blob||!sameFile(searchItems(read(),listingId).get(id),item))continue;
+        const pages=await searchablePages(item,blob);
+        if(pages.some(page=>page.text.trim()))extracted.push({item,pages});
+      }
+      // Permissions and the selected file can change while reading its bytes.
+      const current=read();
+      const available=searchItems(current,listingId);
+      const docs:RoomSearchDocument[]=[];
+      for(const {item,pages} of extracted){
+        const currentItem=available.get(item.id);
+        if(currentItem&&sameFile(currentItem,item))docs.push({itemId:item.id,displayName:currentItem.displayName,pages});
+      }
+      const results=searchRoom(text,docs);
+      if(viewer.kind==='buyer')write(D.recordRoomSearch(current,viewer,listingId,text));
+      return results;
+    },
     async open(itemId,kind='opened'){
       const out=D.openItem(read(),viewer,itemId,kind);write(out.db);if(out.error||!out.ticket||!out.item)throw Error(out.error||'You do not have access to this document.');
       // The ticket is checked again before the bytes are read, as the storage policy does in the cloud.
@@ -69,14 +124,14 @@ const item=(r:ItemRow):D.RoomItem=>({id:r.id,listingId:r.listing_id,portalId:r.p
 type RoomRow={listing_id:string;portal_id:string;status:D.RoomStatus;proposed_at:string|null;published_at:string|null;weekly_summary:boolean};
 const room=(r:RoomRow):D.Room=>({listingId:r.listing_id,portalId:r.portal_id,status:r.status,proposedAt:r.proposed_at||undefined,publishedAt:r.published_at||undefined,weeklySummary:r.weekly_summary});
 /** Supabase data room. Row-level security and the RPCs in migration 009 enforce every rule above. */
-export function cloudDataRoomStore(client:SupabaseClient):DataRoomStore{
+export function cloudDataRoomStore(client:SupabaseClient):CloudDataRoomStore{
   async function call<T=unknown>(name:string,args:Record<string,unknown>):Promise<T>{const {data,error}=await client.rpc(name,args);if(error)throw Error(error.message);return data as T;}
   async function rows<T>(q:PromiseLike<{data:unknown;error:{message:string}|null}>):Promise<T[]>{const {data,error}=await q;if(error)throw Error(error.message);return (data||[]) as T[];}
   return {
     mode:'cloud',
     async room(listingId){const r=await call<{room:RoomRow|null;items:ItemRow[];events:{buyer_id:string;item_id:string;event:D.ViewEvent['event'];page:number|null;seconds:number|null;at:string}[];buyers:{id:string;name:string;label:string}[];loi:{buyer_id:string;note:string;by_name:string;at:string}[]}>('kalling_dataroom_advisor',{p_listing:listingId});
       const db={...B.emptyBrokerDb(),...D.emptyRoomDb(),views:r.events.map((e,i)=>({id:String(i),listingId,itemId:e.item_id,buyerId:e.buyer_id,event:e.event,page:e.page??undefined,seconds:e.seconds??undefined,at:e.at}))};
-      return {room:r.room?room(r.room):undefined,items:r.items.map(item),engagement:D.engagement(db,listingId),loi:r.loi.map(g=>({listingId,buyerId:g.buyer_id,note:g.note,by:g.by_name,at:g.at})),
+      return {room:r.room?room(r.room):undefined,items:r.items.map(item),engagement:D.engagement(db,listingId),loi:r.loi.map(g=>({listingId,buyerId:g.buyer_id,note:g.note,by:g.by_name,at:g.at})),searches:[],searchQuestionCount:0,
         buyers:D.buyerEngagement(db,listingId).map(e=>{const b=r.buyers.find(x=>x.id===e.buyerId);return {...e,name:b?.name||'A buyer',label:b?.label||'A buyer'};})};},
     async saveItem(i){return String(await call('kalling_dataroom_save_item',{p:i}));},
     async removeItem(id){await call('kalling_dataroom_remove_item',{p_item:id});},

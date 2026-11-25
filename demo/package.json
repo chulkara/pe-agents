@@ -16,7 +16,8 @@
     "e2e:seller": "node e2e/seller-flow.cjs",
     "e2e:execution": "node e2e/execution-flow.cjs",
     "e2e:sample": "node e2e/sample.cjs",
-    "e2e:matches": "node e2e/buyer-matches.cjs"
+    "e2e:matches": "node e2e/buyer-matches.cjs",
+    "e2e:ask": "node --experimental-strip-types e2e/ask-room.cjs"
   },
   "dependencies": {
     "@fontsource-variable/zalando-sans": "^5.3.0",
