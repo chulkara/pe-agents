@@ -7,6 +7,7 @@ import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Check,ChevronDown,CircleHelp,Download,FileText,Lock,Mail,MessageSquare,Phone,Send,Upload,Users,X,Loader2,ListChecks,FolderOpen,AlertTriangle,Paperclip} from 'lucide-react';
 import {buyerStanding} from '../lib/buyerStanding';
 import {SaleReadyView} from './saleReady/SaleReady';
+import OwnerHome from './OwnerHome';
 import type {Transaction} from '../lib/transactions';
 import {possessive,portalProgress,privacyReminder,requestOrder,unread,type DocRequest,type PortalBundle,type PortalFile,type Buyer} from '../lib/portal';
 import type {PortalStore} from '../lib/portalStore';
@@ -46,12 +47,14 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
   const readOnly=preview||!b.canEdit,gated=!!p.requestsHidden&&b.side==='seller';
   const firstOpen=[...b.requests].filter(r=>!['Accepted','Not applicable','Submitted'].includes(r.status)).sort((x,y)=>requestOrder(x)-requestOrder(y))[0]?.id||'';
   const openId=openState??firstOpen;
+  const go=(target:string)=>{if(target.startsWith('req-'))setOpenState(target.slice(4));requestAnimationFrame(()=>document.getElementById(target)?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));};
   const upload=()=>{const id=firstOpen||b.requests[0]?.id;if(!id)return;setOpenState(id);requestAnimationFrame(()=>document.getElementById('req-'+id)?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));};
   return <div className="portal-shell">
     {top}
     {preview&&<p className="portal-preview" role="status"><Lock size={14}/>Preview of what {p.ownerName} sees. Actions are disabled here.</p>}
     <header className="portal-hero">
       <div className="portal-hero-text"><h1>{p.businessName}</h1><p className="portal-by">Prepared by {p.firmName} for {p.ownerName}</p><p>Everything here is private to you and {possessive(p.firmName)} team.</p>
+        {b.side==='seller'||preview?<OwnerHome b={b} txs={txs} go={go}/>:null}
         {p.welcome&&<blockquote className="portal-welcome">{p.welcome}</blockquote>}</div>
       <aside className="portal-help" aria-label="Help"><CircleHelp size={20}/><div><strong>Questions? Ask {p.help.name.split(' ')[0]}.</strong><span>{p.help.name} is your contact at {p.firmName}.</span><a href={'mailto:'+p.help.email}><Mail size={13}/>{p.help.email}</a>{p.help.phone&&<a href={'tel:'+p.help.phone.replace(/[^\d+]/g,'')}><Phone size={13}/>{p.help.phone}</a>}<a href={"#portal-messages"} onClick={jump}><MessageSquare size={13}/>Send a message here</a></div></aside>
     </header>
