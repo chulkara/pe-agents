@@ -1,11 +1,12 @@
 import {createContext,useContext,useEffect,useState,type FormEvent} from 'react';
-import {Copy,ExternalLink,Eye,Plus,Check,X,Pencil,Users,FileText,ListChecks,Settings2,Link2,Loader2} from 'lucide-react';
+import {Copy,ExternalLink,Eye,Plus,Check,X,Pencil,Users,FileText,ListChecks,Settings2,Link2,Loader2,Gauge} from 'lucide-react';
 import type {Company} from '../lib/domain';
 import {hvacRequestTemplates,dataRoomSharing} from '../lib/engagement';
 import {extractText,type Extract} from '../lib/extract';
 import {possessive,buyerStages,portalProgress,unread,type Contact,type DocRequest,type Portal,type BuyerStage,type NextStep} from '../lib/portal';
 import {inviteLink,type PortalStore,type RequestInput} from '../lib/portalStore';
 import SellerPortal,{usePortal,FileRow,Messages,fmtDate} from './SellerPortal';
+import {SaleReadyAdmin} from './saleReady/SaleReady';
 
 export type PortalContext={store:PortalStore|null;helpDefault:Contact;canWrite:boolean;local:boolean;pros?:import('../lib/professionalStore').ProfessionalStore};
 const Ctx=createContext<PortalContext>({store:null,helpDefault:{name:'',email:''},canWrite:false,local:true});
@@ -33,16 +34,16 @@ export default function OwnerPortalAdmin({company,sections,onChange}:{company:Co
     :<p>Ask an analyst or administrator to create the owner portal.</p>}
     {portals.some(p=>p.status==='Closed')&&<p className="portal-muted">{portals.filter(p=>p.status==='Closed').length} closed portal(s) kept for your records.</p>}
   </section>;
-  return <Manage key={current.id} store={store} portalId={current.id} ctx={ctx} reload={load} sections={sections} onChange={onChange}/>;
+  return <Manage key={current.id} company={company} store={store} portalId={current.id} ctx={ctx} reload={load} sections={sections} onChange={onChange}/>;
 }
 
-function Manage({store,portalId,ctx,reload,sections,onChange}:{store:PortalStore;portalId:string;ctx:PortalContext;reload:()=>Promise<void>;sections?:string[];onChange?:()=>void}){
+function Manage({company,store,portalId,ctx,reload,sections,onChange}:{company:Company;store:PortalStore;portalId:string;ctx:PortalContext;reload:()=>Promise<void>;sections?:string[];onChange?:()=>void}){
   const {b,error:loadError,refresh}=usePortal(store,portalId);
   const [tab,setTab]=useState(sections?.[0]||'Requests'),[link,setLink]=useState(''),[copied,setCopied]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false);
   if(!b)return <div className="portal-admin">{loadError?<p className="error-banner">{loadError}</p>:<Loader2 className="spin"/>}</div>;
   const p=b.portal,prog=portalProgress(b),toReview=b.requests.filter(r=>r.status==='Submitted').length,newMsgs=unread(b),w=ctx.canWrite;
   async function act(fn:()=>Promise<unknown>){setBusy(true);setError('');try{await fn();await refresh();onChange?.();}catch(e){setError(e instanceof Error?e.message:'Could not save.');}finally{setBusy(false);}}
-  const tabs=([['Requests',FileText,toReview],['Buyers',Users,0],['Next steps',ListChecks,0],['Messages',Link2,newMsgs],['Settings',Settings2,0],['Owner’s view',Eye,0]] as [string,typeof FileText,number][]).filter(([t])=>!sections||sections.includes(t)),showHead=!sections||sections.some(t=>t!=='Requests');
+  const tabs=([['Requests',FileText,toReview],['Buyers',Users,0],['Next steps',ListChecks,0],['Messages',Link2,newMsgs],['Sale-ready',Gauge,0],['Settings',Settings2,0],['Owner’s view',Eye,0]] as [string,typeof FileText,number][]).filter(([t])=>!sections||sections.includes(t)),showHead=!sections||sections.some(t=>t!=='Requests');
   return <section className="panel portal-admin">
     {showHead&&<><header className="portal-admin-head"><div><h2>{p.businessName}</h2><p>For {p.ownerName}, {p.ownerEmail}, <span className={'portal-status '+p.status.toLowerCase()}>{p.status==='Active'?'Owner has joined':p.status==='Invited'?'Invitation sent '+fmtDate(p.invitedAt):p.status}</span></p></div>
       <div className="portal-admin-stats"><span><strong>{prog.done}/{prog.total}</strong>complete</span><span><strong>{toReview}</strong>to review</span><span><strong>{newMsgs}</strong>unread</span></div></header>
@@ -54,6 +55,7 @@ function Manage({store,portalId,ctx,reload,sections,onChange}:{store:PortalStore
     {tabs.length>1&&<nav className="portal-admin-tabs">{tabs.map(([t,Icon,n])=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}><Icon size={14}/>{t}{n?<em>{n}</em>:null}</button>)}</nav>}
     {tab==='Requests'&&<RequestsAdmin b={b} store={store} act={act} busy={busy} w={w}/>}
     {tab==='Buyers'&&<BuyersAdmin b={b} store={store} act={act} busy={busy} w={w}/>}
+    {tab==='Sale-ready'&&<SaleReadyAdmin key={p.id} company={company} b={b} store={store} refresh={refresh} canWrite={w}/>}
     {tab==='Next steps'&&<StepsAdmin steps={b.steps} save={s=>act(()=>store.saveSteps(p.id,s))} busy={busy} w={w} firm={p.firmName}/>}
     {tab==='Messages'&&<Messages b={b} store={store} readOnly={!w} refresh={async()=>{await store.seen(p.id).catch(()=>{});await refresh();}}/>}
     {tab==='Settings'&&<form className="portal-form" onSubmit={e=>{e.preventDefault();const d=v(e);if(d.ownerEmail.toLowerCase()!==p.ownerEmail&&!confirm('Changing the owner email removes access for '+p.ownerEmail+' and cancels their invitation. Continue?'))return;void act(()=>store.update(p.id,{businessName:d.businessName,ownerName:d.ownerName,ownerEmail:d.ownerEmail,help:{name:d.helpName,email:d.helpEmail,phone:d.helpPhone},welcome:d.welcome}));}}>

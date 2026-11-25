@@ -129,12 +129,23 @@ const until=async(fn,ms=60000)=>{const end=Date.now()+ms;for(;;){const v=await f
   const dr=await adv.locator('.dr').innerText();assert.match(dr,/Alex Morgan/);assert.match(dr,/Alex Morgan was refused 1 time/);await shot(adv,'dataroom-engaged-1440');
   step(15,'owner saw “Buyer 1, owner-operator”; restricted buyer lost access');
 
+  // 16. The advisor shares the sale-ready page; the owner sees the range, the price drags and readiness.
+  await tab('Owner');await adv.locator('.portal-admin-tabs').getByRole('button',{name:/^Sale-ready/}).click();
+  await adv.waitForSelector('.sr-admin .sr-range');assert.match(await adv.locator('.sr-admin .sr-meta').innerText(),/Preview of the owner/);
+  await adv.locator('.sr-admin').getByRole('button',{name:/^Share with/}).click();await adv.waitForSelector('.sr-admin .sr-ok, .sr-admin [role=alert]');assert.ok(await adv.locator('.sr-admin .sr-ok').count(),await adv.locator('.sr-admin').innerText());
+  await owner.reload();await owner.waitForSelector('#portal-sale-ready .sr-range');
+  const sr=await owner.locator('#portal-sale-ready').innerText();
+  assert.match(sr,/is worth today/);assert.match(sr,/What is holding the price back/);assert.match(sr,/not an appraisal or an offer/);assert.match(sr,/your Kalling advisor/);
+  await owner.locator('#portal-sale-ready').scrollIntoViewIfNeeded();await shot(owner,'sale-ready-owner-1440',false);
+  step(16,'advisor shared the sale-ready page; owner sees the estimate, price drags and readiness');
+
   // No horizontal page scroll at tablet and phone widths on the three sides of the data room.
   await site.goto(listingUrl);await site.waitForTimeout(500);
   for(const w of [1024,390])for(const [pg,tag] of [[adv,'advisor'],[owner,'owner'],[site,'buyer']]){await pg.setViewportSize({width:w,height:900});await pg.waitForTimeout(250);
     const over=await pg.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert.ok(over<=1,`${tag} overflows by ${over}px at ${w}`);}
   for(const pg of [adv,owner,site])await pg.setViewportSize({width:1440,height:900});
-  if(OUT){for(const [pg,name] of [[adv,'dataroom-advisor'],[owner,'dataroom-owner-portal']]){await pg.setViewportSize({width:390,height:844});await pg.waitForTimeout(300);await shot(pg,name+'-390');await pg.setViewportSize({width:1440,height:900});}}
+  if(OUT){await owner.setViewportSize({width:390,height:844});await owner.locator('#portal-sale-ready').scrollIntoViewIfNeeded();await owner.waitForTimeout(300);await owner.locator('#portal-sale-ready').screenshot({path:`${OUT}/sale-ready-owner-390.png`});await owner.setViewportSize({width:1440,height:900});
+    for(const [pg,name] of [[adv,'dataroom-advisor'],[owner,'dataroom-owner-portal']]){await pg.setViewportSize({width:390,height:844});await pg.waitForTimeout(300);await shot(pg,name+'-390');await pg.setViewportSize({width:1440,height:900});}}
   console.log('errors:',errs.join(' | ')||'none');
   }finally{await b.close();for(const p of procs)p.kill();}
   if(errs.length)process.exitCode=1;

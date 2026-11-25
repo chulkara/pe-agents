@@ -84,6 +84,7 @@ export function cloudPortalStore(client:SupabaseClient,o:{side:Side;firmId?:stri
     async voidLetter(id,reason){await call('kalling_letter_void',{p_letter:id,p_reason:reason});},
     async saveAnswers(portalId,a){await call('kalling_portal_save_answers',{p_portal:portalId,p:a});},
     async publishReview(portalId,r){return call<string>('kalling_portal_publish_review',{p_portal:portalId,p:r});},
+    async shareSaleReady(){throw Error('Sharing the sale-ready page with hosted owners arrives with the next database update. It works in the demo today.');},
     async decideReview(id,d,c){await call('kalling_portal_decide_review',{p_review:id,p_decision:d,p_comments:c});},
     async uploadFirmFile(portalId,f){const sha=await sha256Hex(await f.arrayBuffer());const r=await call<{file:FileRow;duplicate:boolean;uploaded?:boolean}>('kalling_portal_reserve_firm_file',{p_portal:portalId,p_name:f.name,p_mime:f.type,p_size:f.size,p_sha256:sha});
       if(r.duplicate)return file(r.file);if(!r.uploaded){const up=await client.storage.from('kalling-portal').upload(r.file.object_path!,f,{contentType:f.type,upsert:false,cacheControl:'0'});if(up.error&&!/exists|duplicate/i.test(up.error.message))throw Error('The upload was interrupted: '+up.error.message);}

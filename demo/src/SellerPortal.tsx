@@ -6,6 +6,7 @@ import {OwnerHelpers} from './pro/Helpers';
 import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Check,ChevronDown,CircleHelp,Download,FileText,Lock,Mail,MessageSquare,Phone,Send,Upload,Users,X,Loader2,ListChecks,FolderOpen,AlertTriangle,Paperclip} from 'lucide-react';
 import {buyerStanding} from '../lib/buyerStanding';
+import {SaleReadyView} from './saleReady/SaleReady';
 import type {Transaction} from '../lib/transactions';
 import {possessive,portalProgress,privacyReminder,requestOrder,unread,type DocRequest,type PortalBundle,type PortalFile,type Buyer} from '../lib/portal';
 import type {PortalStore} from '../lib/portalStore';
@@ -56,6 +57,7 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
     </header>
     {error&&<p role="alert" className="error-banner">{error}</p>}
     <OwnerLetter b={b} store={store} readOnly={readOnly} refresh={refresh}/>
+    {!gated&&b.saleReady?.[0]&&<SaleReadyView snap={b.saleReady[0]} previous={b.saleReady[1]?.input} by={b.saleReady[0].by}/>}
     {!gated&&<ExecutionWorkspace store={store.execution} portalId={portalId} canWrite={!readOnly} watermark={p.ownerName+' | '+p.ownerEmail}/>}
     {!gated&&<section className="portal-summary" aria-label="Your progress">
       <div><strong className="k-figure">{prog.done}<small> of {prog.total}</small></strong><span>complete</span></div>
