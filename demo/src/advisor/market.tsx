@@ -9,10 +9,30 @@ import {useAdvisor,openOffer} from './data';
 import {Button,StatusPill,EmptyState,Field,Avatar} from '../design/ui';
 import {AdvisorOfferDesk} from '../buyer/Offers';
 import {AdvisorVerification} from '../buyer/Verification';
+import {matchBuyers,matchListings,type Tier} from '../../lib/matching';
 
 const dt=(s?:string)=>s?new Date(s).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'';
 export const site=(path:string)=>location.pathname+'#'+path;
 const offerTone=(s:Offer['status'])=>s==='Accepted'?'green':s==='Shared with seller'?'peri':s==='Submitted'?'purple':s==='Countered'?'plain':'plain';
+
+const tierTone=(t:Tier)=>t==='Strong fit'?'green':t==='Good fit'?'peri':'plain';
+/** Buyers in the directory ranked by fit for this listing, each with the reason in one line. Copying an
+ *  invitation only puts a draft on the clipboard: a person reads it and sends it. */
+export function BuyerMatches({listing}:{listing:Listing}){
+  const {d}=useAdvisor();const [copied,setCopied]=useState('');if(!d)return null;
+  const matches=matchBuyers({buyers:d.buyers,checks:d.checks,access:d.requests},listing,8);
+  const invite=(m:typeof matches[number])=>{const first=m.buyer.name.split(' ')[0];const text=`Hi ${first}, a business on Kalling may fit what you are looking for: ${listing.headline} (${listing.number}), ${listing.region}, asking ${money(listing.askingPrice)}. ${m.fit.buyerReason} You can see it and request the details here: ${location.origin+site('/listings/'+listing.number)}`;
+    void navigator.clipboard?.writeText(text).then(()=>setCopied(m.buyer.id),()=>setCopied(''));};
+  return <section className="bm" aria-labelledby={'bm-'+listing.id}>
+    <div className="bm-head"><h2 className="deal-sub" id={'bm-'+listing.id}>Best-fit buyers</h2><p className="adv-muted">Ranked from each buyer's profile and this listing. Restricted buyers are left out. Copy an invitation to read and send it yourself.</p></div>
+    {matches.length?<ol className="bm-list">{matches.map(m=><li key={m.buyer.id}>
+      <div className="bm-who"><strong>{m.buyer.name}</strong><small>{m.buyer.type}{m.buyer.company?', '+m.buyer.company:''}</small></div>
+      <StatusPill tone={tierTone(m.fit.tier)}>{m.fit.tier}</StatusPill>
+      <p className="bm-why">{m.fit.reason}</p>
+      <div className="bm-act">{m.access?<span className="adv-muted">NDA {m.access.toLowerCase()}</span>:<>{m.saved&&<span className="adv-muted">Saved this listing</span>}<Button tone="quiet" onClick={()=>invite(m)}>{copied===m.buyer.id?'Invitation copied':'Copy invitation'}</Button></>}</div>
+    </li>)}</ol>:<EmptyState title="No good matches yet">As buyers create profiles, the ones who fit this listing appear here with the reason.</EmptyState>}
+  </section>;
+}
 
 /** NDA requests waiting for a decision, with the signature details. */
 export function AccessRequests({listingId,onApproved}:{listingId?:string;onApproved?:(l:Listing)=>void}){

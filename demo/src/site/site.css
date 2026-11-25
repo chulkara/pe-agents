@@ -319,3 +319,9 @@ a:hover>.ks-arrow,a:hover .ks-arrow{transform:translate(2px,-2px)}
 .ks-addback small{color:var(--ink2);font-size:13px;line-height:1.5}
 .ks-addback-result{display:grid;gap:10px;justify-items:start;padding:16px;border-radius:12px;background:#fff}
 .ks-addback-result p{margin:0}.ks-addback-result b{font-weight:600}
+/* Matched for you: the buyer's best-fit live listings */
+.ks-matches{margin:0 0 56px}.ks-matches h2{font-size:30px}
+.ks-match-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.ks-match-list li{display:grid;grid-template-rows:1fr auto;gap:10px;min-width:0}
+.ks-match-why{margin:0;font-size:14.5px;line-height:1.5;color:var(--ink2)}.ks-match-why b{color:var(--ink);font-weight:600}
+@media (max-width:640px){.ks-match-list{grid-template-columns:1fr}.ks-matches h2{font-size:24px}}
