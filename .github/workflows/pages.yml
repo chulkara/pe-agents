@@ -1,7 +1,7 @@
 name: Deploy Kalling to GitHub Pages
 on:
   push:
-    branches: [main, 'codex/**']
+    branches: [main, 'codex/**', 'claude/**']
   workflow_dispatch:
 permissions:
   contents: read
@@ -50,6 +50,11 @@ jobs:
       - name: Check existing seller flow
         if: ${{ !cancelled() && steps.fixture_server.outcome == 'success' }}
         run: npm run e2e:seller
+      - name: Check the one-tap sample portal and buyer matches
+        if: ${{ !cancelled() && steps.fixture_server.outcome == 'success' }}
+        run: |
+          npm run e2e:sample
+          npm run e2e:matches
       - name: Check execution, permissions and three screen widths
         if: ${{ !cancelled() && steps.fixture_server.outcome == 'success' }}
         run: npm run e2e:execution
