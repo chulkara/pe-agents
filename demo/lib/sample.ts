@@ -13,6 +13,7 @@ export const sampleSaleReady=(requests:{title:string;status:string}[]):SaleReady
   addBacks:[{item:'One-time legal settlement',amount:40000,evidence:'pl-2025.pdf, page 1'},{item:'Personal vehicle',amount:12000,evidence:''}],
   basisSources:{revenue:'pl-2025.pdf, page 1',netProfit:'pl-2025.pdf, page 1',ownerPay:'tax-return-2025.pdf, page 3'},
   requests,asOf:new Date().toISOString().slice(0,10),
+  buyerFit:{total:9,strong:4,byType:{'Owner-operator':4,'Strategic HVAC operator':3,'Search fund':2},basis:'listing'},
 });
 
 /** Builds Pat Russo's fictional portal through the same store calls a real advisor and owner make. */

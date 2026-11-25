@@ -45,4 +45,6 @@ test('the drafted note states the range, the top fix and the next record, and sa
   assert.match(n,/not an appraisal or an offer\.$/);
   const later=saleReadyReport(input({inputs:{...inputs,licenseHolder:'owner-and-employee'}}));
   assert.match(draftNote(later,'Pat',r),/That is up \$/);
+  assert.match(draftNote(r,'Pat',undefined,7),/7 buyers in our directory already fit the business\. This is an estimate/);
+  assert.doesNotMatch(draftNote(r,'Pat',undefined,0),/buyers in our directory/);
 });

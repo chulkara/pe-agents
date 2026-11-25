@@ -47,3 +47,16 @@ test('two-way lists: best buyers for a listing, best listings for a buyer',()=>{
   assert.deepEqual(matchListings(buyer(),ls).map(x=>x.listing.id),['b','a']);
   assert.deepEqual(matchListings(buyer(),ls,{exclude:['b']}).map(x=>x.listing.id),['a']);
 });
+
+test('owner-safe buyer fit: counts by type, from the listing or, before listing, the estimate',async()=>{
+  const {buyerFitFor,describeTypes}=await import('../lib/matching.ts');
+  assert.equal(describeTypes({'Owner-operator':4,'Strategic HVAC operator':3,'Search fund':2}),'4 owner-operators, 3 HVAC companies and 2 search funds');
+  assert.equal(describeTypes({'Private equity / family office':1}),'1 investment firm');
+  const db={buyers:[buyer({name:'A'}),buyer({name:'B',type:'Strategic HVAC operator',funds:'$1M to $5M'}),buyer({name:'C',maxPrice:900000})],checks:[],access:[],listings:[]};
+  const est=buyerFitFor(db,{id:'co',region:'Central Jersey'},{price:1800000,sde:463000});
+  assert.deepEqual(est,{total:2,strong:2,byType:{'Owner-operator':1,'Strategic HVAC operator':1},basis:'estimate'});
+  assert.equal(JSON.stringify(est).includes('Maria'),false,'no names');
+  assert.equal(buyerFitFor(db,{id:'co'},{price:1800000,sde:463000}),null,'no region, nothing to match on');
+  const listed=buyerFitFor({...db,listings:[listing({companyId:'co',askingPrice:850000})]},{id:'co',region:'Central Jersey'},{price:1800000,sde:463000});
+  assert.equal(listed.basis,'listing');assert.equal(listed.total,3,'the cheaper listing fits buyer C too');
+});

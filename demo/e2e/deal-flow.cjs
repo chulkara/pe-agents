@@ -87,6 +87,9 @@ const step=(n,t)=>console.log(`${n}. ${t}`);
   await adv.getByRole('button',{name:'Deals',exact:true}).click();await adv.waitForSelector('.adv-board, .adv-table');await adv.goBack();await adv.waitForSelector('.deal-head h1');
   assert.match(adv.url(),/\/LOI$/);assert.equal(await adv.getByRole('tab',{selected:true}).innerText(),'LOI');console.log('back button keeps the execution tab');
   {const cid=await adv.evaluate(()=>JSON.parse(localStorage.getItem('kalling-pages-demo-v1')).companies[0].id);await adv.goto(U+'#advisor/deal/'+cid+'/Buyers');}await adv.waitForSelector('.bm');assert.match(await adv.innerText('.bm'),/Alex Morgan[\s\S]*Strong fit[\s\S]*Buys in Central Jersey/);console.log('best-fit buyers ranked with a reason');
+  {const cid=await adv.evaluate(()=>JSON.parse(localStorage.getItem('kalling-pages-demo-v1')).companies[0].id);await adv.goto(U+'#advisor/deal/'+cid+'/Owner');}await adv.locator('.portal-admin-tabs').getByRole('button',{name:/^Sale-ready/}).click();await adv.waitForSelector('.sr-admin .sr-range');
+  assert.match(await adv.locator('.sr-admin').innerText(),/1 buyer in Kalling’s directory fits your business today, 1 of them strongly: 1 owner-operator\./);assert.doesNotMatch(await adv.locator('.sr-admin .sr-fit').innerText(),/Alex|Morgan/);
+  assert.match(await adv.locator('.sr-admin textarea').inputValue(),/One buyer in our directory already fits the business\./);console.log('sale-ready page counts buyers who fit, without names');
 
   if(OUT){
     await adv.goto(U+'#advisor/deals');await adv.waitForSelector('.adv-board');await shot(adv,'deals-1440',false);

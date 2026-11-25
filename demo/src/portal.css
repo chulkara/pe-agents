@@ -166,3 +166,4 @@
 .oh-next .btn:focus-visible{outline:2px solid #fff;outline-offset:3px}
 .oh-next.quiet{background:var(--k-surface);background-image:none;color:#000}.oh-next.quiet h2{color:#000}.oh-next.quiet p{color:var(--k-grey-1)}.oh-next.quiet .oh-kicker{color:var(--k-green)}
 @media (max-width:640px){.oh-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.oh{margin-top:18px}.oh-next{padding:18px}.portal-hero{padding-top:22px}.portal-hero h1{font-size:38px;margin-bottom:12px}.portal-hero p.portal-by+p{font-size:14px}}
+.oh-fit{margin:0;font-size:15px;line-height:1.5;color:var(--k-grey-1)}.oh-fit strong{color:var(--k-purple);font-weight:600}.oh-fit .text-link{font-size:15px;padding:0;min-height:0;vertical-align:baseline}

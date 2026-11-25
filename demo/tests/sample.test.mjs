@@ -16,6 +16,7 @@ test('the sample portal seeds a believable mid-sale owner view, in memory only',
   assert.deepEqual([r.readiness.done,r.readiness.total],[4,6]);
   assert.equal(r.drags[0].key,'license');
   assert.match(b.saleReady[0].note,/Four of six records are in/);
+  assert.equal(b.saleReady[0].input.buyerFit.total,9);
 });
 
 test('every visit starts fresh',async()=>{
