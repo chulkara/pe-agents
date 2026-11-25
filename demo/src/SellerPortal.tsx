@@ -61,7 +61,7 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
     {error&&<p role="alert" className="error-banner">{error}</p>}
     <OwnerLetter b={b} store={store} readOnly={readOnly} refresh={refresh}/>
     {!gated&&b.saleReady?.[0]&&<SaleReadyView snap={b.saleReady[0]} previous={b.saleReady[1]?.input} by={b.saleReady[0].by}/>}
-    {!gated&&<ExecutionWorkspace store={store.execution} portalId={portalId} canWrite={!readOnly} watermark={p.ownerName+' | '+p.ownerEmail}/>}
+    {!gated&&<ExecutionWorkspace store={store.execution} portalId={portalId} canWrite={!readOnly} hideWhenEmpty={b.side==='seller'} watermark={p.ownerName+' | '+p.ownerEmail}/>}
     {!gated&&<section className="portal-summary" aria-label="Your progress">
       <div><strong className="k-figure">{prog.done}<small> of {prog.total}</small></strong><span>complete</span></div>
       <div><strong className="k-figure">{waiting.length}</strong><span>waiting for you</span></div>

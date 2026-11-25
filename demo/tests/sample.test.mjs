@@ -8,8 +8,9 @@ test('the sample portal seeds a believable mid-sale owner view, in memory only',
   assert.equal(b.portal.businessName,'Russo Heating & Air');
   assert.equal(b.requests.length,6);
   assert.equal(b.requests.filter(r=>r.status==='Accepted').length,4);
-  assert.match(b.answers.history,/Edison/);assert.equal(b.answers.team,'');
-  assert.deepEqual(b.buyers.map(x=>x.stage).sort(),['Offer made','Reviewing information']);
+  assert.equal(b.answers.team,'');
+  assert.deepEqual(b.buyers.map(x=>x.stage).sort(),['Reviewing information','Under NDA']);
+  assert.match(b.answers.history,/Green Brook/);
   assert.equal(b.steps.length,3);
   assert.equal(b.saleReady.length,1);
   const r=saleReadyReport(b.saleReady[0].input);
