@@ -20,7 +20,7 @@ Kalling has been validated end to end with fictional data only: the hosted sale 
 ## Migrations
 
 - Applied November 23, 2026 in the SQL editor and recorded in the migration ledger: `20261123170000_kalling_professional_access` and `20261123190000_kalling_seller_helpers`. Check returned 11 professional functions, 11 helper functions and 3 storage policies, as expected. Applied November 24, 2026 and recorded in the ledger: `20261124051000_kalling_pro_helper_read_operations` (found by the second rehearsal: Storage's file-details lookup was refused for CPA reads and helper previews). It also removes the temporary read logger used to diagnose it.
-- Waiting to apply: `20261125060000_kalling_sale_ready` (sharing the sale-ready page with hosted owners). Until it is applied, the hosted advisor sees a clear message when sharing, and owners see no sale-ready page. After applying, record it in `supabase_migrations.schema_migrations` and run the check: `select count(*) from pg_proc where proname='kalling_portal_share_sale_ready'` returns 1, and `select relrowsecurity from pg_class where relname='kalling_portal_sale_ready'` returns true.
+- Applied 2026-11-25: `20261125060000_kalling_sale_ready` (sharing the sale-ready page with hosted owners). Check: the share function exists and the table has row-level security on.
 
 ## Data and switches (setup, in this order)
 
