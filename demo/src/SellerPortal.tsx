@@ -157,10 +157,11 @@ function RequestCard({r,b,store,readOnly,refresh,open,setOpen}:{r:DocRequest;b:P
 }
 
 export function Messages({b,store,readOnly,refresh}:{b:PortalBundle;store:PortalStore;readOnly:boolean;refresh:()=>Promise<void>}){
-  const [text,setText]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');const end=useRef<HTMLDivElement>(null);
-  const me=b.side;useEffect(()=>{end.current?.scrollIntoView({block:'nearest'});},[b.messages.length]);
+  const [text,setText]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');const thread=useRef<HTMLDivElement>(null);
+  // Keep the newest message in view by scrolling the thread itself, never the page.
+  const me=b.side;useEffect(()=>{const t=thread.current;if(t)t.scrollTop=t.scrollHeight;},[b.messages.length]);
   return <section id="portal-messages" className="portal-section portal-messages"><h2>Messages</h2>
-    <div className="portal-thread" aria-live="polite">{b.messages.map(m=><div key={m.id} className={'portal-msg '+(m.side===me?'mine ':'theirs ')+m.side}><p>{m.body}</p><small>{m.side===me?'You':m.author}, {new Date(m.createdAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</small></div>)}{!b.messages.length&&<p className="portal-empty">No messages yet. Ask anything and {b.portal.help.name.split(' ')[0]} will reply here.</p>}<div ref={end}/></div>
+    <div ref={thread} className="portal-thread" aria-live="polite">{b.messages.map(m=><div key={m.id} className={'portal-msg '+(m.side===me?'mine ':'theirs ')+m.side}><p>{m.body}</p><small>{m.side===me?'You':m.author}, {new Date(m.createdAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</small></div>)}{!b.messages.length&&<p className="portal-empty">No messages yet. Ask anything and {b.portal.help.name.split(' ')[0]} will reply here.</p>}</div>
     {!readOnly&&<form onSubmit={e=>{e.preventDefault();if(!text.trim())return;setBusy(true);setError('');void store.message(b.portal.id,text).then(async()=>{setText('');await store.seen(b.portal.id).catch(()=>{});await refresh();}).catch(err=>setError(err.message)).finally(()=>setBusy(false));}}>
       <label className="sr-only" htmlFor={'msg-'+b.portal.id}>Message</label><textarea id={'msg-'+b.portal.id} rows={2} maxLength={4000} value={text} onChange={e=>setText(e.target.value)} placeholder={me==='seller'?'Write to '+b.portal.firmName+'…':'Write to '+b.portal.ownerName+'…'}/><button className="btn primary" disabled={busy||!text.trim()}><Send size={14}/>Send</button></form>}
     {error&&<p className="error-banner" role="alert">{error}</p>}
