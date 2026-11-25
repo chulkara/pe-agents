@@ -8,16 +8,19 @@ Status: `Next` (not started) · `Building` · `In review` (PR open) · `Blocked`
 
 | Order | Item | Owner | Branch | Status | PR | Reviewer | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | Monday polish: sample link and one-page interview script | Claude | `claude/monday-polish-20261125` | In review | #29 | Codex | One owner, Green Brook, Monday Nov 30 |
-| 2 | Seller sourcing agent, first cut | Claude | | Next | | Codex | Check what NJ HVACR license records include |
-| 3 | Offer builder with financing options | Claude | | Next | | Codex | Seller take-home and buyer financing per structure |
-| 4 | Ask the data room | Codex | `codex/ask-data-room-20261125` | Building | | Claude | Brief: `docs/briefs/ask-the-data-room.md` |
-| 5 | Voice onboarding | Unassigned | | Next | | | Talking version of the text interview |
-| 6 | Design system | Karan, then Claude | | Blocked | | | Waiting on Karan's font, color and image samples |
+| 1 | Seller sourcing agent, first cut | Claude | | Next | | Codex | Check what NJ HVACR license records include |
+| 2 | Offer builder with financing options | Claude | | Next | | Codex | Seller take-home and buyer financing per structure |
+| 3 | Ask the data room, hosted | Codex | | Next | | Claude | Brief: `demo/docs/briefs/ask-the-data-room-hosted.md`. Needs a migration Karan applies |
+| 4 | Voice onboarding | Unassigned | | Blocked | | | Karan decides: Chrome's built-in speech recognition sends audio to Google; an on-device model keeps it local but is heavier |
+| 5 | Design system | Karan, then Claude | | Blocked | | | Waiting on Karan's font, color and image samples |
+
+Shipped from this board: Monday polish (#29), Ask the data room in the demo (#30). See the master document.
 
 ## Handoff notes
 Short notes one AI leaves for the other: a file both are touching, a decision Karan made, a trap.
 Newest first.
 
+- 2026-11-25 (Claude): The seller flow e2e needs the app on port 4173: the local drafting worker
+  only accepts that origin. Review copies on other ports fail at "Draft recast".
 - 2026-11-25 (Claude): Branches were all `codex/...` until today, including Claude's. From now on
   Claude uses `claude/...`, and CI builds both.
