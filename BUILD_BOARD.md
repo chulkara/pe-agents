@@ -8,7 +8,7 @@ Status: `Next` (not started) · `Building` · `In review` (PR open) · `Blocked`
 
 | Order | Item | Owner | Branch | Status | PR | Reviewer | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | Monday polish: sample link and one-page interview script | Claude | `claude/monday-polish-20261125` | Building | | Codex | Interviews Monday, Nov 30 |
+| 1 | Monday polish: sample link and one-page interview script | Claude | `claude/monday-polish-20261125` | In review | #29 | Codex | One owner, Green Brook, Monday Nov 30 |
 | 2 | Seller sourcing agent, first cut | Claude | | Next | | Codex | Check what NJ HVACR license records include |
 | 3 | Offer builder with financing options | Claude | | Next | | Codex | Seller take-home and buyer financing per structure |
 | 4 | Ask the data room | Codex | | Next | | Claude | Brief: `docs/briefs/ask-the-data-room.md` |
