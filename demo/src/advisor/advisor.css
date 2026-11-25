@@ -214,3 +214,12 @@
 .adv-q-ref{display:block;font-size:12px;color:var(--k-purple);margin:2px 0}
 @media (max-width:720px){.dr-table thead{display:none}.dr-table tr{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--k-line)}.dr-table td{border:0;padding:2px 0}.dr-table td:first-child{grid-column:1/-1}.dr-row-actions{text-align:left}.dr-status-actions{margin-left:0}.dr-add-cim{flex-direction:column;align-items:flex-start}}
 .dr .dr-table th{text-transform:none;letter-spacing:0}.dr .dr-table td:first-child,.dr .dr-table th:first-child{padding-left:0}
+/* Best-fit buyers for a listing */
+.bm{display:grid;gap:12px;margin-bottom:28px}.bm-head p{margin:4px 0 0}
+.bm-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.bm-list li{display:grid;grid-template-columns:minmax(150px,1fr) auto;grid-template-areas:'who tier' 'why why' 'act act';gap:6px 14px;padding:14px 16px;border:1px solid var(--k-line);border-radius:var(--k-radius-input);background:#fff}
+.bm-who{grid-area:who;display:grid;gap:2px;min-width:0}.bm-who small{color:var(--k-grey-2);font-size:13px}
+.bm-list .k-pill{grid-area:tier;align-self:start}
+.bm-why{grid-area:why;margin:0;font-size:14.5px;line-height:1.5}
+.bm-act{grid-area:act;display:flex;gap:12px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+@media (min-width:900px){.bm-list li{grid-template-columns:minmax(180px,1.1fr) auto 2.4fr auto;grid-template-areas:'who tier why act';align-items:center}}

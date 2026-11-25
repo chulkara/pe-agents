@@ -86,6 +86,7 @@ const step=(n,t)=>console.log(`${n}. ${t}`);
   // Back button returns to the same Deal Room tab.
   await adv.getByRole('button',{name:'Deals',exact:true}).click();await adv.waitForSelector('.adv-board, .adv-table');await adv.goBack();await adv.waitForSelector('.deal-head h1');
   assert.match(adv.url(),/\/LOI$/);assert.equal(await adv.getByRole('tab',{selected:true}).innerText(),'LOI');console.log('back button keeps the execution tab');
+  {const cid=await adv.evaluate(()=>JSON.parse(localStorage.getItem('kalling-pages-demo-v1')).companies[0].id);await adv.goto(U+'#advisor/deal/'+cid+'/Buyers');}await adv.waitForSelector('.bm');assert.match(await adv.innerText('.bm'),/Alex Morgan[\s\S]*Strong fit[\s\S]*Buys in Central Jersey/);console.log('best-fit buyers ranked with a reason');
 
   if(OUT){
     await adv.goto(U+'#advisor/deals');await adv.waitForSelector('.adv-board');await shot(adv,'deals-1440',false);

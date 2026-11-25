@@ -1,7 +1,8 @@
+import {matchListings} from '../../lib/matching';
 import {ExecutionWorkspace} from '../execution/ExecutionWorkspace';
 import {useEffect,useState,type FormEvent} from 'react';
 import {money} from '../../lib/hvacValuation';
-import {ndaText,regions,focuses,buyerTypes,fundBands,filterListings,regionState,type ListingFilter,type Region,type Focus,type BuyerType,type Funds} from '../../lib/brokerage';
+import {ndaText,regions,focuses,buyerTypes,fundBands,filterListings,regionState,type ListingFilter,type Region,type Focus,type BuyerType,type Funds,type Buyer} from '../../lib/brokerage';
 import type {ViewListing} from '../../lib/brokerStore';
 import {href,go,useAsync,useSession,Arrow,type Route} from './BrokerSite';
 import {BuyerDataRoom,OpenedHistory} from './DataRoom';
@@ -14,6 +15,15 @@ import {BuyerProfessionals} from '../pro/Professionals';
 import {BuyerVerification} from '../buyer/Verification';
 
 /** Listing card: where and what, then the asking price as the headline number. */
+/** Live listings ranked against the buyer's own profile, each with the reason in one line. */
+function Matches({buyer,listings,exclude}:{buyer:Buyer;listings:ViewListing[];exclude:string[]}){
+  const top=matchListings(buyer,listings,{exclude,limit:3});
+  return <section className="ks-matches" aria-labelledby="ks-matches-h"><div className="ks-section-head"><h2 id="ks-matches-h">Matched for you</h2><a className="ks-link" href={href('/account?next=profile')}>Sharpen your matches</a></div>
+    {top.length?<ol className="ks-match-list">{top.map(({listing,fit})=><li key={listing.id}><Nameplate l={listing}/><p className="ks-match-why"><b>{fit.tier}.</b> {fit.buyerReason}</p></li>)}</ol>
+    :<p className="ks-empty">No live listings fit your profile right now. Turn on listing alerts below and we will tell you when one does.</p>}
+  </section>;
+}
+
 export function Nameplate({l}:{l:ViewListing}){
   return <a className={'ks-plate'+(l.status==='Sold'?' sold':'')} href={href('/listings/'+l.number)}>
     <div className="ks-plate-top"><span>{l.region}, {regionState(l.region)}</span>{l.sample&&<span className="ks-tag">Sample</span>}{l.status!=='Live'&&<span className="ks-tag ks-tag-dark">{l.status}</span>}</div>
@@ -166,6 +176,7 @@ export function AccountPage({route}:{route:Route}){
       {error&&<p className="ks-error" role="alert">{error}</p>}{saved&&<p className="ks-ok" role="status">Profile saved.</p>}
       <div className="ks-actions"><button className="ks-btn ks-btn-primary">Save profile</button>{me&&<a className="ks-link" href={href('/account')}>Cancel</a>}</div>
     </form>:<>
+      <Matches buyer={me.buyer} listings={all} exclude={me.access.map(a=>a.listingId)}/>
       <div className="ks-account-grid">
         <section><h2>Your requests</h2>{me.access.length?<ul className="ks-offers">{me.access.map(a=>{const l=all.find(x=>x.id===a.listingId);return <li key={a.id}><a href={href('/listings/'+(l?.number||a.listingId))}>{l?.headline||'Listing'}</a><b>{a.status}</b><small>NDA signed {new Date(a.nda.signedAt).toLocaleDateString()}</small></li>;})}</ul>:<p className="ks-empty">No requests yet. Open a listing and sign its NDA to see the details.</p>}</section>
         <section><h2>Saved listings</h2>{me.buyer.saved.length?<div className="ks-plates ks-plates-tight">{all.filter(l=>me.buyer.saved.includes(l.id)).map(l=><Nameplate key={l.id} l={l}/>)}</div>:<p className="ks-empty">Save listings to compare them here.</p>}</section>
