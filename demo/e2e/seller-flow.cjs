@@ -130,7 +130,9 @@ const until=async(fn,ms=60000)=>{const end=Date.now()+ms;for(;;){const v=await f
   step(15,'owner saw “Buyer 1, owner-operator”; restricted buyer lost access');
 
   // 16. The advisor shares the sale-ready page; the owner sees the range, the price drags and readiness.
-  await tab('Owner');await adv.locator('.portal-admin-tabs').getByRole('button',{name:/^Sale-ready/}).click();
+  await adv.goto(U+'#advisor/today');await adv.waitForSelector('text=Share a first sale-ready page with Pat');
+  await adv.locator('.adv-needs li').filter({hasText:'Share a first sale-ready page'}).getByRole('button',{name:/Prepare page/}).click();await adv.waitForSelector('.portal-admin-tabs');
+  await adv.locator('.portal-admin-tabs').getByRole('button',{name:/^Sale-ready/}).click();
   await adv.waitForSelector('.sr-admin .sr-range');assert.match(await adv.locator('.sr-admin .sr-meta').innerText(),/Preview of the owner/);
   await adv.locator('.sr-admin').getByRole('button',{name:/^Share with/}).click();await adv.waitForSelector('.sr-admin .sr-ok, .sr-admin [role=alert]');assert.ok(await adv.locator('.sr-admin .sr-ok').count(),await adv.locator('.sr-admin').innerText());
   await owner.reload();await owner.waitForSelector('#portal-sale-ready .sr-range');
