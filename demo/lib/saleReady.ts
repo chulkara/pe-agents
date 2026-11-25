@@ -12,7 +12,11 @@ export type SaleReadyInput={
   basisSources?:Partial<Record<'revenue'|'netProfit'|'ownerPay',string>>; // e.g. "pl-2025.pdf, page 1"
   requests:{title:string;status:string}[];
   asOf:string;                     // ISO date the advisor prepared it
+  buyerFit?:BuyerFit;              // counts only, never names; see lib/matching.ts
 };
+/** How many buyers in the directory fit, by type. `basis` says whether it was matched on the live
+ *  listing or, before listing, on the estimated value. */
+export type BuyerFit={total:number;strong:number;byType:Record<string,number>;basis:'listing'|'estimate'};
 export type PriceDrag={key:string;title:string;why:string;fix:string;assumption:string;gainMid:number};
 export type SaleReadyReport={valuation:Valuation;basis:SaleReadyBasis[];drags:PriceDrag[];readiness:{done:number;total:number;pct:number;missing:string[]}};
 
@@ -53,12 +57,13 @@ export function saleReadyReport(i:SaleReadyInput):SaleReadyReport{
 const money=(n:number)=>n>=1e6?'$'+(n/1e6).toFixed(2).replace(/\.?0+$/,'')+'M':'$'+Math.round(n/1000).toLocaleString('en-US')+'K';
 
 /** A first draft of the monthly note. The advisor edits it before the owner sees it. */
-export function draftNote(r:SaleReadyReport,ownerFirstName:string,previous?:SaleReadyReport):string{
+export function draftNote(r:SaleReadyReport,ownerFirstName:string,previous?:SaleReadyReport,buyersWhoFit?:number):string{
   const v=r.valuation,lines=[`${ownerFirstName}, here is where the business stands this month.`];
   lines.push(`Our estimate of its value is ${money(v.low)} to ${money(v.high)}.`+(previous?` That is ${v.mid>=previous.valuation.mid?'up':'down'} ${money(Math.abs(v.mid-previous.valuation.mid))} from last time.`:''));
   const top=r.drags[0];
   if(top)lines.push(`The biggest thing you can work on: ${top.fix.charAt(0).toLowerCase()+top.fix.slice(1)} By our estimate that is worth about ${money(top.gainMid)}.`);
   if(r.readiness.total)lines.push(r.readiness.done===r.readiness.total?'All your records are in, so a sale could start quickly.':`${r.readiness.done} of ${r.readiness.total} records are in. Next up: ${r.readiness.missing[0]}.`);
+  if(buyersWhoFit&&buyersWhoFit>0)lines.push(buyersWhoFit===1?'One buyer in our directory already fits the business.':`${buyersWhoFit} buyers in our directory already fit the business.`);
   lines.push('This is an estimate to plan with, not an appraisal or an offer.');
   return lines.join(' ');
 }

@@ -6,18 +6,21 @@ import type {DealCompany} from '../../lib/deals';
 import type {PortalBundle,SaleReadySnapshot} from '../../lib/portal';
 import type {PortalStore} from '../../lib/portalStore';
 import {saleReadyReport,draftNote,type SaleReadyInput,type SaleReadyReport} from '../../lib/saleReady';
+import {buyerFitFor,describeTypes} from '../../lib/matching';
+import {useAdvisor} from '../advisor/data';
 import './saleReady.css';
 
 const money=(n:number)=>n>=1e6?'$'+(n/1e6).toFixed(2).replace(/\.?0+$/,'')+'M':'$'+Math.round(n/1000).toLocaleString('en-US')+'K';
 const exact=(n:number)=>'$'+Math.round(n).toLocaleString('en-US');
 const day=(iso:string)=>new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const cleanFit=(f:SaleReadyInput['buyerFit'])=>{if(!f||typeof f!=='object')return null;const n=(x:unknown)=>Number.isFinite(Number(x))&&Number(x)>0?Math.floor(Number(x)):0;const byType:Record<string,number>={};for(const [k,v] of Object.entries(f.byType||{}))if(n(v))byType[k]=n(v);return {total:n(f.total),strong:Math.min(n(f.strong),n(f.total)),byType,basis:f.basis==='listing'?'listing' as const:'estimate' as const};};
 const safeReport=(i:SaleReadyInput):SaleReadyReport|null=>{try{return saleReadyReport(i);}catch{return null;}};
 
 /** What the owner sees. `snap` is a shared version; `previous` is the one before it, for the change line. */
 export function SaleReadyView({snap,previous,by,preview=false}:{snap:{input:SaleReadyInput;note:string;sharedAt?:string};previous?:SaleReadyInput;by?:string;preview?:boolean}){
   const r=useMemo(()=>safeReport(snap.input),[snap.input]),before=useMemo(()=>previous?safeReport(previous):null,[previous]);
   if(!r)return null;
-  const v=r.valuation,change=before?v.mid-before.valuation.mid:0;
+  const v=r.valuation,change=before?v.mid-before.valuation.mid:0,fit=cleanFit(snap.input.buyerFit);
   return <section className="sr" id="portal-sale-ready" aria-labelledby="sr-title">
     <p className="sr-meta">{preview?'Preview of the owner’s page':'Your sale-ready page'}{snap.sharedAt?` · updated ${day(snap.sharedAt)}`:''}</p>
     <h2 id="sr-title">What {snap.input.businessName} is worth today</h2>
@@ -33,6 +36,9 @@ export function SaleReadyView({snap,previous,by,preview=false}:{snap:{input:Sale
         <p className="sr-assume">{d.assumption}, by the same estimate.</p>
       </li>)}</ol></div>}
 
+    {fit&&fit.total>0&&<div className="sr-block sr-fit"><h3>Buyers who fit</h3>
+      <p className="sr-fit-line"><strong>{fit.total}</strong> {fit.total===1?'buyer':'buyers'} in Kalling’s directory {fit.total===1?'fits':'fit'} your business today{fit.strong?`, ${fit.strong} of them strongly`:''}: {describeTypes(fit.byType)}.</p>
+      <p className="sr-sub">{fit.basis==='estimate'?'Matched on the estimated value above, before anything is listed. No buyer has been told about your business.':'Matched on your anonymous listing. Buyers see only the anonymous listing until we approve them under a confidentiality agreement.'}</p></div>}
     {r.readiness.total>0&&<div className="sr-block"><h3>How ready a sale is</h3>
       <div className="sr-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={r.readiness.pct} aria-label="Records in"><i style={{width:r.readiness.pct+'%'}}/></div>
       <p className="sr-sub">{r.readiness.done} of {r.readiness.total} records are in{r.readiness.missing.length?'. Still needed: '+r.readiness.missing.slice(0,3).join(', ')+(r.readiness.missing.length>3?` and ${r.readiness.missing.length-3} more`:'')+'.':'. A sale could start quickly.'}</p></div>}
@@ -55,11 +61,13 @@ export function saleReadyInput(company:Company,b:Pick<PortalBundle,'portal'|'req
 }
 
 export function SaleReadyAdmin({company,b,store,refresh,canWrite}:{company:Company;b:PortalBundle;store:PortalStore;refresh:()=>Promise<void>;canWrite:boolean}){
-  const input=useMemo(()=>saleReadyInput(company,b),[company,b]);
+  const {d}=useAdvisor();
+  const base=useMemo(()=>saleReadyInput(company,b),[company,b]);
+  const input=useMemo(()=>{if(!base||!d)return base;const r=safeReport(base);const fit=buyerFitFor({buyers:d.buyers,checks:d.checks,access:d.requests,listings:d.listings},{id:company.id,region:(company as DealCompany).region},r?{price:r.valuation.mid,sde:r.valuation.sde}:undefined);return fit?{...base,buyerFit:fit}:base;},[base,d,company]);
   const shared=(b.saleReady||[]) as SaleReadySnapshot[],last=shared[0];
   const report=useMemo(()=>input?safeReport(input):null,[input]);
   const firstName=b.portal.ownerName.split(' ')[0]||b.portal.ownerName;
-  const [note,setNote]=useState(()=>report?draftNote(report,firstName,last?safeReport(last.input)||undefined:undefined):''),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[err,setErr]=useState('');
+  const [note,setNote]=useState(()=>report?draftNote(report,firstName,last?safeReport(last.input)||undefined:undefined,input?.buyerFit?.total):''),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[err,setErr]=useState('');
   if(!input||!report)return <section className="panel"><h2>Sale-ready page</h2><p className="muted">Save the recast under Valuation and recast first. The page is built from it.</p></section>;
   const share=async()=>{setBusy(true);setErr('');setMsg('');try{await store.shareSaleReady(b.portal.id,input,note);await refresh();setMsg(`Shared with ${firstName}. It is at the top of their portal.`);}catch(e){setErr((e as Error).message);}finally{setBusy(false);}};
   return <section className="panel sr-admin">

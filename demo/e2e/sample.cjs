@@ -5,6 +5,7 @@ const BASE=process.env.BASE||'http://127.0.0.1:4173/',OUT=process.argv[2];
   await p.goto(BASE+'#sample');await p.waitForSelector('#portal-sale-ready');
   assert.equal(await p.evaluate(()=>scrollY),0,'opens at the top');
   assert.match(await p.innerText('#portal-sale-ready'),/master HVACR license is only in your name/);
+  assert.match(await p.innerText('#portal-sale-ready'),/9 buyers in Kalling’s directory fit your business today, 4 of them strongly: 4 owner-operators, 3 HVAC companies and 2 search funds\./);
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth),390,'no sideways scroll');
   const home=p.locator('.oh');assert.match(await home.innerText(),/Choosing an offer, step 3 of 5/);
   assert.match(await home.locator('h2').innerText(),/Send your year-to-date financials for 2026/);

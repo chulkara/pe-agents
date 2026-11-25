@@ -36,3 +36,4 @@
 .sr-ok{padding:10px 12px;border-radius:var(--k-radius-input);background:var(--k-green-soft);color:var(--k-green-2);font-size:14px}
 .sr-history{margin-top:10px}
 @media (max-width:520px){.sr{padding:22px 16px;border-radius:14px}.sr-how td.sr-src{display:none}.sr-drags li{padding:14px}}
+.sr-fit-line{margin:0;font-size:16px;line-height:1.55}.sr-fit-line strong{font:400 30px/1 var(--k-figure);color:var(--k-purple);margin-right:2px;vertical-align:-3px}

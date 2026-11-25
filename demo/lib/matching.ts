@@ -84,3 +84,22 @@ export function fitSummary(matches:BuyerMatch[]){
   for(const m of matches)byType[m.buyer.type]=(byType[m.buyer.type]||0)+1;
   return {total:matches.length,strong,byType};
 }
+
+const typeWords:Record<string,[string,string]>={'Owner-operator':['owner-operator','owner-operators'],'Search fund':['search fund','search funds'],'Strategic HVAC operator':['HVAC company','HVAC companies'],'Private equity / family office':['investment firm','investment firms']};
+/** "4 owner-operators, 3 HVAC companies and 2 search funds", largest group first. */
+export function describeTypes(byType:Record<string,number>){
+  const parts=Object.entries(byType).filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1]).map(([t,n])=>{const w=typeWords[t]||[t.toLowerCase(),t.toLowerCase()];return n+' '+(n===1?w[0]:w[1]);});
+  return parts.length>1?parts.slice(0,-1).join(', ')+' and '+parts.at(-1):parts[0]||'';
+}
+/** Buyer fit for an owner's business: against its listing when there is one, otherwise against the
+ *  estimated value before listing. Returns null when there is not enough to match on. */
+export function buyerFitFor(db:{buyers:Buyer[];checks?:BuyerCheck[];access:AccessRequest[];listings:Listing[]},company:{id:string;region?:Listing['region']},estimate?:{price:number;sde:number}){
+  const listed=db.listings.find(l=>l.companyId===company.id&&l.status!=='Withdrawn'&&l.status!=='Sold');
+  let l:Listing|undefined=listed,basis:'listing'|'estimate'='listing';
+  if(!l){
+    if(!company.region||!estimate||!(estimate.price>0))return null;
+    basis='estimate';
+    l={id:'estimate-'+company.id,number:'',status:'Draft',sample:false,headline:'',region:company.region,focus:'Residential service & replacement',askingPrice:Math.round(estimate.price),revenue:0,sde:Math.round(estimate.sde),established:0,employees:0,technicians:0,agreements:0,recurringPct:0,residentialPct:0,vehicles:0,realEstate:'Leased facility',sellerFinancing:false,reason:'',summary:'',highlights:[],growth:[],confidential:{businessName:'',city:'',website:'',details:''},createdAt:'',updatedAt:''};
+  }
+  return {...fitSummary(matchBuyers(db,l,1000)),basis};
+}
