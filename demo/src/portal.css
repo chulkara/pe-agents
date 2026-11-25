@@ -142,3 +142,5 @@
 .portal-dr-log ul{margin:4px 0 0 20px;padding:0;color:var(--k-grey-1);font-size:14px}
 .portal-check{display:flex;gap:8px;align-items:center;margin-top:14px;font-size:14px}
 .portal-fine{color:var(--k-grey-1);font-size:13px}.portal-error{color:var(--k-error)}
+.portal-sample-note{max-width:1180px;margin:0 auto;padding:10px 28px;background:var(--k-peri-soft);font:450 13px/1.45 var(--k-ui);color:var(--k-grey-1)}
+@media (max-width:640px){.portal-sample-note{padding:10px 16px}}
