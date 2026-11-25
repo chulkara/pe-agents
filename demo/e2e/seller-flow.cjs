@@ -32,7 +32,17 @@ const until=async(fn,ms=60000)=>{const end=Date.now()+ms;for(;;){const v=await f
   const up=async(title,files)=>{const r=owner.locator('.portal-request').filter({hasText:title}).first();if(!(await r.getAttribute('class')).includes('open'))await r.locator('.portal-request-head').click();
     await r.locator('input[type=file]').setInputFiles(files.map(f=>path.join(FX,f)));await owner.waitForTimeout(400);await r.getByRole('button',{name:'Send for review'}).click();await owner.waitForTimeout(300);};
   await up('Profit and loss statements',['pl-2023.pdf','pl-2024.pdf','pl-2025.pdf']);await up('Business tax returns',['tax-returns.pdf']);await up('Maintenance agreement list',['agreements.csv']);await up('Team overview',['team.xlsx']);
-  await owner.locator('#portal-about textarea').first().fill('Pat Russo started the business in 2007 out of his garage and added a second van in 2009.');await owner.waitForSelector('text=Saved');
+  // The business questions come one at a time; a short answer gets one follow-up, and answers land in the same fields as the form.
+  const iv=owner.locator('#portal-about');assert.match(await iv.locator('.iv-now .iv-q').innerText(),/How did the business start/);
+  await iv.locator('#iv-text').fill('Pat Russo started the business in 2007 out of his garage and added a second van in 2009.');await iv.locator('#iv-text').press('Enter');await owner.waitForSelector('text=Saved');
+  await owner.waitForFunction(()=>/What work do you do/.test(document.querySelector('#portal-about .iv-now .iv-q')?.textContent||''));
+  await iv.locator('#iv-text').fill('Service and replacement.');await iv.getByRole('button',{name:'Send'}).click();
+  await owner.waitForFunction(()=>/Could you say a little more/.test(document.querySelector('#portal-about .iv-now .iv-q')?.textContent||''));
+  if(OUT){await owner.setViewportSize({width:390,height:844});await iv.locator('.iv').scrollIntoViewIfNeeded();await iv.locator('.iv').screenshot({path:`${OUT}/owner-interview-390.png`});await owner.setViewportSize({width:1440,height:900});}
+  await iv.locator('#iv-text').fill('About 1,400 maintenance plans across Middlesex and Somerset counties.');await iv.locator('#iv-text').press('Enter');
+  await owner.waitForFunction(()=>/What makes the business good/.test(document.querySelector('#portal-about .iv-now .iv-q')?.textContent||''));
+  await iv.getByRole('button',{name:'See all questions'}).click();
+  assert.equal(await iv.locator('textarea').nth(1).inputValue(),'Service and replacement. About 1,400 maintenance plans across Middlesex and Somerset counties.');
   await shot(owner,'owner-requests-1440');step(6,'owner uploaded documents and answered about the business');
 
   // 7. The advisor accepts the documents; their text is read in the browser.

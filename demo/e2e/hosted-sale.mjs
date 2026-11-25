@@ -289,7 +289,7 @@ const step=async(name,fn)=>{
     await up('Business tax returns',['tax-returns.pdf']);
     await up('Maintenance agreement list',['agreements.csv']);
     await up('Team overview',['team.xlsx']);
-    await sel.locator('#portal-about textarea').first().fill('Pat started the business in 2007 out of his garage and added a second van in 2009. (Fictional rehearsal text.)');
+    await sel.locator('#portal-about textarea').first().fill('Pat started the business in 2007 out of his garage and added a second van in 2009. (Fictional rehearsal text.)');if(await sel.locator('#portal-about #iv-text').count())await sel.locator('#portal-about #iv-text').press('Enter');
     await sel.waitForSelector('text=Saved');
     await sweep(sel,'seller-requests');
   });
