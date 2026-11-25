@@ -1,0 +1,40 @@
+.ask-room {
+  display: grid;
+  gap: .75rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--line, var(--k-line));
+  border-radius: .75rem;
+  overflow-wrap: anywhere;
+}
+.ask-room h3, .ask-room p, .ask-room blockquote { margin: 0; }
+.ask-room form, .ask-room label, .ask-room-empty { display: grid; gap: .5rem; min-width: 0; }
+.ask-room textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+  padding: .625rem;
+  border: 1px solid var(--line, var(--k-line));
+  border-radius: .5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.ask-room button { justify-self: start; }
+.ask-room-note { font-size: .875rem; }
+.ask-room-results { display: grid; gap: .75rem; list-style: none; margin: 0; padding: 0; min-width: 0; }
+.ask-room-results li {
+  display: grid;
+  gap: .5rem;
+  min-width: 0;
+  padding: .75rem;
+  border: 1px solid var(--line, var(--k-line));
+  border-radius: .5rem;
+}
+.ask-room-citation { font-weight: 600; }
+.ask-room blockquote { white-space: pre-wrap; }
+.ask-room-error { color: var(--k-error); }
+.dr-search-history { min-width: 0; overflow-wrap: anywhere; }
+.dr-search-history small { display: block; }
+.ks-viewer-text { margin: 0 auto; max-width: 75ch; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; }

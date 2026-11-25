@@ -11,7 +11,7 @@ Status: `Next` (not started) · `Building` · `In review` (PR open) · `Blocked`
 | 1 | Monday polish: sample link and one-page interview script | Claude | `claude/monday-polish-20261125` | In review | #29 | Codex | One owner, Green Brook, Monday Nov 30 |
 | 2 | Seller sourcing agent, first cut | Claude | | Next | | Codex | Check what NJ HVACR license records include |
 | 3 | Offer builder with financing options | Claude | | Next | | Codex | Seller take-home and buyer financing per structure |
-| 4 | Ask the data room | Codex | | Next | | Claude | Brief: `docs/briefs/ask-the-data-room.md` |
+| 4 | Ask the data room | Codex | `codex/ask-data-room-20261125` | Building | | Claude | Brief: `docs/briefs/ask-the-data-room.md` |
 | 5 | Voice onboarding | Unassigned | | Next | | | Talking version of the text interview |
 | 6 | Design system | Karan, then Claude | | Blocked | | | Waiting on Karan's font, color and image samples |
 

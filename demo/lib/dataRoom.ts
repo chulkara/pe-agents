@@ -18,12 +18,13 @@ export type RoomStatus='Draft'|'Proposed'|'Published'|'Unpublished';
 export type Room={listingId:string;portalId:string;status:RoomStatus;proposedAt?:string;publishedAt?:string;weeklySummary?:boolean};
 export type RoomItem={id:string;listingId:string;portalId:string;fileId:string;fileName:string;mime:string;displayName:string;folder:Folder;tier:Tier;allowDownload:boolean;note:string;ownerStatus:'Pending'|'Approved'|'Removed';ownerNote:string;changedAt:string;approvedAt?:string};
 export type ViewEvent={id:string;listingId:string;itemId:string;buyerId:string;event:'opened'|'page'|'downloaded'|'denied';page?:number;seconds?:number;at:string;ticket?:string};
+export type RoomSearchEvent={listingId:string;buyerId:string;question:string;at:string};
 export type Ticket={id:string;buyerId:string;itemId:string;fileId:string;at:string};
 export type LoiGrant={listingId:string;buyerId:string;note:string;by:string;at:string};
-export type RoomDb={rooms:Room[];roomItems:RoomItem[];views:ViewEvent[];tickets:Ticket[];loiGrants:LoiGrant[]};
-export const emptyRoomDb=():RoomDb=>({rooms:[],roomItems:[],views:[],tickets:[],loiGrants:[]});
+export type RoomDb={rooms:Room[];roomItems:RoomItem[];views:ViewEvent[];tickets:Ticket[];loiGrants:LoiGrant[];roomSearches:RoomSearchEvent[]};
+export const emptyRoomDb=():RoomDb=>({rooms:[],roomItems:[],views:[],tickets:[],loiGrants:[],roomSearches:[]});
 export type FullDb=BrokerDb&Partial<RoomDb>;
-const R=(db:FullDb):RoomDb=>({rooms:db.rooms||[],roomItems:db.roomItems||[],views:db.views||[],tickets:db.tickets||[],loiGrants:db.loiGrants||[]});
+const R=(db:FullDb):RoomDb=>({rooms:db.rooms||[],roomItems:db.roomItems||[],views:db.views||[],tickets:db.tickets||[],loiGrants:db.loiGrants||[],roomSearches:db.roomSearches||[]});
 export const TICKET_SECONDS=120;
 const advisor=(v:Viewer)=>need(v.kind==='advisor'&&v.canWrite,'Only a Kalling advisor can do this.');
 
@@ -75,6 +76,12 @@ export function buyerItems(db:FullDb,v:Viewer,listingId:string){
   const b=buyerOf(db,v),t=buyerTier(db,b,listingId),r=R(db);
   return {tier:t,items:r.roomItems.filter(x=>x.listingId===listingId&&x.ownerStatus==='Approved').map(x=>({id:x.id,displayName:x.displayName,folder:x.folder,tier:x.tier,mime:x.mime,allowDownload:x.allowDownload,note:x.note,open:visible(x,t)}))};
 }
+/** Search activity is separate from document opens. Only the advisor sees the text. */
+export function recordRoomSearch(db:FullDb,viewer:Viewer,listingId:string,question:string):FullDb{
+  const buyer=buyerOf(db,viewer);
+  need(buyer&&buyerTier(db,buyer,listingId),'You do not have access to this data room.');
+  return {...db,roomSearches:[...R(db).roomSearches,{listingId,buyerId:buyer.id,question,at:now()}]};
+}
 /** Opening writes the log row first, then hands back a short-lived ticket. A denied open is logged too. */
 export function openItem(db:FullDb,v:Viewer,itemId:string,kind:'opened'|'downloaded'='opened'):{db:FullDb;ticket?:Ticket;item?:RoomItem;error?:string}{
   const r=R(db),it=r.roomItems.find(x=>x.id===itemId),b=buyerOf(db,v);need(it,'Document not found.');need(b,'Sign in with your buyer profile first.');
@@ -117,13 +124,19 @@ export function ownerLog(db:FullDb,listingId:string){
 }
 export function buyerHistory(db:FullDb,v:Viewer){const b=buyerOf(db,v);if(!b)return [];const r=R(db);return r.views.filter(x=>x.buyerId===b.id&&x.event==='opened').map(x=>({at:x.at,document:r.roomItems.find(i=>i.id===x.itemId)?.displayName||'A document',listing:db.listings.find(l=>l.id===x.listingId)?.number||''})).reverse();}
 export const watermarkText=(name:string,email:string,at=new Date())=>`${name}, ${email}, ${at.toISOString().slice(0,10)}. Confidential, Kalling data room`;
-/** Plain text for the owner's weekly summary, from per-document entries. */
-export function summaryText(log:{item:string;entries:{label:string;opens:number;last:string;downloaded:boolean}[]}[],since=Date.now()-7*864e5){
-  const recent=log.map(x=>({...x,entries:x.entries.filter(e=>Date.parse(e.last)>=since)})).filter(x=>x.entries.length);
-  if(!recent.length)return 'No buyer opened a document in the data room this week.';
-  return 'Data room this week:\n'+recent.map(x=>`${x.item}: `+x.entries.map(e=>`${e.label} (${e.opens} open${e.opens===1?'':'s'}${e.downloaded?', downloaded':''})`).join('; ')).join('\n');
+export function searchQuestionCount(db:FullDb,listingId:string,since=Date.now()-7*864e5){
+  return R(db).roomSearches.filter(event=>event.listingId===listingId&&Date.parse(event.at)>=since).length;
 }
-export const weeklySummary=(db:FullDb,listingId:string,since=Date.now()-7*864e5)=>summaryText(ownerLog(db,listingId),since);
+/** Plain text for the owner's weekly summary, from opens and aggregate search activity. */
+export function summaryText(log:{item:string;entries:{label:string;opens:number;last:string;downloaded:boolean}[]}[],since=Date.now()-7*864e5,questions=0){
+  const recent=log.map(x=>({...x,entries:x.entries.filter(e=>Date.parse(e.last)>=since)})).filter(x=>x.entries.length);
+  const questionLine=questions?`${questions} question${questions===1?'':'s'} asked`:'';
+  if(!recent.length&&!questionLine)return 'No buyer opened a document in the data room this week.';
+  const lines=recent.map(x=>`${x.item}: `+x.entries.map(e=>`${e.label} (${e.opens} open${e.opens===1?'':'s'}${e.downloaded?', downloaded':''})`).join('; '));
+  if(questionLine)lines.push(questionLine);
+  return 'Data room this week:\n'+lines.join('\n');
+}
+export const weeklySummary=(db:FullDb,listingId:string,since=Date.now()-7*864e5)=>summaryText(ownerLog(db,listingId),since,searchQuestionCount(db,listingId,since));
 /** A starting folder and tier for an owner document. The advisor can change both. */
 export function suggestPlacement(name:string,requests:string[]=[]):{folder:Folder;tier:Tier}{
   const t=(name+' '+requests.join(' ')).toLowerCase();
