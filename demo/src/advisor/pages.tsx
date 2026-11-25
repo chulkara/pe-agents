@@ -18,6 +18,7 @@ import {AlertQueue} from '../buyer/Alerts';
 import {AdvisorVerification,VerificationPolicy} from '../buyer/Verification';
 import {PortalContextRef} from '../OwnerPortalAdmin';
 import {useContext} from 'react';
+import {orderNeeds,saleReadyNeed,waitingDays} from '../../lib/needs';
 
 export type AdvisorProps={w:Workspace;commit:(next:Workspace)=>Promise<boolean>;actor:string;readOnly:boolean;openDeal:(companyId:string,tab?:string)=>void;go:(page:string)=>void};
 const dt=(s?:string)=>s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
@@ -39,7 +40,8 @@ export function TodayPage(p:AdvisorProps&{aiReview:{c:Company;label:string}[]}){
   const companyFor=(listingId:string)=>{const l=d?.listings.find(z=>z.id===listingId);return l?.companyId?p.w.companies.find(c=>c.id===l.companyId):undefined;};
   const toPage=(listingId:string,tab:string,page:string)=>()=>{const c=companyFor(listingId);if(c)p.openDeal(c.id,tab);else p.go(page);};
   const docs=Object.values(portals).flatMap(({portal,bundle})=>(bundle?.requests||[]).filter(r=>r.status==='Submitted').map(r=>({portal,r})));
-  const needs:Need[]=d?[
+  const portalCtx=useContext(PortalContextRef);
+  const needs:Need[]=d?orderNeeds([
     ...x.alerts.filter(a=>a.status==='Awaiting review').map(a=>({id:'alert'+a.id,date:a.createdAt,kind:'Listing alert',text:'Review listing alert for '+a.recipient,action:'Review alert',run:()=>{localStorage.setItem('kalling-buyer-section','Listing alerts');p.go('Buyers');}})),
     ...x.introductions.filter(r=>['Submitted','Ready for approval'].includes(r.status)).map(r=>({id:'intro'+r.id,date:r.updatedAt,kind:'Lender request',text:r.nextStep,action:'Review introduction',run:()=>{localStorage.setItem('kalling-buyer-section','Lender requests');p.go('Buyers');}})),
     ...proofQueue.map(v=>({id:'proof'+v.id,date:v.submittedAt||v.updatedAt,kind:'Financing evidence',text:`Financing evidence version ${v.version} is waiting for review`,action:'Review evidence',run:()=>p.go('Buyers')})),
@@ -58,7 +60,8 @@ export function TodayPage(p:AdvisorProps&{aiReview:{c:Company;label:string}[]}){
     ...x.execution.flatMap(({transaction:t})=>t.items.filter(i=>['Submitted','Changes needed'].includes(i.status)).map(i=>({id:'execution:'+i.id,date:t.createdAt,kind:'Diligence review',text:i.title+'; coordinator '+i.owner,action:'Review diligence',run:()=>p.openDeal(t.companyId,'Diligence')}))),
     ...p.w.companies.filter(c=>!c.sample&&c.status!=='Passed'&&c.nextAction&&c.due&&c.due<=new Date().toISOString().slice(0,10)).map(c=>({id:'f'+c.id,date:c.due,kind:'Follow-up',text:`${c.nextAction}, ${c.name}`,action:'Open company',run:()=>p.openDeal(c.id)})),
     ...p.aiReview.map(({c,label})=>({id:'a'+c.id,date:'',kind:'AI draft',text:`${label} for ${c.name}`,action:'Review draft',run:()=>p.openDeal(c.id,'Research and drafting')})),
-  ].sort((a,b)=>b.date.localeCompare(a.date)):[];
+    ...(portalCtx.store?.mode==='local'?p.w.companies.flatMap(c=>{const pb=portals[c.id];if(!pb?.portal)return [];const n=saleReadyNeed({ownerName:pb.portal.ownerName,businessName:pb.portal.businessName,portalActive:pb.portal.status==='Active',recastUpdatedAt:(c as DealCompany).recast?.updatedAt,lastSharedAt:pb.bundle?.saleReady?.[0]?.sharedAt});return n?[{id:'sr'+c.id,date:n.date,kind:'Sale-ready update',text:n.text,action:'Prepare page',run:()=>p.openDeal(c.id,'Owner')}]:[];}):[]),
+  ]):[];
   const counts=sellStages.map(s=>[s,p.w.companies.filter(c=>stageOf(x,c)===s).length] as const);
   return <div className="adv-page">
     <header className="adv-head"><div><p className="adv-date">{new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}</p><h1>{greeting}, {p.actor.split(/[@\s]/)[0]}</h1></div></header>
@@ -70,8 +73,8 @@ export function TodayPage(p:AdvisorProps&{aiReview:{c:Company;label:string}[]}){
     </div>
     {x.error&&<p className="error-banner" role="alert">{x.error}</p>}
     <div className="adv-today">
-      <Panel title="Needs you" action={<span className="adv-muted">{needs.length} item{needs.length===1?'':'s'}</span>}>
-        {needs.length?<KeylineList className="adv-needs">{needs.slice(0,25).map(n=><li key={n.id}><div><small>{n.kind}{n.date?', '+dt(n.date):''}</small><strong>{n.text}</strong></div><Button arrow onClick={n.run}>{n.action}</Button></li>)}</KeylineList>
+      <Panel title="Needs you" action={<span className="adv-muted">{needs.length} item{needs.length===1?'':'s'}, most urgent first</span>}>
+        {needs.length?<><KeylineList className="adv-needs">{needs.slice(0,25).map(n=><li key={n.id}><div><small>{n.kind}{n.date?', '+dt(n.date):''}{(()=>{const w=n.date?waitingDays(n.date):null;return w&&w>=1?`, waiting ${w} day${w===1?'':'s'}`:'';})()}</small><strong>{n.text}</strong></div><Button arrow onClick={n.run}>{n.action}</Button></li>)}</KeylineList>{needs.length>25&&<p className="adv-muted">And {needs.length-25} more after these.</p>}</>
           :<EmptyState title="Nothing is waiting for you">New inquiries, NDA requests, seller documents, buyer questions and offers appear here as they arrive.</EmptyState>}
       </Panel>
       <Panel title="Deals by stage" action={<Button tone="quiet" onClick={()=>p.go('Deals')}>Open pipeline</Button>}>
