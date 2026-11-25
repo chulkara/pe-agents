@@ -1,0 +1,38 @@
+/* Sale-ready page. Phone first: one column, big type for the number that matters, plain words. */
+.sr{display:grid;gap:18px;margin:28px 0;padding:28px clamp(18px,4vw,36px);border:1px solid var(--k-line);border-radius:var(--k-radius-panel);background:#fff;min-width:0}
+.sr-meta{margin:0;font:450 13px var(--k-ui);color:var(--k-grey-2)}
+.sr h2{margin:0;font:500 clamp(24px,3.4vw,34px)/1.12 var(--k-font);letter-spacing:-.03em;text-wrap:balance}
+.sr-range{margin:4px 0 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:0 14px;font:400 clamp(44px,9vw,76px)/1 var(--k-figure);color:var(--k-purple);font-variant-numeric:tabular-nums}
+.sr-to{font:450 18px var(--k-ui);color:var(--k-grey-2)}
+.sr-basis-line{margin:0;font-size:15px;line-height:1.55;color:var(--k-grey-1)}
+.sr-up{color:var(--k-green)}.sr-down{color:var(--k-error)}
+.sr-note{margin:4px 0 0;padding:16px 18px;background:var(--k-peri-soft);border-radius:var(--k-radius-input);display:grid;gap:8px}
+.sr-note p{margin:0;font-size:15px;line-height:1.6;color:#000}
+.sr-note cite{font:450 13px var(--k-ui);font-style:normal;color:var(--k-grey-1)}
+.sr-block{display:grid;gap:10px;padding-top:18px;border-top:1px solid var(--k-line)}
+.sr h3{margin:0;font:500 20px/1.25 var(--k-font);letter-spacing:-.01em}
+.sr-sub{margin:0;font-size:14px;line-height:1.55;color:var(--k-grey-1)}
+.sr-drags{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:12px;counter-reset:drag}
+.sr-drags li{display:grid;gap:6px;padding:16px;border:1px solid var(--k-line);border-radius:var(--k-radius-input);min-width:0}
+.sr-drag-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px 14px;flex-wrap:wrap}
+.sr-drag-head strong{font-size:16px;line-height:1.35}
+.sr-gain{font:500 14px var(--k-ui);color:var(--k-green);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sr-drags p{margin:0;font-size:14px;line-height:1.55;color:var(--k-grey-1)}
+.sr-drags .sr-fix{display:flex;gap:8px;align-items:flex-start;color:#000}
+.sr-fix svg{flex:0 0 auto;margin-top:3px;color:var(--k-green)}
+.sr-drags .sr-assume{font-size:12.5px;color:var(--k-grey-2)}
+.sr-bar{height:10px;border-radius:var(--k-radius-pill);background:var(--k-surface);overflow:hidden}
+.sr-bar i{display:block;height:100%;background:var(--k-green);border-radius:inherit}
+.sr-how{border-top:1px solid var(--k-line);padding-top:12px}
+.sr-how summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font:500 14px var(--k-ui)}
+.sr-how table{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 12px}
+.sr-how th,.sr-how td{text-align:left;padding:9px 8px 9px 0;border-bottom:1px solid var(--k-line);vertical-align:top;font-weight:400}
+.sr-how td{font-variant-numeric:tabular-nums;white-space:nowrap}
+.sr-how td.sr-src{white-space:normal;color:var(--k-grey-2);font-size:13px}
+.sr-how ul{margin:8px 0 0;padding-left:18px;display:grid;gap:6px;font-size:13.5px;line-height:1.5;color:var(--k-grey-1)}
+.sr-legal{margin:0;font-size:12.5px;color:var(--k-grey-2)}
+.sr-admin .sr{margin:18px 0}
+.sr-note-field{display:grid;gap:8px}.sr-note-field textarea{font:15px/1.5 var(--k-font);padding:12px;border-radius:var(--k-radius-input)}
+.sr-ok{padding:10px 12px;border-radius:var(--k-radius-input);background:var(--k-green-soft);color:var(--k-green-2);font-size:14px}
+.sr-history{margin-top:10px}
+@media (max-width:520px){.sr{padding:22px 16px;border-radius:14px}.sr-how td.sr-src{display:none}.sr-drags li{padding:14px}}

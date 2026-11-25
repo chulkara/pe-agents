@@ -29,8 +29,10 @@ export const answerQuestions:[keyof Omit<OwnerAnswers,'portalId'|'updatedAt'>,st
 export const reviewStatuses=['Waiting for owner','Changes requested','Approved'] as const;
 /** A document the owner reviews before anything is shared with buyers, such as the memorandum. */
 export type OwnerReview={id:string;portalId:string;kind:'cim';version:number;title:string;sections:{key:string;title:string;text:string}[];status:typeof reviewStatuses[number];comments:{section:string;text:string;at:string}[];createdAt:string;decidedAt?:string};
-export type PortalBundle={answers?:OwnerAnswers;reviews:OwnerReview[];letters:Letter[];portal:Portal;buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];access:{team:string[];seller:string[]};side:Side;canEdit:boolean};
-export type PortalDb={portals:Portal[];buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];letters?:Letter[];answers?:OwnerAnswers[];reviews?:OwnerReview[];invites:{token:string;portalId:string;email:string;expiresAt:string;usedAt?:string}[]};
+/** A sale-ready snapshot the advisor prepared and shared. The report is recomputed from `input` with saleReady.ts, so the owner sees exactly what the advisor reviewed. */
+export type SaleReadySnapshot={id:string;portalId:string;version:number;input:import('./saleReady.ts').SaleReadyInput;note:string;by:string;sharedAt:string};
+export type PortalBundle={saleReady?:SaleReadySnapshot[];answers?:OwnerAnswers;reviews:OwnerReview[];letters:Letter[];portal:Portal;buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];access:{team:string[];seller:string[]};side:Side;canEdit:boolean};
+export type PortalDb={portals:Portal[];buyers:Buyer[];requests:DocRequest[];files:PortalFile[];messages:Message[];steps:NextStep[];letters?:Letter[];answers?:OwnerAnswers[];reviews?:OwnerReview[];saleReady?:SaleReadySnapshot[];invites:{token:string;portalId:string;email:string;expiresAt:string;usedAt?:string}[]};
 export type Actor={side:Side;name:string;email:string;canWrite?:boolean};
 
 export const fileLimits={maxBytes:10*1024*1024,maxFiles:100,maxPortalBytes:200*1024*1024,types:['application/pdf','image/png','image/jpeg','text/plain','text/csv','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/msword']};
@@ -172,7 +174,8 @@ export function bundle(db:PortalDb,a:Actor,portalId:string,team:string[]):Portal
   const requests=seller&&portal.requestsHidden?[]:db.requests.filter(r=>r.portalId===portalId);
   const letters=(db.letters||[]).filter(l=>l.portalId===portalId&&(!seller||l.status!=='Draft')).sort((x,y)=>y.version-x.version);
   const reviews=(db.reviews||[]).filter(r=>r.portalId===portalId).sort((x,y)=>y.version-x.version),answers=(db.answers||[]).find(x=>x.portalId===portalId);
-  return {answers,reviews,letters,portal,buyers:db.buyers.filter(b=>b.portalId===portalId),requests,files:seller&&portal.requestsHidden?[]:db.files.filter(f=>f.portalId===portalId&&f.status==='stored'),messages:db.messages.filter(m=>m.portalId===portalId),steps:db.steps.filter(s=>s.portalId===portalId),access:{team,seller:portal.status==='Active'?[portal.ownerEmail]:[]},side:a.side,canEdit:a.side==='firm'?a.canWrite!==false:portal.status==='Active'};
+  const saleReady=(db.saleReady||[]).filter(x=>x.portalId===portalId).sort((x,y)=>y.version-x.version).slice(0,seller?2:12);
+  return {saleReady,answers,reviews,letters,portal,buyers:db.buyers.filter(b=>b.portalId===portalId),requests,files:seller&&portal.requestsHidden?[]:db.files.filter(f=>f.portalId===portalId&&f.status==='stored'),messages:db.messages.filter(m=>m.portalId===portalId),steps:db.steps.filter(s=>s.portalId===portalId),access:{team,seller:portal.status==='Active'?[portal.ownerEmail]:[]},side:a.side,canEdit:a.side==='firm'?a.canWrite!==false:portal.status==='Active'};
 }
 
 /** Progress the owner sees at the top of their portal. */
@@ -246,4 +249,14 @@ export function addFirmFile(db:PortalDb,a:Actor,portalId:string,f:{id?:string;na
   const dup=findDuplicate(db,portalId,f.sha256);if(dup)return {db,file:dup};checkUpload(db,portalId,f);
   const file:PortalFile={id:f.id||uid(),portalId,name:clean(f.name,200),mime:f.mime,size:f.size,sha256:f.sha256,status:'stored',uploadedBy:a.name,side:'firm',createdAt:now()};
   return {db:{...db,files:[...db.files,file]},file};
+}
+
+/** The advisor shares a reviewed sale-ready page with the owner. Shared versions are kept; the newest is shown. */
+export function shareSaleReady(db:PortalDb,a:Actor,portalId:string,input:import('./saleReady.ts').SaleReadyInput,note:string):{db:PortalDb;id:string}{
+  firmWriter(a);const p=portalOf(db,portalId);require_(p.status!=='Closed','This portal is closed.');
+  const text=clean(note,2000);require_(text.length>=20,'Write a short note for the owner, at least 20 characters.');
+  require_(input&&input.inputs&&input.inputs.revenue>0,'Enter the recast before sharing the sale-ready page.');
+  const version=Math.max(0,...(db.saleReady||[]).filter(x=>x.portalId===portalId).map(x=>x.version))+1;
+  const snap:SaleReadySnapshot={id:uid(),portalId,version,input:structuredClone(input),note:text,by:a.name,sharedAt:now()};
+  return {db:{...db,saleReady:[...(db.saleReady||[]),snap]},id:snap.id};
 }

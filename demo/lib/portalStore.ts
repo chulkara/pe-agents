@@ -48,6 +48,8 @@ export interface PortalStore{
   // owner answers, owner reviews and firm files
   saveAnswers(portalId:string,a:Partial<Omit<OwnerAnswers,'portalId'|'updatedAt'>>):Promise<void>;
   publishReview(portalId:string,r:{kind:'cim';version:number;title:string;sections:{key:string;title:string;text:string}[]}):Promise<string>;
+  /** Share a reviewed sale-ready page with the owner. Local demo only until the hosted migration lands. */
+  shareSaleReady(portalId:string,input:import('./saleReady.ts').SaleReadyInput,note:string):Promise<string>;
   decideReview(id:string,decision:'Approved'|'Changes requested',comments:{section:string;text:string}[]):Promise<void>;
   uploadFirmFile(portalId:string,file:File):Promise<PortalFile>;
   extracts(portalId:string):Promise<Extract[]>;
@@ -115,6 +117,7 @@ export function localPortalStore(o:{actor:Actor;firmId:string;firmName:string;te
     async voidLetter(id:string,reason:string){await apply(db=>P.voidLetter(db,a,id,reason));},
     async saveAnswers(portalId:string,ans:Parameters<PortalStore['saveAnswers']>[1]){await apply(db=>P.saveAnswers(db,a,portalId,ans));},
     async publishReview(portalId:string,r:Parameters<PortalStore['publishReview']>[1]){const out=P.publishReview(read(),a,portalId,r);write(out.db);return out.id;},
+    async shareSaleReady(portalId:string,input:Parameters<PortalStore['shareSaleReady']>[1],note:string){const out=P.shareSaleReady(read(),a,portalId,input,note);write(out.db);return out.id;},
     async decideReview(id:string,d:'Approved'|'Changes requested',c:{section:string;text:string}[]){await apply(db=>P.decideReview(db,a,id,d,c));},
     async uploadFirmFile(portalId:string,file:File){const buf=await file.arrayBuffer(),sha256=await P.sha256Hex(buf),id=crypto.randomUUID();const db=read();if(!P.findDuplicate(db,portalId,sha256))await bytes.put(id,new Blob([buf],{type:file.type}));const out=P.addFirmFile(read(),a,portalId,{id,name:file.name,mime:file.type,size:file.size,sha256});write(out.db);return out.file;},
     async saveExtract(portalId:string,ex:Extract){if(a.side!=='firm'||a.canWrite===false)throw Error('Only the firm’s team can change this.');const all=readExtracts();all[portalId]={...(all[portalId]||{}),[ex.fileId]:ex};kv.setItem(LOCAL_EXTRACT_KEY,JSON.stringify(all));},

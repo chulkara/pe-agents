@@ -105,3 +105,17 @@ test('file checks reject oversize and unsupported files before any bytes are sto
   const big=new File([new Uint8Array(P.fileLimits.maxBytes+1)],'big.pdf',{type:'application/pdf'});await assert.rejects(()=>s.seller.upload(r.id,big),/10 MB/);
   assert.equal((await s.seller.load(s.id)).files.length,0);
 });
+
+test('the sale-ready page reaches the owner only when the firm shares it, newest first',async()=>{
+  const {firm:f,seller:s}=stores();const id=await f.create({companyId:'c1',businessName:'Garden State Heating',ownerName:'Dana Reyes',ownerEmail:owner.email,help});
+  const token=await f.invite(id);await s.acceptInvite(owner.email,token);
+  const input={businessName:'Garden State Heating',inputs:{revenue:2000000,ownerPay:150000,netProfit:200000,addBacks:0,maintenancePct:40,agreements:200,commercialPct:20,newConstructionPct:5,technicians:4,ownerRole:'key-relationships',topCustomerPct:8,years:12,trend:'flat',licenseHolder:'owner-only'},addBacks:[],requests:[],asOf:'2026-11-24'};
+  assert.equal((await s.load(id)).saleReady.length,0);
+  await assert.rejects(()=>s.shareSaleReady(id,input,'Dana, here is where the business stands.'),/firm/);
+  await assert.rejects(()=>f.shareSaleReady(id,input,'too short'),/at least 20/);
+  await assert.rejects(()=>f.shareSaleReady(id,{...input,inputs:{...input.inputs,revenue:0}},'Dana, here is where the business stands.'),/recast/);
+  await f.shareSaleReady(id,input,'Dana, here is where the business stands this month.');
+  await f.shareSaleReady(id,{...input,inputs:{...input.inputs,licenseHolder:'owner-and-employee'}},'Dana, the license step moved the estimate up.');
+  const seen=(await s.load(id)).saleReady;
+  assert.deepEqual(seen.map(x=>x.version),[2,1]);assert.equal(seen[0].by,'Karan');assert.match(seen[0].note,/license step/);
+});
