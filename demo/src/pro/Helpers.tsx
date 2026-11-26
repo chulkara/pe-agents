@@ -21,7 +21,7 @@ export function OwnerHelpers({store,portalId,requests,refresh}:{store:HelperStor
     {error&&<p className="pro-error" role="alert">{error}</p>}{notice&&<p className="pro-ok" role="status">{notice}</p>}
     {link&&<div className="pro-link"><p>Invitation link. It works once, for the email address you entered.</p><code>{link}</code><button type="button" className="pro-btn" onClick={()=>void navigator.clipboard?.writeText(link).then(()=>setNotice('Link copied.'))}>Copy link</button></div>}
     {list===null?<p className="pro-fine">Loading…</p>:list.map(v=><HelperCard key={v.helper.id+v.helper.requestIds.join()} v={v} store={store} open={open} busy={busy} run={run} showLink={t=>setLink(helperLink(t))}/>)}
-    <details className="pro-add" open={list?.length===0}><summary>Add someone from your staff</summary>
+    <details className="pro-add"><summary>Add someone from your staff</summary>
       <form className="pro-form" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget),form=e.currentTarget;void run(async()=>{const t=await store.add(portalId,{name:String(f.get('name')),email:String(f.get('email')),days:Number(f.get('days'))});form.reset();setLink(helperLink(t));},'Added. Send them the invitation link, then choose which requests they work on. Kalling does not email it for you.');}}>
         <label><span>Their name</span><input name="name" required maxLength={120} autoComplete="off"/></label>
         <label><span>Their email</span><input name="email" type="email" required autoComplete="off"/></label>

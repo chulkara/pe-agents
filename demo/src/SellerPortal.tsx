@@ -55,7 +55,7 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
     <header className="portal-hero">
       <div className="portal-hero-text"><h1>{p.businessName}</h1><p className="portal-by">Prepared by {p.firmName} for {p.ownerName}</p><p>Everything here is private to you and {possessive(p.firmName)} team.</p>
         {b.side==='seller'||preview?<OwnerHome b={b} txs={txs} go={go}/>:null}
-        {p.welcome&&<blockquote className="portal-welcome">{p.welcome}</blockquote>}</div>
+        {p.welcome&&gated&&!b.letters.some(l=>['Signed by owner','Countersigned'].includes(l.status))&&<blockquote className="portal-welcome">{p.welcome}</blockquote>}</div>
       <aside className="portal-help" aria-label="Help"><CircleHelp size={20}/><div><strong>Questions? Ask {p.help.name.split(' ')[0]}.</strong><span>{p.help.name} is your contact at {p.firmName}.</span><a href={'mailto:'+p.help.email}><Mail size={13}/>{p.help.email}</a>{p.help.phone&&<a href={'tel:'+p.help.phone.replace(/[^\d+]/g,'')}><Phone size={13}/>{p.help.phone}</a>}<a href={"#portal-messages"} onClick={jump}><MessageSquare size={13}/>Send a message here</a></div></aside>
     </header>
     {error&&<p role="alert" className="error-banner">{error}</p>}
@@ -65,16 +65,14 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
     {!gated&&<section className="portal-summary" aria-label="Your progress">
       <div><strong className="k-figure">{prog.done}<small> of {prog.total}</small></strong><span>complete</span></div>
       <div><strong className="k-figure">{waiting.length}</strong><span>waiting for you</span></div>
-      <div><strong className="k-figure">{prog.sent}</strong><span>with {p.firmName.split(' ')[0]} for review</span></div>
-      <div><strong className="k-figure">{newMessages}</strong><span>new {newMessages===1?'message':'messages'}</span></div>
       <div className="portal-progress"><ProgressBar done={prog.done} sent={prog.sent} total={prog.total} label="Document requests"/><p><i className="done"/>Complete <i className="sent"/>Sent for review <i/>Still to do</p></div>
     </section>}
-    <nav className="portal-nav" aria-label="Portal sections"><a href={"#portal-steps"} onClick={jump}><ListChecks size={15}/>Next steps</a>{!gated&&<a href={"#portal-requests"} onClick={jump}><FileText size={15}/>Requests{waiting.length?<em>{waiting.length}</em>:null}</a>}<a href={"#portal-buyers"} onClick={jump}><Users size={15}/>Buyers</a><a href={"#portal-messages"} onClick={jump}><MessageSquare size={15}/>Messages{newMessages?<em>{newMessages}</em>:null}</a><a href={"#portal-documents"} onClick={jump}><FolderOpen size={15}/>Your documents</a></nav>
+    <nav className="portal-nav" aria-label="Portal sections">{b.steps.length>0&&<a href={"#portal-steps"} onClick={jump}><ListChecks size={15}/>Next steps</a>}{!gated&&<a href={"#portal-requests"} onClick={jump}><FileText size={15}/>Requests{waiting.length?<em>{waiting.length}</em>:null}</a>}{b.buyers.length>0&&<a href={"#portal-buyers"} onClick={jump}><Users size={15}/>Buyers</a>}<a href={"#portal-messages"} onClick={jump}><MessageSquare size={15}/>Messages{newMessages?<em>{newMessages}</em>:null}</a><a href={"#portal-documents"} onClick={jump}><FolderOpen size={15}/>Your documents</a></nav>
     <div className="portal-grid">
       <main className="portal-main">
-        <section id="portal-steps" className="portal-section"><h2>Next steps</h2>
-          {b.steps.length?<ol className="portal-steps">{b.steps.map(s=><li key={s.id} className={s.done?'done':''}><span className="portal-step-mark">{s.done?<Check size={14}/>:null}</span><div><strong>{s.text}</strong><small>{s.owner==='You'?'You':p.firmName}{s.due?', by '+fmtDate(s.due):''}{s.done?', done':''}</small></div></li>)}</ol>:<p className="portal-empty">{p.firmName} will add next steps here.</p>}
-        </section>
+        {b.steps.length>0&&<section id="portal-steps" className="portal-section"><h2>Next steps</h2>
+          <ol className="portal-steps">{b.steps.map(s=><li key={s.id} className={s.done?'done':''}><span className="portal-step-mark">{s.done?<Check size={14}/>:null}</span><div><strong>{s.text}</strong><small>{s.owner==='You'?'You':p.firmName}{s.due?', by '+fmtDate(s.due):''}{s.done?', done':''}</small></div></li>)}</ol>
+        </section>}
         {gated?<section id="portal-requests" className="portal-section"><h2>Document requests</h2><p className="portal-empty">Your document requests open here once the engagement letter is signed by both of us.</p></section>:<section id="portal-requests" className="portal-section"><h2>Document requests</h2>
           <p className="portal-lede">Each request explains what is needed, why, and who can see it. Your work saves as you go, so you can leave and come back. Send each request when you’re ready for it to be reviewed.</p>
           <div className="portal-requests">{[...b.requests].sort((x,y)=>requestOrder(x)-requestOrder(y)).map(r=><RequestCard key={r.id} r={r} b={b} store={store} readOnly={readOnly} refresh={refresh} open={openId===r.id} setOpen={o=>setOpenId(o?r.id:'')}/>)}</div>
@@ -84,21 +82,21 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
         {!gated&&<OwnerDataRoom room={room} portalId={portalId} readOnly={readOnly} firm={p.firmName}/>}
         {!gated&&<OwnerOfferComparison store={store} portalId={portalId} readOnly={readOnly}/>}
         {!gated&&<AboutBusiness b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
-        <section id="portal-buyers" className="portal-section"><h2>Interested buyers</h2>
-          {b.buyers.length?<div className="portal-buyers">{b.buyers.map(x=>{const st=buyerStanding(x,txs,stageHelp[x.stage]);return <article key={x.id}><div className="portal-buyer-head"><h3>{x.name}</h3><VerificationPill badge={x.verification}/><span className={'k-pill'+(st.tone?' k-pill-'+st.tone:'')}>{st.label}</span></div>{x.summary&&<p>{x.summary}</p>}<small>{st.help} Updated {fmtDate(x.updatedAt)}.</small></article>;})}</div>:<p className="portal-empty">No buyers are listed yet. {p.firmName} adds buyers here as conversations begin.</p>}
-        </section>
+        {b.buyers.length>0&&<section id="portal-buyers" className="portal-section"><h2>Interested buyers</h2>
+          <div className="portal-buyers">{b.buyers.map(x=>{const st=buyerStanding(x,txs,stageHelp[x.stage]);return <article key={x.id}><div className="portal-buyer-head"><h3>{x.name}</h3><VerificationPill badge={x.verification} owner/><span className={'k-pill'+(st.tone?' k-pill-'+st.tone:'')}>{st.label}</span></div>{x.summary&&<p>{x.summary}</p>}<small>{st.help} Updated {fmtDate(x.updatedAt)}.</small></article>;})}</div>
+        </section>}
       </main>
       <aside className="portal-side">
         <Messages b={b} store={store} readOnly={readOnly} refresh={refresh}/>
         <section id="portal-documents" className="portal-section portal-docs"><h2>Your documents</h2>
-          {b.files.length||b.letters.some(l=>l.status==='Countersigned')?<ul className="k-keylines"><SignedLetterLink b={b}/>{b.files.map(f=><li key={f.id}><FileRow f={f} store={store}/><small>Used for {b.requests.filter(r=>r.fileIds.includes(f.id)).map(r=>r.title).join(', ')||'nothing yet'}</small></li>)}</ul>:<p className="portal-empty">Documents you provide appear here, so you never need to send the same one twice.</p>}
+          {b.files.length||b.letters.some(l=>l.status==='Countersigned')?<ul className="k-keylines"><SignedLetterLink b={b}/>{b.files.map(f=><li key={f.id}><FileRow f={f} store={store}/>{(()=>{const used=b.requests.filter(r=>r.fileIds.includes(f.id)).map(r=>r.title);return <small>{used.length?'Used for '+used.join(', '):f.side==='firm'?'Added by '+p.firmName:'Not attached to a request yet'}</small>;})()}</li>)}</ul>:<p className="portal-empty">Documents you provide appear here, so you never need to send the same one twice.</p>}
           <p className="portal-access"><Lock size={13}/>Stored privately. Opened only by you{b.access.team.length?' and '+b.access.team.length+' '+(b.access.team.length===1?'person':'people')+' at '+p.firmName:''}.</p>
         </section>
       </aside>
     </div>
     {!gated&&!preview&&helpers&&b.side==='seller'&&<div className="portal-pros"><OwnerHelpers store={helpers} portalId={portalId} requests={b.requests} refresh={refresh}/></div>}
     {!gated&&!preview&&pros&&b.side==='seller'&&<div className="portal-pros"><PartyProfessionals store={pros} side="seller"/></div>}
-    {!preview&&<nav className="portal-mobilebar" aria-label="Quick actions"><a href="#portal-messages" onClick={jump}><MessageSquare size={18}/>Messages{newMessages?<em>{newMessages}</em>:null}</a><button type="button" onClick={upload} disabled={readOnly||gated||!b.requests.length}><Upload size={18}/>Upload</button></nav>}
+    {!preview&&<nav className="portal-mobilebar" aria-label="Quick actions"><a href="#portal-messages" onClick={jump}><MessageSquare size={18}/>Messages{newMessages?<em>{newMessages}</em>:null}</a>{!gated&&b.requests.length>0&&<button type="button" onClick={upload} disabled={readOnly}><Upload size={18}/>Upload</button>}</nav>}
   </div>;
 }
 
@@ -145,7 +143,7 @@ function RequestCard({r,b,store,readOnly,refresh,open,setOpen}:{r:DocRequest;b:P
       {files.length>0&&<ul className="portal-attached">{files.map(f=><li key={f.id}><FileRow f={f} store={store}/>{!locked&&<button className="icon-btn" aria-label={'Remove '+f.name+' from this request'} disabled={busy} onClick={()=>void act(()=>store.unlink(r.id,f.id))}><X size={14}/></button>}</li>)}</ul>}
       {!locked&&<>
         <div className={'portal-drop'+(drag?' drag':'')} onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={e=>{e.preventDefault();setDrag(false);if(e.dataTransfer.files.length)void add(e.dataTransfer.files);}}>
-          <Upload size={20}/><p><strong>Add documents.</strong> Drag files here or <button className="text-link" onClick={()=>input.current?.click()}>choose files</button>. Each file saves as soon as it uploads.</p><small>PDF, images, Word, Excel, CSV or text, up to 10 MB each. {privacyReminder}</small>
+          <Upload size={20}/><p><strong>Add documents.</strong> <span className="portal-drag-hint">Drag files here, or choose them. </span>Each file saves as soon as it uploads.</p><button type="button" className="btn portal-choose" onClick={()=>input.current?.click()}>Choose files</button><small>PDF, images, Word, Excel, CSV or text, up to 10 MB each. {privacyReminder}</small>
           <input ref={input} type="file" multiple hidden aria-label={'Add documents for '+r.title} accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.xls,.xlsx,.doc,.docx" onChange={e=>{const l=e.target.files;if(l?.length)void add([...l]);e.target.value='';}}/>
         </div>
         {uploads.length>0&&<ul className="portal-uploads" aria-live="polite">{uploads.map((u,i)=><li key={i} className={u.error?'failed':u.fraction>=1?'ok':''}><span>{u.name}</span><small>{u.error||u.stage}</small>{!u.error&&u.fraction<1&&<span className="portal-upload-bar"><span style={{width:Math.round(u.fraction*100)+'%'}}/></span>}</li>)}</ul>}
@@ -165,6 +163,7 @@ export function Messages({b,store,readOnly,refresh}:{b:PortalBundle;store:Portal
   const me=b.side;useEffect(()=>{const t=thread.current;if(t)t.scrollTop=t.scrollHeight;},[b.messages.length]);
   return <section id="portal-messages" className="portal-section portal-messages"><h2>Messages</h2>
     <div ref={thread} className="portal-thread" aria-live="polite">{b.messages.map(m=><div key={m.id} className={'portal-msg '+(m.side===me?'mine ':'theirs ')+m.side}><p>{m.body}</p><small>{m.side===me?'You':m.author}, {new Date(m.createdAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</small></div>)}{!b.messages.length&&<p className="portal-empty">No messages yet. Ask anything and {b.portal.help.name.split(' ')[0]} will reply here.</p>}</div>
+    {me==='seller'&&<p className="portal-contact"><span>Or reach {b.portal.help.name} directly:</span> <a href={'mailto:'+b.portal.help.email}>{b.portal.help.email}</a>{b.portal.help.phone&&<>, <a href={'tel:'+b.portal.help.phone.replace(/[^\d+]/g,'')}>{b.portal.help.phone}</a></>}</p>}
     {!readOnly&&<form onSubmit={e=>{e.preventDefault();if(!text.trim())return;setBusy(true);setError('');void store.message(b.portal.id,text).then(async()=>{setText('');await store.seen(b.portal.id).catch(()=>{});await refresh();}).catch(err=>setError(err.message)).finally(()=>setBusy(false));}}>
       <label className="sr-only" htmlFor={'msg-'+b.portal.id}>Message</label><textarea id={'msg-'+b.portal.id} rows={2} maxLength={4000} value={text} onChange={e=>setText(e.target.value)} placeholder={me==='seller'?'Write to '+b.portal.firmName+'…':'Write to '+b.portal.ownerName+'…'}/><button className="btn primary" disabled={busy||!text.trim()}><Send size={14}/>Send</button></form>}
     {error&&<p className="error-banner" role="alert">{error}</p>}

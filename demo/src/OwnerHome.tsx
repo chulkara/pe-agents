@@ -12,7 +12,7 @@ export default function OwnerHome({b,txs,go}:{b:PortalBundle;txs:Pick<Transactio
         <span className="oh-dot">{i<at?<Check size={11} strokeWidth={3}/>:null}</span><span className="oh-label">{s.label}</span></li>)}
     </ol>
     <p className="oh-now"><strong>{stage.label}</strong>, step {at+1} of {saleStages.length}. {stage.now}</p>
-    {fit>0&&at<2&&<p className="oh-fit"><strong>{fit}</strong> {fit===1?'buyer':'buyers'} in our directory already {fit===1?'fits':'fit'} your business. <button type="button" className="text-link" onClick={()=>go('portal-sale-ready')}>See who</button></p>}
+    {fit>0&&at<2&&<p className="oh-fit"><strong>{fit}</strong> {fit===1?'buyer':'buyers'} in our directory already {fit===1?'fits':'fit'} your business. <button type="button" className="text-link" onClick={()=>go('portal-sale-ready')}>See what kinds</button></p>}
     <div className={'oh-next'+(next.yours?'':' quiet')}>
       <p className="oh-kicker">{next.yours?'Your next step':'Up to date'}</p>
       <h2>{next.title}</h2>

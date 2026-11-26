@@ -25,7 +25,7 @@ export function PartyProfessionals({store,side}:{store:ProfessionalStore;side:'s
     {link&&<div className="pro-link"><p>Invitation link. It works once, for the email address you entered.</p><code>{link.url}</code><button type="button" className="pro-btn" onClick={()=>void navigator.clipboard?.writeText(link.url).then(()=>setNotice('Link copied.'))}>Copy link</button></div>}
     {list===null?<p className="pro-fine">Loading…</p>:list.map(v=><Pro key={v.professional.id} store={store} v={v} docs={docs} groups={groups} side={side} busy={busy} run={run} showLink={t=>setLink({id:t,url:inviteLink(t)})}/>)}
     {list&&!list.length&&<p className="pro-fine">No one added yet.</p>}
-    <details className="pro-add" open={list?.length===0}><summary>Add a CPA or attorney</summary>
+    <details className="pro-add"><summary>Add a CPA or attorney</summary>
       <form onSubmit={e=>void add(e)} className="pro-form">
         <label><span>Their name</span><input name="name" required maxLength={120} autoComplete="off"/></label>
         <label><span>Their email</span><input name="email" type="email" required autoComplete="off"/></label>
