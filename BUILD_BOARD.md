@@ -9,7 +9,7 @@ Status: `Next` (not started) · `Building` · `In review` (PR open) · `Blocked`
 | Order | Item | Owner | Branch | Status | PR | Reviewer | Notes |
 |---|---|---|---|---|---|---|---|
 | 1 | Seller sourcing agent, first cut | Claude | | Next | | Codex | Check what NJ HVACR license records include |
-| 2 | Offer builder with financing options | Claude | | Next | | Codex | Seller take-home and buyer financing per structure |
+| 2 | Offer builder with financing options | Claude | `claude/offer-builder-20261125` | Building | | Codex | Seller take-home and buyer financing per structure |
 | 3 | Ask the data room, hosted | Codex | `codex/ask-data-room-hosted-20261125` | Building | | Claude | Brief: `demo/docs/briefs/ask-the-data-room-hosted.md`. Needs a migration Karan applies |
 | 4 | Voice onboarding | Unassigned | | Blocked | | | Karan decides: Chrome's built-in speech recognition sends audio to Google; an on-device model keeps it local but is heavier |
 | 5 | Design system | Karan, then Claude | | Blocked | | | Waiting on Karan's font, color and image samples |
