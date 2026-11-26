@@ -1,0 +1,16 @@
+/* Offer builder: structure cards for buyers, take-home cards for owners. */
+.ob{display:grid;gap:14px}.ob-lede{margin:0;font-size:15px;line-height:1.55;max-width:720px}
+.ob-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.ob-option{display:grid;gap:8px;align-content:start;text-align:left;padding:16px;border:1px solid var(--k-line);border-radius:var(--k-radius-input);background:#fff;font:inherit;color:inherit;cursor:pointer;min-width:0}
+.ob-option:hover{border-color:var(--k-grey-2)}.ob-option.is-picked{border-color:var(--k-purple);box-shadow:0 0 0 1px var(--k-purple)}
+.ob-option:focus-visible{outline:2px solid var(--k-purple);outline-offset:2px}
+.ob-option strong{font-size:16px}.ob-sum{font-size:13.5px;line-height:1.5;color:var(--k-grey-1)}
+.ob-option dl,.ob-home dl{margin:0;display:grid;gap:4px}.ob-option dl div,.ob-home dl div{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.ob-option dt,.ob-home dt{color:var(--k-grey-1)}.ob-option dd,.ob-home dd{margin:0;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+.ob-cover{font-size:13px;line-height:1.45;color:var(--k-green-2)}.ob-cover.is-warn{color:var(--k-error)}
+.ob-assume,.ob-caveat,.ob-note{margin:0;font-size:13px;line-height:1.5;color:var(--k-grey-2)}
+.ob-home{display:grid;gap:12px;margin:18px 0}.ob-home h3{margin:0}
+.ob-home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.ob-home article{display:grid;gap:10px;align-content:start;padding:16px;border:1px solid var(--k-line);border-radius:var(--k-radius-input);background:#fff}
+.ob-home h4{margin:0;font-size:15px}.ob-big{margin:0;font-size:14px;color:var(--k-grey-1)}.ob-big span{display:block;font:400 30px/1.1 var(--k-figure);color:var(--k-purple);font-variant-numeric:tabular-nums}
+.ob-total{padding-top:6px;border-top:1px solid var(--k-line)}.ob-total dt{color:#000;font-weight:500}
