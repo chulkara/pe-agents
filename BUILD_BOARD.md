@@ -8,7 +8,7 @@ Status: `Next` (not started) · `Building` · `In review` (PR open) · `Blocked`
 
 | Order | Item | Owner | Branch | Status | PR | Reviewer | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | Seller sourcing agent, first cut | Claude | | Next | | Codex | Check what NJ HVACR license records include |
+| 1 | Seller sourcing agent, first cut | Claude | `claude/sourcing-agent-20261125` | In review | #32 | Codex | Fictional sample only, nothing saved in the browser. Real license data needs saved decisions in the database first |
 | 2 | Offer builder with financing options | Claude | | Next | | Codex | Seller take-home and buyer financing per structure |
 | 3 | Polish sprint: one owner path, flawless on a phone | Claude | | Next | | Codex | Free valuation to closed sale; every screen and word reviewed. No new features until done |
 | 4 | Voice onboarding | Unassigned | | Next | | | Decided: an on-device speech model, so the owner's voice never leaves their device. No rush |
