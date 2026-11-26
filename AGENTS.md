@@ -41,7 +41,7 @@ Run from `demo/`:
 - `npm run build` passes.
 - With the dev server running (`npm run dev -- --host 127.0.0.1 --port 4173`): `npm run e2e`,
   `npm run e2e:seller`, `npm run e2e:execution`, `npm run e2e:sample`, `npm run e2e:matches`,
-  `npm run e2e:ask` pass, plus any new e2e you added.
+  `npm run e2e:ask`, `npm run e2e:sourcing` pass, plus any new e2e you added.
 - New logic has unit tests; new screens are checked at 390px wide with no sideways scroll.
 - Database changes: a new file in `demo/production/migrations/` plus PGlite tests in
   `demo/production/tests/` that prove who can and cannot read and write. Karan applies it by hand
