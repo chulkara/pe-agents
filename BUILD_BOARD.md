@@ -13,7 +13,7 @@ Status: `Next` (not started) · `Building` · `In review` (PR open) · `Blocked`
 | 4 | Voice onboarding | Unassigned | | Next | | | Decided: an on-device speech model, so the owner's voice never leaves their device. No rush |
 | 5 | Design system | Karan, then Claude | | Blocked | | | Waiting on Karan's font, color and image samples; then applied to every screen and future feature |
 
-Shipped from this board: Monday polish (#29), Ask the data room in the demo (#30), Ask the data room hosted (#33, migration pending), Seller sourcing agent first cut (#32). Next for sourcing: real license data, after saved decisions in the database. See the master document.
+Shipped from this board: Monday polish (#29), Ask the data room in the demo (#30), Ask the data room hosted (#33, database update applied Nov 26), Seller sourcing agent first cut (#32). Next for sourcing: real license data, after saved decisions in the database. See the master document.
 
 ## Handoff notes
 Short notes one AI leaves for the other: a file both are touching, a decision Karan made, a trap.
