@@ -20,7 +20,7 @@ export function SourcingPanel({actor,readOnly}:{actor:string;readOnly:boolean}){
   const loadSample=()=>act(latest=>importRecords(latest,parseLicenseList(sampleLicenseFile()).records,'Fictional sample list'),'Loaded 36 fictional licensees.');
   const startLetter=(p:Prospect)=>{setOpen(p.record.licenseNo);setDraft(p.decision?.letter||draftLetter(p,{name:actor,firm:'Kalling',email:contact}));setErr('');setMsg('');};
   const decide=(p:Prospect,status:ProspectStatus,extra:{letter?:string;approvedBy?:string}={})=>act(latest=>setDecision(latest,p.record.licenseNo,{status,...extra}),
-    status==='Letter approved'?`Letter to ${p.record.name} approved by ${actor}. Print and mail it, then mark it mailed.`:status==='Do not contact'?`${p.record.name} will not appear again, even after a new import.`:`${p.record.name}: ${status.toLowerCase()}.`);
+    status==='Letter approved'?`Letter to ${p.record.name} approved by ${actor}. Print and mail it, then mark it mailed.`:status==='Do not contact'?`${p.record.name} is marked do not contact and hidden from this list until you leave this page. Saved opt-outs come with database storage.`:`${p.record.name}: ${status.toLowerCase()}.`);
   const copy=(text:string)=>void navigator.clipboard?.writeText(text).then(()=>setMsg('Letter copied.'),()=>setErr('Copy did not work in this browser. Select the text instead.'));
 
   return <Panel title="Find owners likely to sell">

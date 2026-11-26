@@ -24,6 +24,8 @@ const U=process.env.BASE||'http://127.0.0.1:4173/',OUT=process.argv[2];
     assert.equal(await first.getByRole('button',{name:/Draft letter|Edit letter/}).count(),0,'a mailed letter cannot be reopened');
     const second=p.locator('.src-list > li').nth(1),gone=(await second.locator('strong').innerText()).trim();
     await second.getByRole('button',{name:'Do not contact'}).click();
+    assert.match(await p.innerText('.src-ok'),/until you leave this page/,'the opt-out note promises only this session');
+    assert.doesNotMatch(await p.innerText('.src-ok'),/will not appear again/);
     assert.ok(!(await p.locator('.src-list strong').allInnerTexts()).includes(gone));
     assert.match(await p.innerText('.src-bar p'),/1 mailed, 0 replied, 1 not to contact/);
     // Nothing about prospects, letters or the advisor's contact details is kept in browser storage.
