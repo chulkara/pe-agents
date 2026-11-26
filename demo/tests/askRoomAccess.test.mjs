@@ -118,5 +118,41 @@ test('the advisor can see search text and the owner sees only a weekly count',as
   const [ownerRoom]=await f.store(publicViewer).ownerRooms(['portal']);
   assert.equal(ownerRoom.summary,'Data room this week:\n1 question asked');
   assert.doesNotMatch(JSON.stringify(ownerRoom),/penguins|previous week|buyer-0/);
-  assert.equal('search' in cloudDataRoomStore({}),false);
+});
+
+test('hosted stores map exact passages and keep advisor activity on its own RPC',async()=>{
+  const result={item_id:'file',display_name:'Fictional schedule',page:2,quote:'Ten fictional service contracts renew in March.',score:0.5};
+  const activity={searches:[{question:'When do contracts renew?',at:'2026-11-25T15:00:00Z'}],search_question_count:2};
+  const calls=[];
+  const client={rpc:async(name,args)=>{
+    calls.push([name,args]);
+    switch(name){
+      case 'kalling_dataroom_search':
+      case 'kalling_dataroom_search_advisor':return {data:[result],error:null};
+      case 'kalling_dataroom_advisor':return {data:{room:{listing_id:'listing'},items:[],events:[],buyers:[],loi:[]},error:null};
+      case 'kalling_dataroom_search_activity':return {data:activity,error:null};
+      default:throw Error(`Unexpected RPC ${name}`);
+    }
+  }};
+  const expected=[{itemId:result.item_id,displayName:result.display_name,page:result.page,quote:result.quote,score:result.score}];
+  const args={p_listing:'listing',p_question:'When do contracts renew?'};
+  assert.deepEqual(await cloudDataRoomStore(client).search('listing',args.p_question),expected);
+  const advisorStore=cloudDataRoomStore(client,'advisor');
+  assert.deepEqual(await advisorStore.search('listing',args.p_question),expected);
+  const room=await advisorStore.room('listing');
+  assert.deepEqual(room.searches,activity.searches);
+  assert.equal(room.searchQuestionCount,2);
+  assert.deepEqual(calls,[
+    ['kalling_dataroom_search',args],['kalling_dataroom_search_advisor',args],
+    ['kalling_dataroom_advisor',{p_listing:'listing'}],['kalling_dataroom_search_activity',{p_listing:'listing'}],
+  ]);
+});
+
+test('existing hosted rooms load while the search migration is waiting to be applied',async()=>{
+  const store=cloudDataRoomStore({rpc:async name=>name==='kalling_dataroom_advisor'
+    ? {data:{room:{listing_id:'listing'},items:[],events:[],buyers:[],loi:[]},error:null}
+    : {data:null,error:{code:'PGRST202',message:'Function not found'}}},'advisor');
+  const room=await store.room('listing');
+  assert.deepEqual(room.searches,[]);
+  await assert.rejects(store.search('listing','When do contracts renew?'),/Data room search is not available yet/);
 });

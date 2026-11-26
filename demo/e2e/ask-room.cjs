@@ -15,6 +15,8 @@ const quote = 'Thirty-two service contracts renew in the spring.';
 const lockedQuote = 'Forty-seven rooftop warranty transfers expire in July.';
 const buyerQuestion = 'How many maintenance agreements renew in the spring?';
 const noMatchQuestion = 'When do rooftop warranty transfers expire?';
+const pendingQuote = 'Calibration records are kept in the fictional shop logbook.';
+const pendingLabel = 'Not yet approved by the owner';
 
 async function makePdf(name, texts) {
   const pdf = await PDFDocument.create();
@@ -84,6 +86,7 @@ async function fixture() {
   await room.ownerDecide([itemId, lockedId], 'Approved', '', [portalId]);
   await room.setStatus(listing.id, 'Published');
   await room.setWeeklySummary(listing.id, true, [portalId]);
+  await addDocument('Shop handbook', 'After NDA', [pendingQuote]);
 
   const workspace = sample();
   workspace.firm = {...workspace.firm, name: 'Fictional Kalling', operator: advisor.name, configured: true};
@@ -151,6 +154,123 @@ async function assertFits(page, label) {
   assert.equal(content, screen, label + ' fits without sideways scroll');
 }
 
+async function testHostedBuyer(browser, data) {
+  const context = await browser.newContext({viewport: {width: 390, height: 844}});
+  const project = 'fictional-ask-room';
+  const origin = `https://${project}.supabase.co`;
+  const at = '2026-11-25T12:00:00Z';
+  const user = {id: 'fictional-buyer', email: buyer.email, email_confirmed_at: at, app_metadata: {}, user_metadata: {}};
+  const session = {
+    access_token: 'fictional-access-token', refresh_token: 'fictional-refresh-token', token_type: 'bearer',
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    user,
+  };
+  const profile = {id: data.request.buyerId, email: buyer.email, name: buyerName, saved: []};
+  const listing = {
+    ...data.listing,
+    asking_price: data.listing.askingPrice, recurring_pct: data.listing.recurringPct,
+    residential_pct: data.listing.residentialPct, seller_financing: data.listing.sellerFinancing,
+    real_estate: data.listing.realEstate, created_at: at, published_at: at, updated_at: at,
+  };
+  const access = {
+    id: data.request.id, listing_id: listing.id, buyer_id: profile.id, status: 'Approved', nda: data.request.nda,
+  };
+  const approvedItem = {
+    id: data.itemId, display_name: 'Renewal schedule', folder: 'Customers', tier: 'After NDA',
+    mime: 'application/pdf', allow_download: false, note: '', open: true,
+  };
+  const responses = {
+    '/auth/v1/user': user,
+    '/rest/v1/kalling_listings': [listing],
+    '/rest/v1/kalling_listing_private': [{listing_id: listing.id, business_name: 'Fictional HVAC'}],
+    '/rest/v1/kalling_buyers': [profile],
+    '/rest/v1/kalling_access': [access],
+    '/rest/v1/kalling_listing_questions': [],
+    '/rest/v1/rpc/kalling_public_cases': [],
+    '/rest/v1/rpc/kalling_offer_rows': [],
+    '/rest/v1/rpc/kalling_dataroom_buyer': {tier: 1, items: [approvedItem]},
+    '/rest/v1/rpc/kalling_dataroom_open': {
+      ticket: 'fictional-view-ticket', path: 'fixtures/renewal-schedule.pdf', name: approvedItem.display_name,
+      file_name: 'renewal-schedule.pdf', mime: approvedItem.mime, allow_download: false,
+      watermark: `${buyerName}, ${buyer.email}, 2026-11-25. Confidential, Kalling data room`,
+    },
+    '/rest/v1/rpc/kalling_dataroom_events': null,
+    '/rest/v1/rpc/kalling_listing_ask': null,
+  };
+  const page = await context.newPage();
+  const errors = [];
+  const calls = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await context.addInitScript(({origin, project, session}) => {
+    localStorage.setItem('kalling-cloud-public-config-v1', JSON.stringify({
+      url: origin, publishableKey: 'sb_publishable_fictional-browser-test',
+    }));
+    localStorage.setItem(`sb-${project}-auth-token`, JSON.stringify(session));
+  }, {origin, project, session});
+  await context.route('**/*', async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.origin === base.origin) return route.continue();
+    if (url.origin !== origin) return route.abort();
+
+    const headers = {
+      'access-control-allow-origin': base.origin,
+      'access-control-allow-headers': 'apikey, authorization, content-type, x-client-info, x-supabase-api-version',
+      'access-control-allow-methods': 'GET, POST, OPTIONS',
+    };
+    if (request.method() === 'OPTIONS') return route.fulfill({status: 204, headers});
+
+    const path = url.pathname;
+    const body = request.postDataJSON();
+    calls.push({path, body});
+    if (path === '/rest/v1/rpc/kalling_dataroom_search') {
+      const results = body?.p_question === buyerQuestion
+        ? [{item_id: data.itemId, display_name: 'Renewal schedule', page: 2, quote, score: 1}]
+        : [];
+      return route.fulfill({json: results, headers});
+    }
+    if (path.endsWith('/kalling-portal/fixtures/renewal-schedule.pdf')) {
+      return route.fulfill({body: Buffer.from(data.files[0].content, 'base64'), contentType: 'application/pdf', headers});
+    }
+    if (Object.hasOwn(responses, path)) {
+      return route.fulfill({json: responses[path], headers});
+    }
+    errors.push('Unexpected Supabase request: ' + path);
+    return route.abort();
+  });
+  try {
+    await page.goto(new URL('#/listings/' + listing.number, base).href);
+    await search(page, buyerQuestion);
+    const card = page.getByRole('listitem').filter({hasText: 'Renewal schedule, page 2'});
+    await card.getByText(quote, {exact: true}).waitFor();
+    await assertFits(page, 'Hosted buyer search results');
+    await card.getByRole('button', {name: 'Open at page 2', exact: true}).click();
+    const viewer = page.getByRole('dialog', {name: 'Renewal schedule'});
+    await viewer.getByText('Page 2 of 2', {exact: true}).waitFor();
+    await viewer.locator('canvas').waitFor();
+    assert.match(await viewer.locator('.ks-viewer-stamp').innerText(), /Fictional Buyer, buyer@ask-room\.invalid/);
+    await viewer.getByRole('button', {name: 'Close', exact: true}).click();
+    await search(page, noMatchQuestion);
+    await page.getByText('Nothing in the documents answers that yet.', {exact: true}).waitFor();
+    await page.getByRole('button', {name: 'Ask the advisor', exact: true}).click();
+    await page.getByText('Question sent. Answers appear on this listing.', {exact: true}).waitFor();
+
+    assert.deepEqual(calls.filter(call => call.path.endsWith('/kalling_dataroom_search')).map(call => call.body), [
+      {p_listing: listing.id, p_question: buyerQuestion}, {p_listing: listing.id, p_question: noMatchQuestion},
+    ]);
+    const openIndex = calls.findIndex(call => call.path.endsWith('/kalling_dataroom_open'));
+    const downloadIndex = calls.findIndex(call => call.path.endsWith('/kalling-portal/fixtures/renewal-schedule.pdf'));
+    assert.ok(openIndex >= 0 && downloadIndex > openIndex, 'opening a result requests a ticket before reading bytes');
+    assert.deepEqual(calls[openIndex].body, {p_item: data.itemId});
+    assert.deepEqual(calls.find(call => call.path.endsWith('/kalling_listing_ask'))?.body,
+      {p_listing: listing.id, p_body: noMatchQuestion, p_buyer: null});
+    assert.deepEqual(errors, []);
+    console.log('Hosted buyer data room passed against mocked Supabase at 390px.');
+  } finally {
+    await context.close();
+  }
+}
+
 (async () => {
   const data = await fixture();
   const browser = await chromium.launch();
@@ -193,10 +313,16 @@ async function assertFits(page, label) {
 
     await page.getByRole('tab', {name: 'Data room', exact: true}).click();
     await search(page, noMatchQuestion);
-    await page.getByText(lockedQuote, {exact: true}).waitFor();
+    const approvedCard = page.getByRole('listitem').filter({hasText: 'Warranty register, page 1'});
+    await approvedCard.getByText(lockedQuote, {exact: true}).waitFor();
+    assert.equal(await approvedCard.getByText(pendingLabel, {exact: true}).count(), 0);
     const summary = await page.locator('.dr-summary').innerText();
     assert.match(summary, /2 questions asked/);
     assert.ok(!summary.includes(buyerQuestion) && !summary.includes(noMatchQuestion), 'owner summary does not reveal search text');
+    await search(page, 'Where are calibration records kept?');
+    const pendingCard = page.getByRole('listitem').filter({hasText: 'Shop handbook, page 1'});
+    await pendingCard.getByText(pendingQuote, {exact: true}).waitFor();
+    await pendingCard.getByText(pendingLabel, {exact: true}).waitFor();
     await assertFits(page, 'Advisor search results');
 
     const buyerTab = await context.newPage();
@@ -214,6 +340,8 @@ async function assertFits(page, label) {
     await displayedQuote.waitFor({state: 'detached'});
     assert.deepEqual(errors, []);
     console.log('Ask the data room passed for buyer and advisor at 390px.');
+    await context.close();
+    await testHostedBuyer(browser, data);
   } finally {
     await browser.close();
   }

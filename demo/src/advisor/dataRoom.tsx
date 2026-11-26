@@ -5,7 +5,7 @@ import type {Listing} from '../../lib/brokerage';
 import type {Portal,PortalBundle} from '../../lib/portal';
 import {folders,tiers,suggestPlacement,suggestName,summaryText,type Folder,type Tier,type RoomItem} from '../../lib/dataRoom';
 import type {AdvisorRoom} from '../../lib/dataRoomStore';
-import {acceptedInputs} from '../../lib/extract';
+import {acceptedInputs,extractText} from '../../lib/extract';
 import {materialsOf} from '../../lib/materials';
 import {canShareInDataRoom} from '../../lib/cim';
 import {cimPdfBlob} from './cimEditor';
@@ -35,13 +35,17 @@ export default function DataRoomTab(p:P){
   async function act(fn:()=>Promise<unknown>,done=''){setBusy(true);setErr('');setMsg('');try{await fn();await load();if(done)setMsg(done);}catch(e){setErr((e as Error).message);}finally{setBusy(false);}}
   async function addCim(){const s=portalCtx?.store;if(!s||!cim)throw Error('The owner portal is not connected.');
     const blob=await cimPdfBlob(p.c,cim),f=await s.uploadFirmFile(b.portal.id,new File([blob],`Memorandum v${cim.version}.pdf`,{type:'application/pdf'}));
+    if(s.mode==='cloud'){
+      const extract=await extractText(f.id,new Uint8Array(await blob.arrayBuffer()),f.name,f.mime);
+      if(extract.status==='ok')await s.saveExtract(b.portal.id,extract);
+    }
     await x.room.saveItem({listingId:listing.id,portalId:b.portal.id,fileId:f.id,fileName:f.name,mime:f.mime,displayName:cimName,folder:'Overview',tier:'After NDA',allowDownload:false,note:'Start here.'});await x.reloadPortals();}
   const pending=items.filter(i=>i.ownerStatus==='Pending').length,approved=items.filter(i=>i.ownerStatus==='Approved').length;
   const nameOf=(id:string)=>r?.buyers.find(x=>x.buyerId===id)?.name||x.d?.buyers.find(y=>y.id===id)?.name||'A buyer';
   const approvedBuyers=(x.d?.requests||[]).filter(a=>a.listingId===listing.id&&a.status==='Approved').map(a=>x.d!.buyers.find(y=>y.id===a.buyerId)).filter(Boolean);
   const log=items.map(it=>({item:it.displayName,entries:(r?.engagement||[]).filter(g=>g.itemId===it.id&&(g.opens||g.downloads)).map(g=>({label:r!.buyers.find(y=>y.buyerId===g.buyerId)?.label||'A buyer',opens:g.opens,last:g.last,downloaded:g.downloads>0}))})).filter(x=>x.entries.length);
   const summary=summaryText(log,undefined,r?.searchQuestionCount);
-  const searchRoom=x.room.mode==='local'?x.room:undefined;
+  const pendingItems=new Set(items.filter(i=>i.ownerStatus==='Pending').map(i=>i.id));
   return <div className="dr">
     <div className="dr-status" role="status" aria-live="polite">
       <StatusPill tone={status==='Published'?'green':status==='Proposed'?'peri':'plain'}>{status==='Published'?'Open to approved buyers':status==='Proposed'?'With the owner for approval':status==='Unpublished'?'Closed to buyers':'Draft, not shared'}</StatusPill>
@@ -55,8 +59,8 @@ export default function DataRoomTab(p:P){
     {pending>0&&status==='Published'&&<p className="dr-note">Changed documents are hidden from buyers until the owner approves them again.</p>}
     {msg&&<p className="dr-ok" role="status">{msg}</p>}{err&&<p className="dr-err" role="alert">{err}</p>}
 
-    {searchRoom&&items.length>0&&<AskRoom key={JSON.stringify(items.map(i=>[i.id,i.changedAt,i.ownerStatus]))}
-      search={question=>searchRoom.search(listing.id,question)} buttonClass="k-button"/>}
+    {items.length>0&&<AskRoom key={JSON.stringify([listing.id,items.map(i=>[i.id,i.changedAt,i.ownerStatus])])}
+      search={question=>x.room.search(listing.id,question)} pendingItems={pendingItems} buttonClass="k-button"/>}
     {!!r?.searches.length&&<details className="dr-search-history">
       <summary>Buyer searches</summary>
       <ul>{r.searches.slice(0,20).map(search=><li key={`${search.at}:${search.question}`}>

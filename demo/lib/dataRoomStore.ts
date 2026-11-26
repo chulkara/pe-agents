@@ -26,12 +26,13 @@ interface CommonDataRoomStore{
   ownerDecide(itemIds:string[],decision:'Approved'|'Removed',note:string,portalIds:string[]):Promise<void>;
   setWeeklySummary(listingId:string,on:boolean,portalIds:string[]):Promise<void>;
   buyerRoom(listingId:string):Promise<BuyerRoom>;
+  search(listingId:string,question:string):Promise<RoomSearchResult[]>;
   open(itemId:string,kind?:'opened'|'downloaded'):Promise<Opened>;
   logPages(ticket:string,events:{page:number;seconds:number}[]):Promise<void>;
   history():Promise<ReturnType<typeof D.buyerHistory>>;
   ask(itemId:string,page:number,body:string):Promise<void>;
 }
-type LocalDataRoomStore=CommonDataRoomStore&{mode:'local';search(listingId:string,question:string):Promise<RoomSearchResult[]>};
+type LocalDataRoomStore=CommonDataRoomStore&{mode:'local'};
 type CloudDataRoomStore=CommonDataRoomStore&{mode:'cloud'};
 export type DataRoomStore=LocalDataRoomStore|CloudDataRoomStore;
 
@@ -124,14 +125,22 @@ const item=(r:ItemRow):D.RoomItem=>({id:r.id,listingId:r.listing_id,portalId:r.p
 type RoomRow={listing_id:string;portal_id:string;status:D.RoomStatus;proposed_at:string|null;published_at:string|null;weekly_summary:boolean};
 const room=(r:RoomRow):D.Room=>({listingId:r.listing_id,portalId:r.portal_id,status:r.status,proposedAt:r.proposed_at||undefined,publishedAt:r.published_at||undefined,weeklySummary:r.weekly_summary});
 /** Supabase data room. Row-level security and the RPCs in migration 009 enforce every rule above. */
-export function cloudDataRoomStore(client:SupabaseClient):CloudDataRoomStore{
+export function cloudDataRoomStore(client:SupabaseClient,audience:'buyer'|'advisor'='buyer'):CloudDataRoomStore{
   async function call<T=unknown>(name:string,args:Record<string,unknown>):Promise<T>{const {data,error}=await client.rpc(name,args);if(error)throw Error(error.message);return data as T;}
   async function rows<T>(q:PromiseLike<{data:unknown;error:{message:string}|null}>):Promise<T[]>{const {data,error}=await q;if(error)throw Error(error.message);return (data||[]) as T[];}
+  async function searchActivity(listingId:string) {
+    const {data,error}=await client.rpc('kalling_dataroom_search_activity',{p_listing:listingId});
+    // The static app can be updated before the SQL migration is applied.
+    if(error&&error.code!=='PGRST202')throw Error(error.message);
+    return (data as {searches:AdvisorRoom['searches'];search_question_count:number}|null)
+      ?? {searches:[],search_question_count:0};
+  }
   return {
     mode:'cloud',
     async room(listingId){const r=await call<{room:RoomRow|null;items:ItemRow[];events:{buyer_id:string;item_id:string;event:D.ViewEvent['event'];page:number|null;seconds:number|null;at:string}[];buyers:{id:string;name:string;label:string}[];loi:{buyer_id:string;note:string;by_name:string;at:string}[]}>('kalling_dataroom_advisor',{p_listing:listingId});
       const db={...B.emptyBrokerDb(),...D.emptyRoomDb(),views:r.events.map((e,i)=>({id:String(i),listingId,itemId:e.item_id,buyerId:e.buyer_id,event:e.event,page:e.page??undefined,seconds:e.seconds??undefined,at:e.at}))};
-      return {room:r.room?room(r.room):undefined,items:r.items.map(item),engagement:D.engagement(db,listingId),loi:r.loi.map(g=>({listingId,buyerId:g.buyer_id,note:g.note,by:g.by_name,at:g.at})),searches:[],searchQuestionCount:0,
+      const activity=r.room?await searchActivity(listingId):null;
+      return {room:r.room?room(r.room):undefined,items:r.items.map(item),engagement:D.engagement(db,listingId),loi:r.loi.map(g=>({listingId,buyerId:g.buyer_id,note:g.note,by:g.by_name,at:g.at})),searches:activity?.searches??[],searchQuestionCount:activity?.search_question_count??0,
         buyers:D.buyerEngagement(db,listingId).map(e=>{const b=r.buyers.find(x=>x.id===e.buyerId);return {...e,name:b?.name||'A buyer',label:b?.label||'A buyer'};})};},
     async saveItem(i){return String(await call('kalling_dataroom_save_item',{p:i}));},
     async removeItem(id){await call('kalling_dataroom_remove_item',{p_item:id});},
@@ -140,7 +149,14 @@ export function cloudDataRoomStore(client:SupabaseClient):CloudDataRoomStore{
     async ownerRooms(){const r=await call<{listing_id:string;number:string;room:RoomRow;items:ItemRow[];log:OwnerRoom['log'];summary:string}[]>('kalling_dataroom_owner',{});return r.map(x=>({listingId:x.listing_id,listingNumber:x.number,room:room(x.room),items:x.items.map(item),log:x.log,summary:x.summary}));},
     async ownerDecide(ids,d,n){await call('kalling_dataroom_owner_decide',{p_items:ids,p_decision:d,p_note:n});},
     async setWeeklySummary(l,on){await call('kalling_dataroom_weekly',{p_listing:l,p_on:on});},
-    async buyerRoom(listingId){const r=await call<{tier:0|1|2;items:{id:string;display_name:string;folder:D.Folder;tier:D.Tier;mime:string;allow_download:boolean;note:string;open:boolean}[]}>('kalling_dataroom_buyer',{p_listing:listingId});return {tier:r.tier,items:r.items.map(x=>({id:x.id,displayName:x.display_name,folder:x.folder,tier:x.tier,mime:x.mime,allowDownload:x.allow_download,note:x.note,open:x.open}))};},
+    async buyerRoom(listingId){const r=await call<{tier:0|1|2;revision?:string;items:{id:string;display_name:string;folder:D.Folder;tier:D.Tier;mime:string;allow_download:boolean;note:string;open:boolean}[]}>('kalling_dataroom_buyer',{p_listing:listingId});return {tier:r.tier,revision:r.revision??JSON.stringify(r.items.filter(x=>x.open).map(x=>x.id)),items:r.items.map(x=>({id:x.id,displayName:x.display_name,folder:x.folder,tier:x.tier,mime:x.mime,allowDownload:x.allow_download,note:x.note,open:x.open}))};},
+    async search(listingId,question){
+      const rpc=audience==='advisor'?'kalling_dataroom_search_advisor':'kalling_dataroom_search';
+      const {data,error}=await client.rpc(rpc,{p_listing:listingId,p_question:question});
+      if(error)throw Error(error.code==='PGRST202'?'Data room search is not available yet.':error.message);
+      const matches=(data??[]) as {item_id:string;display_name:string;page:number;quote:string;score:number}[];
+      return matches.map(({item_id,display_name,page,quote,score})=>({itemId:item_id,displayName:display_name,page,quote,score}));
+    },
     async open(itemId,kind='opened'){
       // Log first, then use an authenticated request so storage rechecks current access.
       // Signed URLs outlive an approval change and must not be used for buyer documents.

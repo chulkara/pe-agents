@@ -12,33 +12,33 @@ import {AskRoom} from '../AskRoom';
 
 const isPdf=(m:string,n='')=>m==='application/pdf'||/\.pdf$/i.test(n);
 const isSheet=(m:string,n:string)=>/csv|spreadsheet|excel/.test(m)||/\.(csv|xlsx)$/i.test(n);
+const isCsv=(m:string,n:string)=>m.includes('csv')||/\.csv$/i.test(n);
 const isImage=(m:string)=>/^image\//.test(m);
 
 export function BuyerDataRoom({room,listingId,questions,onAsked,askAdvisor}:{room:DataRoomStore;listingId:string;questions:Question[];onAsked:()=>void;askAdvisor:(question:string)=>Promise<void>}){
-  const [r,setR]=useState<BuyerRoom|null>(null),[open,setOpen]=useState<{doc:Opened;page:number}|null>(null),[err,setErr]=useState(''),[busy,setBusy]=useState('');
+  const [r,setR]=useState<BuyerRoom|null>(null),[open,setOpen]=useState<{doc:Opened;page?:number}|null>(null),[err,setErr]=useState(''),[busy,setBusy]=useState('');
   const [searchAccess,setSearchAccess]=useState<BuyerRoom|null>(null);
   const opener=useRef<HTMLElement|null>(null);
-  // Revalidate the viewer and the local search results when room access changes.
+  // Revalidate the viewer and displayed quotes when room access changes.
   useEffect(()=>{let live=true,checking=false;
     const check=async(visibleOnly=true)=>{if(checking||(visibleOnly&&document.visibilityState==='hidden'))return;checking=true;try{
       const next=await room.buyerRoom(listingId);if(!live)return;
-      if(room.mode==='local')setSearchAccess(next);
+      setSearchAccess(next);
       if(!visibleOnly||open)setR(next);
       if(open&&!next.items.some(i=>i.id===open.doc.item.id&&i.open)){setOpen(null);setErr('Access to this document has changed. Ask your advisor before opening it again.');requestAnimationFrame(()=>opener.current?.focus());}
     }catch{if(live){setSearchAccess(null);if(!visibleOnly||open)setR({tier:0,items:[]});if(open){setOpen(null);setErr('Document access could not be confirmed. Reopen it when connected.');}}}finally{checking=false;}};
     void check(false);
-    if(room.mode!=='local'&&!open)return()=>{live=false;};
     const timer=setInterval(()=>void check(),15000),focus=()=>void check();
     const storage=(e:StorageEvent)=>{if(room.mode==='local'&&(e.key===LOCAL_BROKER_KEY||e.key===null))void check();};
     window.addEventListener('focus',focus);document.addEventListener('visibilitychange',focus);window.addEventListener('storage',storage);
     return()=>{live=false;clearInterval(timer);window.removeEventListener('focus',focus);document.removeEventListener('visibilitychange',focus);window.removeEventListener('storage',storage);};
   },[open,room,listingId]);
   if(!r||!r.tier||!r.items.length)return err?<section className="ks-dr"><p className="ks-error" role="alert">{err}</p></section>:null;
-  async function view(id:string,el:HTMLElement,page=1){setBusy(id);setErr('');opener.current=el;try{setOpen({doc:await room.open(id),page});}catch(e){setErr((e as Error).message);}finally{setBusy('');}}
+  async function view(id:string,el:HTMLElement,page?:number){setBusy(id);setErr('');opener.current=el;try{setOpen({doc:await room.open(id),page});}catch(e){setErr((e as Error).message);}finally{setBusy('');}}
   const names=Object.fromEntries(r.items.map(i=>[i.id,i.displayName]));
   return <section className="ks-dr" aria-labelledby="ks-dr-h"><h2 id="ks-dr-h">Data room</h2>
     <p className="ks-fine">Documents the owner approved for buyers under NDA. Every page shows your name and email. Opening a document is recorded so the advisor and owner know which documents were read.</p>
-    {room.mode==='local'&&!!searchAccess?.tier&&<AskRoom key={searchAccess.revision} search={question=>room.search(listingId,question)}
+    {!!searchAccess?.tier&&<AskRoom key={searchAccess.revision} search={question=>room.search(listingId,question)}
       askAdvisor={async question=>{await askAdvisor(question);onAsked();}} buttonClass="ks-btn"
       opening={!!busy} open={(result,button)=>void view(result.itemId,button,result.page)}/>}
     {folders.filter(f=>r.items.some(i=>i.folder===f)).map(f=><div key={f} className="ks-dr-folder"><h3>{f}</h3><ul>{r.items.filter(i=>i.folder===f).map(i=><li key={i.id}>
@@ -51,7 +51,7 @@ export function BuyerDataRoom({room,listingId,questions,onAsked,askAdvisor}:{roo
   </section>;
 }
 
-function Viewer({room,doc,initialPage,onClose,onAsked}:{room:DataRoomStore;doc:Opened;initialPage:number;onClose:()=>void;onAsked:()=>void}){
+function Viewer({room,doc,initialPage,onClose,onAsked}:{room:DataRoomStore;doc:Opened;initialPage?:number;onClose:()=>void;onAsked:()=>void}){
   const {item,watermark}=doc,box=useRef<HTMLDivElement>(null),canvas=useRef<HTMLCanvasElement>(null);
   const [page,setPage]=useState(1),[pages,setPages]=useState(1),[zoom,setZoom]=useState(1),[pdf,setPdf]=useState<{getPage(n:number):Promise<{getViewport(o:{scale:number}):{width:number;height:number};render(o:{canvasContext:CanvasRenderingContext2D;viewport:unknown}):{promise:Promise<void>}}>}|null>(null);
   const [table,setTable]=useState<{name:string;rows:string[][]}[]|null>(null),[img,setImg]=useState(''),[err,setErr]=useState(''),[note,setNote]=useState(''),[q,setQ]=useState('');
@@ -64,21 +64,24 @@ function Viewer({room,doc,initialPage,onClose,onAsked}:{room:DataRoomStore;doc:O
   const go=(n:number)=>{const next=Math.min(pages,Math.max(1,n));if(next===pageRef.current)return;mark();pageRef.current=next;setPage(next);};
   useEffect(()=>{box.current?.focus();},[]);
   useEffect(()=>{let live=true;
-    const start=(count:number)=>{const first=Math.max(1,Math.min(initialPage,count));pageRef.current=first;started.current=Date.now();setPage(first);setPages(count);};
+    const start=(count:number)=>{const first=Math.max(1,Math.min(initialPage??1,count));pageRef.current=first;started.current=Date.now();setPage(first);setPages(count);};
+    const showText=async()=>{
+      const extracted=await extractText(item.id,new Uint8Array(await doc.blob.arrayBuffer()),item.fileName,item.mime);
+      if(!live)return;
+      if(extracted.status!=='ok'||!extracted.pages.length)throw Error('No readable text');
+      start(extracted.pages.length);setTextPages(extracted.pages);
+    };
     void (async()=>{try{
     if(isPdf(item.mime,item.fileName)){const pdfjs=await import('pdfjs-dist');pdfjs.GlobalWorkerOptions.workerSrc=new URL('pdf.worker.min.mjs',document.baseURI).href;const d=await pdfjs.getDocument({data:new Uint8Array(await doc.blob.arrayBuffer())}).promise;if(!live)return;start(d.numPages);setPdf(d as never);}
+    // Hosted CSV citations use the same page breaks as the stored text extraction.
+    else if(room.mode==='cloud'&&initialPage!==undefined&&isCsv(item.mime,item.fileName)){await showText();}
     else if(isSheet(item.mime,item.fileName)){const xlsx=/\.xlsx$/i.test(item.fileName)||/spreadsheetml/.test(item.mime);
       const sheets=xlsx?xlsxPages(new Uint8Array(await doc.blob.arrayBuffer())).map(p=>{const [h,...rest]=p.text.split('\n');return {name:h.replace(/^Sheet: /,''),rows:rest.map(l=>l.split('\t'))};})
         :[] as {name:string;rows:string[][]}[];
       if(!xlsx){const t=csvTable(await doc.blob.text());sheets.push({name:item.displayName,rows:[t.headers,...t.rows]});}
       if(!live)return;start(sheets.length);setTable(sheets);}
     else if(isImage(item.mime)){start(1);setImg(URL.createObjectURL(doc.blob));}
-    else if(room.mode==='local'&&(/\.(txt|docx)$/i.test(item.fileName)||item.mime.startsWith('text/'))){
-      const extracted=await extractText(item.id,new Uint8Array(await doc.blob.arrayBuffer()),item.fileName,item.mime);
-      if(!live)return;
-      if(extracted.status!=='ok'||!extracted.pages.length)throw Error('No readable text');
-      start(extracted.pages.length);setTextPages(extracted.pages);
-    }
+    else if(/\.(txt|docx)$/i.test(item.fileName)||item.mime.startsWith('text/')){await showText();}
     else setErr('This file type can’t be shown here. Ask the advisor for a PDF copy.');
   }catch{if(live)setErr('This document could not be displayed. Ask the advisor for a new copy.');}})();return()=>{live=false;};},[doc,initialPage,item,room.mode]);
   useEffect(()=>()=>{if(img)URL.revokeObjectURL(img);},[img]);

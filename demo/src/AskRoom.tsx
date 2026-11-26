@@ -7,10 +7,11 @@ type Props = {
   open?: (result: RoomSearchResult, button: HTMLButtonElement) => void;
   opening?: boolean;
   askAdvisor?: (question: string) => Promise<void>;
+  pendingItems?: ReadonlySet<string>;
   buttonClass: string;
 };
 
-export function AskRoom({search,open,opening,askAdvisor,buttonClass}:Props) {
+export function AskRoom({search,open,opening,askAdvisor,pendingItems,buttonClass}:Props) {
   const heading=useId();
   const [question,setQuestion]=useState('');
   const [results,setResults]=useState<RoomSearchResult[]|null>(null);
@@ -56,6 +57,7 @@ export function AskRoom({search,open,opening,askAdvisor,buttonClass}:Props) {
       <ul className="ask-room-results">
         {results.map(result=><li key={`${result.itemId}:${result.page}`}>
           <p className="ask-room-citation">{result.displayName}, page {result.page}</p>
+          {pendingItems?.has(result.itemId)&&<p className="ask-room-note">Not yet approved by the owner</p>}
           <blockquote>{result.quote}</blockquote>
           {open&&<button type="button" className={buttonClass} disabled={opening} onClick={e=>open(result,e.currentTarget)}>Open at page {result.page}</button>}
         </li>)}
