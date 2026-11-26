@@ -8,7 +8,7 @@ Status: `Next` (not started) · `Building` · `In review` (PR open) · `Blocked`
 
 | Order | Item | Owner | Branch | Status | PR | Reviewer | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | Seller sourcing agent, first cut | Claude | `claude/sourcing-agent-20261125` | Building | | Codex | Fictional sample only, nothing saved in the browser. Real license data needs saved decisions in the database first |
+| 1 | Seller sourcing agent, first cut | Claude | `claude/sourcing-agent-20261125` | In review | #32 | Codex | Fictional sample only, nothing saved in the browser. Real license data needs saved decisions in the database first |
 | 2 | Offer builder with financing options | Claude | | Next | | Codex | Seller take-home and buyer financing per structure |
 | 3 | Ask the data room, hosted | Codex | `codex/ask-data-room-hosted-20261125` | Building | | Claude | Brief: `demo/docs/briefs/ask-the-data-room-hosted.md`. Needs a migration Karan applies |
 | 4 | Voice onboarding | Unassigned | | Blocked | | | Karan decides: Chrome's built-in speech recognition sends audio to Google; an on-device model keeps it local but is heavier |
