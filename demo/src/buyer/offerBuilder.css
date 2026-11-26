@@ -4,6 +4,7 @@
 .ob-option{display:grid;gap:8px;align-content:start;text-align:left;padding:16px;border:1px solid var(--k-line);border-radius:var(--k-radius-input);background:#fff;font:inherit;color:inherit;cursor:pointer;min-width:0}
 .ob-option:hover{border-color:var(--k-grey-2)}.ob-option.is-picked{border-color:var(--k-purple);box-shadow:0 0 0 1px var(--k-purple)}
 .ob-option:focus-visible{outline:2px solid var(--k-purple);outline-offset:2px}
+.ob-option.is-blocked{cursor:not-allowed;background:var(--k-surface-2,#f7f7f8)}.ob-option.is-blocked:hover{border-color:var(--k-line)}
 .ob-option strong{font-size:16px}.ob-sum{font-size:13.5px;line-height:1.5;color:var(--k-grey-1)}
 .ob-option dl,.ob-home dl{margin:0;display:grid;gap:4px}.ob-option dl div,.ob-home dl div{display:flex;justify-content:space-between;gap:12px;font-size:14px}
 .ob-option dt,.ob-home dt{color:var(--k-grey-1)}.ob-option dd,.ob-home dd{margin:0;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}

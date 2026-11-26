@@ -5,10 +5,13 @@
 import {sbaCheck,sbaDefaults,annualPayment,SBA_MIN_COVERAGE,type SbaInputs} from './sba.ts';
 import type {OfferTerms} from './offerVersions.ts';
 import type {LetterTerms} from './engagement.ts';
+import type {Letter} from './portal.ts';
 
 export type StructureKey='sba-10'|'sba-standby-note'|'sba-paid-note'|'all-cash';
 export type Structure={key:StructureKey;title:string;summary:string;buyerCash:number;loan:number;sellerNote:number;sellerCashAtClose:number;
-  yearlyPayments:number;coverage:number|null;meetsCoverage:boolean;afterPayments:number;issues:string[];assumptions:string;terms:OfferTerms};
+  yearlyPayments:number;coverage:number|null;meetsCoverage:boolean;afterPayments:number;issues:string[];
+  /** Problems that rule the structure out as built (for example the SBA loan limit), apart from coverage, which lenders weigh. */
+  blockers:string[];assumptions:string;terms:OfferTerms};
 
 const LOAN_RATE=sbaDefaults(1,1).ratePct,LOAN_YEARS=sbaDefaults(1,1).years,NOTE_RATE=6,NOTE_YEARS=5;
 const usd=(n:number)=>'$'+Math.round(n).toLocaleString('en-US');
@@ -30,7 +33,7 @@ export function structuresFor(l:{askingPrice:number;sde:number;sellerFinancing:b
   return specs.map(sp=>{
     const c=sbaCheck({...base,...sp.in}),sellerCashAtClose=price-c.sellerNote;
     return {key:sp.key,title:sp.title,summary:sp.summary,buyerCash:c.buyerCash,loan:c.loan,sellerNote:c.sellerNote,sellerCashAtClose,yearlyPayments:c.debtService,
-      coverage:c.dscr,meetsCoverage:c.meetsCoverage,afterPayments:c.afterDebt,issues:c.issues,
+      coverage:c.dscr,meetsCoverage:c.meetsCoverage,afterPayments:c.afterDebt,issues:c.issues,blockers:c.issues.filter(i=>!/^Coverage is /.test(i)),
       assumptions:sp.bank?`Assumes a ${LOAN_RATE}% loan over ${LOAN_YEARS} years and ${usd(base.buyerSalary)} a year paid to whoever runs the business. Your lender sets the real terms.`:`Assumes ${usd(base.buyerSalary)} a year paid to whoever runs the business.`,
       terms:{kind:'Indication of interest',price,cashAtClose:sellerCashAtClose,sellerNote:c.sellerNote,earnout:0,financing:sp.financing,closeDays:sp.bank?90:45,conditions:sp.bank?'Subject to SBA loan approval and customary due diligence.':'Subject to customary due diligence.',
         financingConditions:sp.bank?'SBA 7(a) loan approval':'',...sp.note}};
@@ -42,23 +45,50 @@ export const coverageLine=(s:Pick<Structure,'coverage'|'meetsCoverage'>)=>s.cove
 // ---- Owner side ----
 const pct=(s?:string)=>{const m=String(s??'').match(/(\d+(?:\.\d+)?)\s*%/);return m?Number(m[1]):null;};
 const years=(s?:string)=>{const t=String(s??'');let m=t.match(/(\d+(?:\.\d+)?)\s*years?/i);if(m)return Number(m[1]);m=t.match(/(\d+)\s*months?/i);return m?Number(m[1])/12:null;};
-export type TakeHome={atClose:number;feeAtClose:number;cashAtClose:number;note:{principal:number;total:number|null;monthly:number|null;standby:boolean;explained:string}|null;
-  earnout:{max:number;afterFee:number}|null;ifAllPaid:number;fee:{pct:number;min:number;retainer:number;source:string}|null;caveat:string};
+export type NoteSchedule='equal monthly'|'interest only'|'standby'|'not stated'|'other';
+/** How the offer says the note is repaid. Only schedules we can compute exactly get payment figures. */
+export function noteSchedule(repayment?:string):NoteSchedule{
+  const t=String(repayment??'').trim();if(!t)return 'not stated';
+  if(/standby|no payments/i.test(t))return 'standby';
+  if(/quarter|annual|yearly|semi/i.test(t))return 'other';
+  if(/interest[\s-]*only/i.test(t))return 'interest only';
+  if(/equal|level|amortiz|principal and interest/i.test(t))return 'equal monthly';
+  return 'other';
+}
+export type TakeHome={atClose:number;feeAtClose:number;cashAtClose:number;
+  note:{principal:number;total:number|null;monthly:number|null;standby:boolean;schedule:NoteSchedule;explained:string}|null;
+  earnout:{max:number;fee:number;afterFee:number}|null;ifAllPaid:number;fee:{pct:number;min:number;retainer:number;source:string}|null;caveat:string};
+
+/** The engagement letter whose fee applies: the latest countersigned version. An amendment that is not
+ *  countersigned yet does not replace it. */
+export function signedFeeLetter(letters:Pick<Letter,'version'|'status'|'input'>[]):{terms:LetterTerms;version:number}|undefined{
+  const l=letters.filter(x=>x.status==='Countersigned').sort((a,b)=>b.version-a.version)[0];
+  const t=l&&(l.input as {terms?:LetterTerms}).terms;
+  return t&&typeof t.successFeePct==='number'&&t.successFeePct>0?{terms:t,version:l.version}:undefined;
+}
 
 /** What an offer means for the owner. The fee comes from the signed engagement letter, or is left out
- *  and said so. Taxes, paying off business debt and closing adjustments are not estimated. */
+ *  and said so. It is charged once on everything paid: the minimum covers the whole sale, earnouts
+ *  included, and the retainer is credited once. Taxes, paying off business debt and closing
+ *  adjustments are not estimated. */
 export function takeHome(t:Pick<OfferTerms,'cashAtClose'|'sellerNote'|'earnout'|'noteInterest'|'noteTerm'|'noteRepayment'>,letter?:{terms:Pick<LetterTerms,'successFeePct'|'successFeeMin'|'retainer'>;version:number}):TakeHome{
   const f=letter&&letter.terms.successFeePct?{pct:letter.terms.successFeePct,min:letter.terms.successFeeMin||0,retainer:typeof letter.terms.retainer==='number'?letter.terms.retainer:0,source:`Your signed engagement letter, version ${letter.version}`}:null;
-  const atCloseBase=t.cashAtClose+t.sellerNote;
-  const feeAtClose=f?Math.max(0,Math.max(f.min,Math.round(atCloseBase*f.pct/100))-f.retainer):0;
+  const owed=(base:number)=>f?Math.max(0,Math.max(f.min,Math.round(base*f.pct/100))-f.retainer):0;
+  const atCloseBase=t.cashAtClose+t.sellerNote,earnoutMax=Math.max(0,t.earnout||0);
+  const feeAtClose=owed(atCloseBase),earnoutFee=owed(atCloseBase+earnoutMax)-feeAtClose;
   let note:TakeHome['note']=null;
   if(t.sellerNote>0){
-    const rate=pct(t.noteInterest),term=years(t.noteTerm),standby=/standby|no payments/i.test(t.noteRepayment||'');
-    const yearly=rate!==null&&term?annualPayment(t.sellerNote,rate,term):null;
-    note={principal:t.sellerNote,standby,monthly:yearly&&!standby?Math.round(yearly/12):null,total:yearly&&!standby?Math.round(yearly*term!):null,
-      explained:rate===null||!term?'Paid later by the buyer; the interest and term are not stated, so only the principal is shown.':standby?`Paid later by the buyer, at ${rate}% a year, once the bank loan allows. No payments while it is outstanding.`:`Paid by the buyer monthly over ${term} years at ${rate}% a year.`};
+    const P=t.sellerNote,rate=pct(t.noteInterest),term=years(t.noteTerm),schedule=noteSchedule(t.noteRepayment),known=rate!==null&&!!term;
+    let monthly:number|null=null,total:number|null=null,explained:string;
+    if(schedule==='standby')explained=rate!==null?`Paid later by the buyer, at ${rate}% a year, once the bank loan allows. No payments while it is outstanding.`:'Paid later by the buyer, once the bank loan allows. No payments while it is outstanding.';
+    else if(!known)explained='Paid later by the buyer; the interest or term is not stated, so only the principal is shown.';
+    else if(schedule==='equal monthly'){const y=annualPayment(P,rate,term);monthly=Math.round(y/12);total=Math.round(y*term);explained=`Paid by the buyer in equal monthly payments over ${term} years at ${rate}% a year.`;}
+    else if(schedule==='interest only'){monthly=Math.round(P*rate/100/12);total=Math.round(P+P*rate/100*term);explained=`The buyer pays interest only, ${usd(monthly)} a month at ${rate}% a year, then the full ${usd(P)} at the end of ${term} years.`;}
+    else if(schedule==='not stated')explained='Paid later by the buyer; the repayment schedule is not stated, so only the principal is shown.';
+    else explained=`Paid on the schedule in the offer: "${String(t.noteRepayment).trim().slice(0,200)}". Only the principal is shown; your advisor can walk you through the payments.`;
+    note={principal:P,standby:schedule==='standby',schedule,monthly,total,explained};
   }
-  const earnout=t.earnout>0?{max:t.earnout,afterFee:Math.round(t.earnout*(1-(f?.pct??0)/100))}:null;
+  const earnout=earnoutMax>0?{max:earnoutMax,fee:earnoutFee,afterFee:earnoutMax-earnoutFee}:null;
   const atClose=t.cashAtClose-feeAtClose;
   const ifAllPaid=atClose+(note?.total??note?.principal??0)+(earnout?.afterFee??0);
   return {atClose,feeAtClose,cashAtClose:t.cashAtClose,note,earnout,ifAllPaid,fee:f,

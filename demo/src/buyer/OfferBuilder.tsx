@@ -17,11 +17,11 @@ export function OfferBuilder({listing,busy,submit}:{listing:{askingPrice:number;
   const blank:OfferTerms={kind:'Indication of interest',price:listing.askingPrice,cashAtClose:listing.askingPrice,sellerNote:0,earnout:0,financing:'',closeDays:90,conditions:''};
   return <div className="ob">
     <p className="ob-lede">Start from a structure. Each one shows what you bring, what you borrow, and whether the business's earnings cover the payments. You can change every term before you submit.</p>
-    <div className="ob-options" role="radiogroup" aria-label="Financing structures">{options.map(o=><button key={o.key} type="button" role="radio" aria-checked={picked===o.key} className={'ob-option'+(picked===o.key?' is-picked':'')} onClick={()=>setPicked(o.key)}>
+    <div className="ob-options" role="radiogroup" aria-label="Financing structures">{options.map(o=>{const blocked=o.blockers.length>0;return <button key={o.key} type="button" role="radio" aria-checked={picked===o.key} aria-disabled={blocked||undefined} disabled={blocked} className={'ob-option'+(picked===o.key?' is-picked':'')+(blocked?' is-blocked':'')} onClick={()=>{if(!blocked)setPicked(o.key);}}>
       <strong>{o.title}</strong><span className="ob-sum">{o.summary}</span>
       <dl><div><dt>You bring</dt><dd>{usd(o.buyerCash)}</dd></div>{o.loan>0&&<div><dt>Loan</dt><dd>{usd(o.loan)}</dd></div>}{o.sellerNote>0&&<div><dt>Seller note</dt><dd>{usd(o.sellerNote)}</dd></div>}{o.yearlyPayments>0&&<div><dt>Payments a year</dt><dd>{usd(o.yearlyPayments)}</dd></div>}</dl>
-      <span className={'ob-cover'+(o.meetsCoverage?'':' is-warn')}>{coverageLine(o)}</span>
-    </button>)}</div>
+      {blocked?<span className="ob-cover is-warn">Not available as built: {o.blockers.join(' ')}</span>:<span className={'ob-cover'+(o.meetsCoverage?'':' is-warn')}>{coverageLine(o)}</span>}
+    </button>;})}</div>
     {options.length>0&&<p className="ob-assume">{(chosen||options[0]).assumptions} Kalling doesn't lend or give lending advice.</p>}
     <TermsEditor key={picked||'blank'} busy={busy} initial={chosen?.terms||blank} submit={submit}/>
   </div>;
@@ -39,7 +39,7 @@ export function OfferTakeHome({offers,letter}:{offers:SharedOffer[];letter?:{ter
         <div><dt>Cash from the buyer at closing</dt><dd>{usd(h.cashAtClose)}</dd></div>
         {h.fee&&<div><dt>Kalling's fee due at closing</dt><dd>-{usd(h.feeAtClose)}</dd></div>}
         {h.note&&<div><dt>Seller note{h.note.monthly?`, ${usd(h.note.monthly)} a month`:''}</dt><dd>{usd(h.note.total??h.note.principal)}{h.note.total?' with interest':''}</dd></div>}
-        {h.earnout&&<div><dt>Earnout, only if earned</dt><dd>up to {usd(h.earnout.afterFee)}</dd></div>}
+        {h.earnout&&<div><dt>Earnout, only if earned{h.fee?(h.earnout.fee?`, after ${usd(h.earnout.fee)} fee`:', no further fee'):''}</dt><dd>up to {usd(h.earnout.afterFee)}</dd></div>}
         <div className="ob-total"><dt>If everything is paid</dt><dd>{usd(h.ifAllPaid)}</dd></div>
       </dl>
       {h.note&&<p className="ob-note">{h.note.explained}</p>}
