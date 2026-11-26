@@ -10,11 +10,11 @@ Status: `Next` (not started) · `Building` · `In review` (PR open) · `Blocked`
 |---|---|---|---|---|---|---|---|
 | 1 | Seller sourcing agent, first cut | Claude | | Next | | Codex | Check what NJ HVACR license records include |
 | 2 | Offer builder with financing options | Claude | `claude/offer-builder-20261125` | In review | #34 | Codex | Seller take-home and buyer financing per structure |
-| 3 | Ask the data room, hosted | Codex | `codex/ask-data-room-hosted-20261125` | Building | | Claude | Brief: `demo/docs/briefs/ask-the-data-room-hosted.md`. Needs a migration Karan applies |
-| 4 | Voice onboarding | Unassigned | | Blocked | | | Karan decides: Chrome's built-in speech recognition sends audio to Google; an on-device model keeps it local but is heavier |
-| 5 | Design system | Karan, then Claude | | Blocked | | | Waiting on Karan's font, color and image samples |
+| 3 | Polish sprint: one owner path, flawless on a phone | Claude | | Next | | Codex | Free valuation to closed sale; every screen and word reviewed. No new features until done |
+| 4 | Voice onboarding | Unassigned | | Next | | | Decided: an on-device speech model, so the owner's voice never leaves their device. No rush |
+| 5 | Design system | Karan, then Claude | | Blocked | | | Waiting on Karan's font, color and image samples; then applied to every screen and future feature |
 
-Shipped from this board: Monday polish (#29), Ask the data room in the demo (#30). See the master document.
+Shipped from this board: Monday polish (#29), Ask the data room in the demo (#30), Ask the data room hosted (#33, migration pending). See the master document.
 
 ## Handoff notes
 Short notes one AI leaves for the other: a file both are touching, a decision Karan made, a trap.
