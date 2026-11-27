@@ -6,7 +6,7 @@ import './buyer.css';
 
 const day=(s?:string)=>s?new Date(s.slice(0,10)+'T12:00:00').toLocaleDateString():'';
 // Owners see what the check is about, in plain words.
-const forOwner:Record<VerificationBadge['status'],string>={'Verified':'Financing checked','Not reviewed':'Financing not checked yet','Needs review':'Financing being checked','Expired':'Financing check expired','Withdrawn':'Financing check withdrawn','Revoked':'Financing check withdrawn'};
+const forOwner:Record<VerificationBadge['status'],string>={'Verified':'Financing checked','Not reviewed':'Financing not checked yet','Needs review':'Financing not checked yet','Expired':'Financing check expired','Withdrawn':'Financing check withdrawn','Revoked':'Financing check withdrawn'};
 export function VerificationPill({badge,owner=false}:{badge?:VerificationBadge;owner?:boolean}){
   const verified=badge?.status==='Verified',status=badge?.status||'Not reviewed';return <span className="buyer-verification-badge"><StatusPill tone={verified?'green':'plain'}>{owner?forOwner[status]:verified?'Verified':status}</StatusPill>{verified&&<details><summary>What verified means</summary><p>Kalling reviewed financing evidence on {day(badge.reviewedAt)}. Review valid through {day(badge.until)}. This does not guarantee identity, creditworthiness, financing or closing.</p></details>}</span>;
 }

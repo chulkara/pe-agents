@@ -38,8 +38,6 @@ export function nextAction(b:PortalBundle,txs:Tx[]=[]):NextAction{
     return {title:'Nothing needed from you right now',why:first+' is preparing your engagement letter. It will appear here to read and sign.',button:'Message '+first,target:'portal-messages',yours:false};
   const stage=saleStage(b,txs),n=unread(b);
   const messages={title:'Read '+(n===1?'a new message':n+' new messages')+' from '+first,why:'Reply here, or call if it is easier.',button:'Open messages',target:'portal-messages',yours:true};
-  // After the sale closes there is nothing left to gather or approve; only messages can need the owner.
-  if(stage===4)return n?messages:{title:'Your sale has closed',why:'Your records stay here for you. '+first+' will message you about anything still to settle after closing, such as a seller note or an earnout.',button:'Message '+first,target:'portal-messages',yours:false};
   if(b.reviews.some(r=>r.status==='Waiting for owner'))
     return {title:'Review your memorandum',why:'This is how buyers will first see the business. Approve it or say what to change.',button:'Review it',target:'portal-memo',yours:true};
   const reqs=[...b.requests].sort((x,y)=>requestOrder(x)-requestOrder(y));
@@ -53,6 +51,8 @@ export function nextAction(b:PortalBundle,txs:Tx[]=[]):NextAction{
   if(left>0&&stage<2)return {title:left===1?'Answer one last question about your business':'Answer '+left+' questions about your business',why:'Buyers want the story in your words. It takes about ten minutes, by talking or typing.',button:'Start',target:'portal-about',yours:true};
   const step=b.steps.filter(s=>s.owner==='You'&&!s.done).sort((x,y)=>(x.due||'9').localeCompare(y.due||'9'))[0];
   if(step)return {title:step.text,why:step.due?'By '+new Date(step.due+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})+'.':'When you can.',button:'See next steps',target:'portal-steps',yours:true};
+  // After closing, anything still owed above comes first; otherwise the home says the sale is done.
+  if(stage===4)return {title:'Your sale has closed',why:'Your records stay here for you. '+first+' will message you about anything still to settle after closing, such as a seller note or an earnout.',button:'Message '+first,target:'portal-messages',yours:false};
   return {title:'Nothing needed from you right now',why:first+' is working on the next step. You will see it here, and get a message, when there is something for you.',button:'Message '+first,target:'portal-messages',yours:false};
 }
 const lower=(t:string)=>/^[A-Z][a-z]/.test(t)?t.charAt(0).toLowerCase()+t.slice(1):t;

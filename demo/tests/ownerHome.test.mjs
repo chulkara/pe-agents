@@ -47,10 +47,13 @@ test('after the owner signs, the home says the advisor countersigns next, not th
   b.letters=[];assert.match(nextAction(b).why,/is preparing your engagement letter/,'before any letter, it is still being prepared');
 });
 
-test('after the sale closes the owner is not asked for records or the business story',()=>{
+test('after the sale closes the owner is not asked for the business story, but still sees work they owe',()=>{
   const b=base();b.letters=[{id:'l',version:1,status:'Countersigned'}];
-  b.requests=[req('a','Tax returns','Open')];b.buyers=[{stage:'Offer made'}];
+  b.requests=[req('a','Tax returns','Accepted')];b.buyers=[{stage:'Offer made'}];
   const n=nextAction(b,[{state:'Closed'}]);assert.equal(n.title,'Your sale has closed');assert.equal(n.yours,false);
+  // Work the owner still owes after closing is not hidden (Codex review of #36).
+  b.requests=[req('n','Seller note','Needs changes')];const owed=nextAction(b,[{state:'Closed'}]);assert.equal(owed.title,'Update seller note');assert.equal(owed.yours,true);
+  b.requests=[req('o','Payoff letter','Open')];assert.equal(nextAction(b,[{state:'Closed'}]).title,'Send your payoff letter');
   b.requests=[];
   assert.doesNotMatch(nextAction(b,[{state:'Planning'}]).title,/questions about your business/,'not during closing');
   b.buyers=[{stage:'Under NDA'}];assert.match(nextAction(b,[]).title,/questions about your business/,'still asked while meeting buyers');

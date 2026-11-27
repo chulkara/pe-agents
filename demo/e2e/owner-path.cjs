@@ -15,8 +15,8 @@ async function phoneCheck(page,where,{shot}={}){
   const text=await page.locator('body').innerText();
   for(const [re,what] of banned)assert.doesNotMatch(text,re,`${where}: shows ${what}`);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${where}: scrolls sideways at 390px`);
-  // Every visible button in the owner's portal is at least 40px tall: thumbs, not mouse pointers.
-  const small=await page.evaluate(()=>[...document.querySelectorAll('.portal-shell button, .portal-shell .btn, .portal-mobilebar a')].filter(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&!el.closest('details:not([open]) > :not(summary)')&&r.height<40;}).map(el=>(el.textContent||el.getAttribute('aria-label')||el.className).trim().slice(0,40)));
+  // Every visible button and expander in the owner's portal is at least 40px tall: thumbs, not mouse pointers.
+  const small=await page.evaluate(()=>[...document.querySelectorAll('.portal-shell button, .portal-shell .btn, .portal-shell summary, .portal-mobilebar a')].filter(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&!el.closest('details:not([open]) > :not(summary)')&&r.height<40;}).map(el=>(el.textContent||el.getAttribute('aria-label')||el.className).trim().slice(0,40)));
   assert.deepEqual(small,[],`${where}: buttons smaller than 40px`);
   if(OUT&&shot)await page.screenshot({path:`${OUT}/${shot}.png`,fullPage:true});
 }
@@ -56,7 +56,10 @@ async function phoneCheck(page,where,{shot}={}){
     const open=owner.locator('.portal-request.open').first();
     assert.equal(await open.getByRole('button',{name:'Choose files'}).isVisible(),true,'a real button to choose files on a phone');
     assert.match(await owner.locator('#portal-messages .portal-contact').innerText(),/Or reach Karan directly: team@local\.demo/);
-    assert.equal(await owner.locator('.portal-mobilebar button',{hasText:'Upload'}).isVisible(),true);
+    const up=owner.locator('.portal-mobilebar button',{hasText:'Upload'});assert.equal(await up.isVisible(),true);
+    await up.click();await owner.waitForTimeout(300);
+    const target=owner.locator('.portal-request.open');assert.equal(await target.count(),1);
+    assert.equal(await target.getByRole('button',{name:'Choose files'}).isVisible(),true,'Upload opens a request that still takes files');
     for(const s of ['.portal-pros details.pro-add'])for(const d of await owner.locator(s).all())assert.equal(await d.getAttribute('open'),null,'staff and CPA forms start folded');
     await phoneCheck(owner,'requests open',{shot:'3-requests-390'});step(3,'requests open; empty sections hidden; forms folded; choose-files button');
 

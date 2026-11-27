@@ -13,6 +13,11 @@ export type DocRequest={id:string;portalId:string;title:string;needed:string;why
 export type PortalFile={id:string;portalId:string;name:string;mime:string;size:number;sha256:string;status:'reserved'|'stored';uploadedBy:string;side:Side;createdAt:string};
 export type Message={id:string;portalId:string;side:Side;author:string;body:string;createdAt:string};
 export type NextStep={id:string;portalId:string;text:string;owner:'You'|'Firm';due:string;done:boolean};
+/** The welcome a portal gets when it is created with an engagement letter. Once the owner has signed,
+ *  it is out of date and is no longer shown; any other welcome an advisor writes always shows. */
+const LETTER_WELCOME_ASK='Start by reading and signing the engagement letter below.';
+export const letterWelcome=(firm:string,business:string)=>`Thank you for choosing ${firm} to help sell ${business}. ${LETTER_WELCOME_ASK} Your document requests open once both of us have signed.`;
+export const isLetterWelcome=(text:string)=>text.includes(LETTER_WELCOME_ASK);
 export const letterStatuses=['Draft','Ready to sign','Viewed by owner','Signed by owner','Countersigned','Void'] as const;
 export type LetterStatus=typeof letterStatuses[number];
 export type Signature={name:string;email:string;at:string;consent:true};
