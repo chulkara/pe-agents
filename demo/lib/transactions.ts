@@ -9,7 +9,8 @@ export const dateOnly=(s:string)=>/^\d{4}-\d{2}-\d{2}$/.test(s)&&!isNaN(Date.par
 export function safeText(s:unknown,min=0,max=2000){const t=String(s??'').trim();requireTx(t.length>=min&&t.length<=max,'Enter a complete response within the stated length.');requireTx(!/\b(?:social security|routing number|bank account number|wire instructions|credit authorization)\b|\b\d{3}-\d{2}-\d{4}\b/i.test(t),'Keep sensitive banking and personal application details outside Kalling.');return t;}
 export function cents(s:string):number{requireTx(/^(0|[1-9]\d{0,11})(\.\d{1,2})?$/.test(s),'Enter nonnegative US dollars with at most two decimal places.');const [a,b='']=s.split('.');const n=Number(a)*100+Number(b.padEnd(2,'0'));requireTx(Number.isSafeInteger(n),'The amount is too large.');return n;}
 export function wholeDollarsToCents(n:number){requireTx(Number.isSafeInteger(n)&&n>=0&&Number.isSafeInteger(n*100),'The source offer must use safe whole US dollars.');return n*100;}
-export const dollars=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
+/** Amounts are stored in cents. Whole-dollar amounts show without cents ($2,600,000); others keep them. */
+export const dollars=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:n%100?2:0,maximumFractionDigits:2}).format(n/100);
 export type ExecutionActor={kind:'advisor';id:string;name:string;role:'owner'|'admin'|'analyst'|'viewer'}|{kind:'buyer';id:string;email:string}|{kind:'seller';portalId:string;portalIds?:string[];email:string}|{kind:'guest';id:string;email:string;confirmed:boolean}|{kind:'public'};
 export type ExecutionSource={fileId:string;page:number;excerpt:string};
 export type Evidence={source:ExecutionSource;reviewer:string;at:string;note:string};

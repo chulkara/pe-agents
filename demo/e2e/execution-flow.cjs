@@ -22,6 +22,16 @@ if(!['127.0.0.1','localhost'].includes(new URL(U).hostname))throw Error('Executi
       await page.locator('#surface').selectOption(surface);
       await frame.getByRole('heading',{name:headings[surface],exact:true,level:1}).waitFor();
       if(['advisor','owner','buyer'].includes(surface))await frame.getByRole('heading',{name:surface==='owner'?'Your completed sale':'Your completed acquisition',exact:true}).waitFor();
+      if(surface==='owner'){
+        // The owner's closed sale reads in plain words: no deal jargon, no cents on whole amounts, no business questions after the sale.
+        // Quotes from documents stay word for word, so they are left out of the wording check.
+        const text=await frame.locator('.ex-workspace').evaluate(el=>{const c=el.cloneNode(true);c.querySelectorAll('q,blockquote,.ex-sources').forEach(n=>n.remove());return c.innerText||c.textContent;});
+        for(const w of ['Fixed consideration','Cash consideration at close','Maximum contingent consideration','Accountable coordinator','Execution documents','Transaction attempt'])assert.ok(!text.includes(w),'owner sees '+w);
+        assert.equal(await frame.locator('#portal-about').count(),0,'no business questions after the sale has closed');
+        assert.doesNotMatch(text,/\$[\d,]+\.00\b/,'whole amounts show without cents');assert.doesNotMatch(text,/\d{4}-\d{2}-\d{2} New York/,'deadlines read as dates');
+        for(const w of ['Price, not counting any earnout','Cash at closing','Earnout, the most it can pay','Sale documents'])assert.ok(text.includes(w),'owner should see '+w);
+        assert.equal(await frame.getByRole('button',{name:'Letter of intent'}).count(),1,'the LOI tab is spelled out for the owner');
+      }
       for(const width of ['1440','1024','390']){
         await page.locator('#width').selectOption(width);
         await page.getByRole('button',{name:'Assert layout and privacy',exact:true}).click();

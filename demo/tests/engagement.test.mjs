@@ -34,7 +34,7 @@ test('the letter cannot be rendered with empty fees, and the same input gives th
   assert.throws(()=>E.renderLetter(i),/success fee/);
   const ok=input();assert.deepEqual(E.letterProblems(ok),[]);
   const t1=E.renderLetter(ok),t2=E.renderLetter(input());assert.equal(t1,t2);
-  assert.match(t1,/8% of the total purchase price/);assert.match(t1,/minimum of \$60,000/);assert.match(t1,/There is no retainer/);assert.match(t1,/State of New Jersey/);assert.match(t1,/not sent to outside AI services/);assert.match(t1,new RegExp(E.LETTER_TEMPLATE_VERSION));
+  assert.match(t1,/8% of the total purchase price/);assert.match(t1,/minimum of \$60,000/);assert.match(t1,/There is no retainer/);assert.match(t1,/State of New Jersey/);assert.match(t1,/not sent to outside AI services/);assert.doesNotMatch(t1,/Template|kalling-engagement/,'the owner reads no internal template code');assert.equal(E.LETTER_TEMPLATE_VERSION,'kalling-engagement-2026-11-v2','the version is still recorded with each letter');
   assert.doesNotMatch(t1,/—|–/,'no em or en dashes');
   assert.match(E.renderLetter({...ok,terms:{...terms,retainer:5000}}),/retainer of \$5,000/);
   assert.ok(E.sameName('  pat   russo','Pat Russo'));assert.ok(!E.sameName('Pat','Pat Russo'));
