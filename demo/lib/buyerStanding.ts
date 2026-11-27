@@ -7,6 +7,8 @@ import type {Transaction} from './transactions.ts';
 export type Standing={label:string;help:string;tone:'green'|'peri'|''};
 type Tx=Pick<Transaction,'buyerLabel'|'state'|'createdAt'|'closes'>;
 
+// The stored stage names are the firm's; owners see plain words.
+const ownerLabel:Partial<Record<Buyer['stage'],string>>={'Under NDA':'Signed confidentiality agreement','Reviewing information':'Reviewing your information'};
 const date=(d:string)=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 
 export function buyerStanding(buyer:Pick<Buyer,'name'|'stage'>,transactions:Tx[],stageHelp:string):Standing{
@@ -20,5 +22,5 @@ export function buyerStanding(buyer:Pick<Buyer,'name'|'stage'>,transactions:Tx[]
   const active=live.find(t=>t.buyerLabel===buyer.name);
   if(active)return {label:'Working toward closing',help:'You chose their offer. Your advisor is working through the letter of intent, diligence and closing with you below.',tone:'green'};
   const tone=buyer.stage==='Offer made'?'green':buyer.stage==='Under NDA'||buyer.stage==='Reviewing information'?'peri':'';
-  return {label:buyer.stage,help:stageHelp,tone};
+  return {label:ownerLabel[buyer.stage]??buyer.stage,help:stageHelp,tone};
 }

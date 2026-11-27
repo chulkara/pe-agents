@@ -36,6 +36,8 @@ export function ValuePage(){
   const {store}=useSession();
   const q=new URLSearchParams(location.hash.split('?')[1]||'');
   const [inputs,setInputs]=useState<HvacInputs>({...quickDefaults,revenue:num(q.get('revenue'))||quickDefaults.revenue,netProfit:Math.max(0,(num(q.get('earnings'))||quickDefaults.ownerPay+quickDefaults.netProfit)-quickDefaults.ownerPay),maintenancePct:q.has('service')?num(q.get('service')):quickDefaults.maintenancePct});
+  // Answers carried over from the quick estimate are the owner's own, not examples.
+  const carried=['revenue','earnings','service'].some(k=>q.has(k));
   const [error,setError]=useState(''),[sent,setSent]=useState(''),[busy,setBusy]=useState(false);
   const calc=useMemo(()=>{try{return {v:estimateHvacValue(inputs),err:''};}catch(e){return {v:null,err:(e as Error).message};}},[inputs]);const v=calc.v;
   const set=(k:keyof HvacInputs)=>(e:{target:{value:string}})=>setInputs(x=>({...x,[k]:typeof quickDefaults[k]==='number'?num(e.target.value):e.target.value}));
@@ -44,7 +46,7 @@ export function ValuePage(){
     try{await store.submitLead({name:String(d.get('name')),email:String(d.get('email')),phone:String(d.get('phone')),businessName:String(d.get('businessName')),region:String(d.get('region')) as Region,timing:String(d.get('timing')),message:String(d.get('message')),source:'valuation',consent:d.get('consent')==='on',valuation:v?{sde:v.sde,low:v.low,mid:v.mid,high:v.high,revenue:inputs.revenue}:undefined});setSent(String(d.get('name')).split(' ')[0]);}
     catch(err){setError((err as Error).message);}finally{setBusy(false);}}
   return <div className="ks-value">
-    <section className="ks-wrap ks-page-head"><h1 className="ks-display ks-display-s">What is your HVAC company worth?</h1><p>Fill in what you know. The estimate updates as you type and explains each adjustment. Nobody sees your numbers unless you ask for a review.</p></section>
+    <section className="ks-wrap ks-page-head"><h1 className="ks-display ks-display-s">What is your HVAC company worth?</h1><p>{carried?'Your three answers are carried over. The other numbers are a typical company, to start you off; replace them with yours. The estimate updates':'The numbers below are a typical company, to start you off. Replace them with yours; the estimate updates'} as you type and explains each adjustment. Nobody sees your numbers unless you ask for a review.</p></section>
     <div className="ks-wrap ks-value-grid">
       <form className="ks-value-form" onSubmit={e=>e.preventDefault()}>
         <fieldset><legend>Earnings</legend>

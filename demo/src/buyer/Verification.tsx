@@ -5,8 +5,10 @@ import {Button,Field,Panel,StatusPill} from '../design/ui';
 import './buyer.css';
 
 const day=(s?:string)=>s?new Date(s.slice(0,10)+'T12:00:00').toLocaleDateString():'';
-export function VerificationPill({badge}:{badge?:VerificationBadge}){
-  const verified=badge?.status==='Verified';return <span className="buyer-verification-badge"><StatusPill tone={verified?'green':'plain'}>{verified?'Verified':badge?.status||'Not reviewed'}</StatusPill>{verified&&<details><summary>What verified means</summary><p>Kalling reviewed financing evidence on {day(badge.reviewedAt)}. Review valid through {day(badge.until)}. This does not guarantee identity, creditworthiness, financing or closing.</p></details>}</span>;
+// Owners see what the check is about, in plain words.
+const forOwner:Record<VerificationBadge['status'],string>={'Verified':'Financing checked','Not reviewed':'Financing not checked yet','Needs review':'Financing not checked yet','Expired':'Financing check expired','Withdrawn':'Financing check withdrawn','Revoked':'Financing check withdrawn'};
+export function VerificationPill({badge,owner=false}:{badge?:VerificationBadge;owner?:boolean}){
+  const verified=badge?.status==='Verified',status=badge?.status||'Not reviewed';return <span className="buyer-verification-badge"><StatusPill tone={verified?'green':'plain'}>{owner?forOwner[status]:verified?'Verified':status}</StatusPill>{verified&&<details><summary>What verified means</summary><p>Kalling reviewed financing evidence on {day(badge.reviewedAt)}. Review valid through {day(badge.until)}. This does not guarantee identity, creditworthiness, financing or closing.</p></details>}</span>;
 }
 function EvidenceFiles({v,store}:{v:Verification;store:VerificationStore}){
   const [error,setError]=useState('');return <><ul className="buyer-proof-files">{v.files.map(f=><li key={f.id}><button type="button" className="text-link" onClick={()=>void store.open(f.id).then(blob=>{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=f.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}).catch(e=>setError(e.message))}>{f.name}</button><span>{Math.ceil(f.size/1024)} KB · {f.status==='stored'?'Validated':'Upload validation pending'}</span></li>)}</ul>{error&&<p role="alert" className="buyer-error">{error}</p>}</>;

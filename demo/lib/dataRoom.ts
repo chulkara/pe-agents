@@ -164,3 +164,11 @@ export function suggestName(fileName:string,requests:string[]=[]){
   const words=base.replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim();
   return words.charAt(0).toUpperCase()+words.slice(1);
 }
+
+/** How an owner's data rooms are told apart in headings, in words rather than listing numbers. Rooms
+ *  are ordered open first, then newest; one room needs no label. */
+export function ownerRoomLabel(index:number,total:number):string{
+  if(total<2)return '';
+  if(index===0)return ', your current listing';
+  return total>2?`, earlier listing ${index}`:', your earlier listing';
+}

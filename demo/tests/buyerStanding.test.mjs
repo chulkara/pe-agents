@@ -22,3 +22,9 @@ test('an abandoned attempt does not change the card',()=>{
   assert.equal(buyerStanding(buyer,[tx('Abandoned')],'h').label,'Offer made');
   assert.equal(buyerStanding(other,[tx('Abandoned','Buyer 2, strategic'),tx('Closed')],'h').label,'Sale closed');
 });
+
+test('owners see plain words for buyer stages',()=>{
+  assert.equal(buyerStanding({name:'x',stage:'Under NDA'},[],'h').label,'Signed confidentiality agreement');
+  assert.equal(buyerStanding({name:'x',stage:'Reviewing information'},[],'h').label,'Reviewing your information');
+  assert.equal(buyerStanding({name:'x',stage:'Offer made'},[],'h').label,'Offer made');
+});
