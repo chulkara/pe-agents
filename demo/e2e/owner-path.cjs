@@ -31,6 +31,9 @@ async function phoneCheck(page,where,{shot}={}){
     await site.context().addInitScript(()=>{localStorage.setItem('kalling-marketplace-demo-v1','true');localStorage.setItem('kalling-cloud-disconnected-v1','true');});
     await site.goto(U+'#/value');await site.waitForSelector('.ks-page-head');
     assert.match(await site.locator('.ks-page-head').innerText(),/typical company, to start you off\. Replace them with yours/);
+    await site.goto(U+'#/value?revenue=3000000&earnings=600000&service=40');await site.waitForSelector('.ks-page-head');
+    assert.match(await site.locator('.ks-page-head').innerText(),/Your three answers are carried over\. The other numbers are a typical company/,'carried-over answers are not called examples');
+    await site.goto(U+'#/value');await site.waitForSelector('.ks-page-head');
     assert.equal(await site.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'valuation scrolls sideways');
     if(OUT)await site.screenshot({path:OUT+'/1-valuation-390.png',fullPage:true});
     await H.submitLead(site,U);assert.match(await site.locator('body').innerText(),/An advisor will call or email within one business day/);step(1,'free valuation on a phone, with what happens next');
@@ -42,9 +45,9 @@ async function phoneCheck(page,where,{shot}={}){
     // 3. The owner signs on a phone; the home then says what happens next, not that the letter is being prepared.
     const owner=await ctx.newPage();watch(owner,'owner');await owner.setViewportSize(PHONE);
     await H.ownerSigns(owner,link);
-    const home=owner.locator('.oh');assert.match(await home.innerText(),/You signed your engagement letter[\s\S]*Karan will countersign it next/);
+    const home=owner.locator('.oh');assert.match(await home.innerText(),/You signed your engagement letter[\s\S]*Karan will countersign it next/);assert.doesNotMatch(await home.innerText(),/get a message/);
     assert.doesNotMatch(await home.innerText(),/is preparing your engagement letter/);
-    assert.equal(await owner.locator('.portal-welcome').count(),0,'the welcome that says "start by signing" is gone once signed');
+    assert.doesNotMatch(await owner.locator('body').innerText(),/Start by reading and signing/,'the signing sentences leave the welcome once signed');
     assert.equal(await owner.locator('.portal-mobilebar button').count(),0,'no Upload button before requests open');
     assert.equal(await owner.locator('.portal-help').isVisible(),false,'one way to reach the advisor on a phone, not three');
     await phoneCheck(owner,'signed, waiting for countersignature',{shot:'2-signed-390'});step(2,'owner signed on a phone; next step says Karan countersigns next');

@@ -120,10 +120,13 @@ test('the sale-ready page reaches the owner only when the firm shares it, newest
   assert.deepEqual(seen.map(x=>x.version),[2,1]);assert.equal(seen[0].by,'Karan');assert.match(seen[0].note,/license step/);
 });
 
-test('only the letter welcome is treated as out of date once signed; an advisor-written welcome is not',async()=>{
-  const {letterWelcome,isLetterWelcome}=await import('../lib/portal.ts');
+test('after signing, only the signing sentences leave the welcome; anything an advisor wrote stays',async()=>{
+  const {letterWelcome,welcomeToShow}=await import('../lib/portal.ts');
   const w=letterWelcome('Kalling','Russo Heating & Air');
-  assert.match(w,/^Thank you for choosing Kalling to help sell Russo Heating & Air\. Start by reading and signing/);
-  assert.equal(isLetterWelcome(w),true);
-  assert.equal(isLetterWelcome('Welcome, Pat. Upload what you have and I will take it from there.'),false);
+  assert.match(welcomeToShow(w,false),/Start by reading and signing/);
+  assert.equal(welcomeToShow(w,true),'Thank you for choosing Kalling to help sell Russo Heating & Air.');
+  const added=w+' Please send the lease first; the landlord needs it by Friday.';
+  assert.equal(welcomeToShow(added,true),'Thank you for choosing Kalling to help sell Russo Heating & Air. Please send the lease first; the landlord needs it by Friday.');
+  const own='Welcome, Pat. Upload what you have and I will take it from there.';
+  assert.equal(welcomeToShow(own,true),own);assert.equal(welcomeToShow('',true),'');
 });

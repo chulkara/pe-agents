@@ -33,7 +33,7 @@ export function nextAction(b:PortalBundle,txs:Tx[]=[]):NextAction{
   if(letter&&(letter.status==='Ready to sign'||letter.status==='Viewed by owner'))
     return {title:'Sign your engagement letter',why:'It sets out how '+b.portal.firmName+' works for you and what it costs. Your records list opens once it is signed by both of us.',button:'Read and sign',target:'portal-letter',yours:true};
   if(letter&&letter.status==='Signed by owner')
-    return {title:'You signed your engagement letter',why:first+' will countersign it next. Then your list of records to send opens here, and you will get a message.',button:'Message '+first,target:'portal-messages',yours:false};
+    return {title:'You signed your engagement letter',why:first+' will countersign it next. Then your list of records to send opens on this page.',button:'Message '+first,target:'portal-messages',yours:false};
   if(b.portal.requestsHidden)
     return {title:'Nothing needed from you right now',why:first+' is preparing your engagement letter. It will appear here to read and sign.',button:'Message '+first,target:'portal-messages',yours:false};
   const stage=saleStage(b,txs),n=unread(b);

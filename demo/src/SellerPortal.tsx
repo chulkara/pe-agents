@@ -9,7 +9,7 @@ import {buyerStanding} from '../lib/buyerStanding';
 import {SaleReadyView} from './saleReady/SaleReady';
 import OwnerHome from './OwnerHome';
 import type {Transaction} from '../lib/transactions';
-import {isLetterWelcome,possessive,portalProgress,privacyReminder,requestOrder,unread,type DocRequest,type PortalBundle,type PortalFile,type Buyer} from '../lib/portal';
+import {welcomeToShow,possessive,portalProgress,privacyReminder,requestOrder,unread,type DocRequest,type PortalBundle,type PortalFile,type Buyer} from '../lib/portal';
 import type {PortalStore} from '../lib/portalStore';
 import './portal.css';
 import {ProgressBar} from './design/ui';
@@ -44,6 +44,7 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
   useEffect(()=>{if(b&&!preview&&!seenOnce.current){seenOnce.current=true;void store.seen(portalId).catch(()=>{});}},[b,preview,store,portalId]);
   if(!b)return <div className="portal-shell"><div className="portal-loading">{error?<p role="alert" className="error-banner">{error}</p>:<><Loader2 className="spin"/>Opening your portal…</>}</div></div>;
   const p=b.portal,prog=portalProgress(b),waiting=b.requests.filter(r=>['Open','In progress','Needs changes'].includes(r.status)),newMessages=unread(b);
+  const welcome=welcomeToShow(p.welcome||'',b.letters.some(l=>['Signed by owner','Countersigned'].includes(l.status)));
   const readOnly=preview||!b.canEdit,gated=!!p.requestsHidden&&b.side==='seller';
   const firstOpen=[...b.requests].filter(r=>!['Accepted','Not applicable','Submitted'].includes(r.status)).sort((x,y)=>requestOrder(x)-requestOrder(y))[0]?.id||'';
   const openId=openState??firstOpen;
@@ -57,7 +58,7 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
     <header className="portal-hero">
       <div className="portal-hero-text"><h1>{p.businessName}</h1><p className="portal-by">Prepared by {p.firmName} for {p.ownerName}</p><p>Everything here is private to you and {possessive(p.firmName)} team.</p>
         {b.side==='seller'||preview?<OwnerHome b={b} txs={txs} go={go}/>:null}
-        {p.welcome&&!(isLetterWelcome(p.welcome)&&b.letters.some(l=>['Signed by owner','Countersigned'].includes(l.status)))&&<blockquote className="portal-welcome">{p.welcome}</blockquote>}</div>
+        {welcome&&<blockquote className="portal-welcome">{welcome}</blockquote>}</div>
       <aside className="portal-help" aria-label="Help"><CircleHelp size={20}/><div><strong>Questions? Ask {p.help.name.split(' ')[0]}.</strong><span>{p.help.name} is your contact at {p.firmName}.</span><a href={'mailto:'+p.help.email}><Mail size={13}/>{p.help.email}</a>{p.help.phone&&<a href={'tel:'+p.help.phone.replace(/[^\d+]/g,'')}><Phone size={13}/>{p.help.phone}</a>}<a href={"#portal-messages"} onClick={jump}><MessageSquare size={13}/>Send a message here</a></div></aside>
     </header>
     {error&&<p role="alert" className="error-banner">{error}</p>}

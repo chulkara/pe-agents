@@ -43,7 +43,7 @@ test('before the letter, the owner is told what is coming, not given work',()=>{
 test('after the owner signs, the home says the advisor countersigns next, not that the letter is being prepared',()=>{
   const b=base();b.portal.requestsHidden=true;
   b.letters=[{id:'l',version:1,status:'Signed by owner'}];
-  const n=nextAction(b);assert.equal(n.title,'You signed your engagement letter');assert.match(n.why,/^Karan will countersign it next/);assert.equal(n.yours,false);
+  const n=nextAction(b);assert.equal(n.title,'You signed your engagement letter');assert.match(n.why,/^Karan will countersign it next/);assert.doesNotMatch(n.why,/message/,'countersigning sends no message, so none is promised');assert.equal(n.yours,false);
   b.letters=[];assert.match(nextAction(b).why,/is preparing your engagement letter/,'before any letter, it is still being prepared');
 });
 

@@ -128,3 +128,11 @@ test('the cloud store logs first and uses authenticated storage downloads, never
   client.storage.from=()=>assert.fail('a denied open must not request storage');
   await assert.rejects(()=>cloudDataRoomStore(client).open('i1'),/do not have access/);
 });
+
+test('owners tell data rooms apart in words, never by listing number',async()=>{
+  const {ownerRoomLabel}=await import('../lib/dataRoom.ts');
+  assert.equal(ownerRoomLabel(0,1),'');
+  assert.deepEqual([0,1].map(n=>ownerRoomLabel(n,2)),[', your current listing',', your earlier listing']);
+  assert.deepEqual([0,1,2].map(n=>ownerRoomLabel(n,3)),[', your current listing',', earlier listing 1',', earlier listing 2']);
+  for(const n of [0,1,2])assert.doesNotMatch(ownerRoomLabel(n,3),/KL-|\d{4}/);
+});
