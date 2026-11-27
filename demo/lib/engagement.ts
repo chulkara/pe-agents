@@ -50,7 +50,9 @@ export function markNotFit(w:Workspace,companyId:string,reason:NotFitReason,note
 }
 
 // ── Engagement letter ───────────────────────────────────────────────────────────────────────
-export const LETTER_TEMPLATE_VERSION='kalling-engagement-2026-11-v1';
+// v2 drops the template line from the text the owner reads and signs. Each letter's version is still
+// stored with it, and letters already signed keep their exact text and hash.
+export const LETTER_TEMPLATE_VERSION='kalling-engagement-2026-11-v2';
 export type LetterTerms={successFeePct:number|null;successFeeMin:number|null;feeBasis:string;retainer:'none'|number|null;exclusivityMonths:number|null;tailMonths:number|null;terminationDays:number|null;expenses:string};
 export type LetterInput={ownerName:string;ownerTitle:string;legalName:string;state:'NJ'|'NY'|'';advisorName:string;advisorEmail:string;firmName:string;firmAddress:string;effectiveDate:string;terms:LetterTerms};
 export const emptyTerms=():LetterTerms=>({successFeePct:null,successFeeMin:null,feeBasis:'',retainer:null,exclusivityMonths:null,tailMonths:null,terminationDays:null,expenses:''});
@@ -92,7 +94,6 @@ export function renderLetter(i:LetterInput):string{
   const minimum=t.successFeeMin?`, with a minimum of ${usd(t.successFeeMin)}`:'';
   return [
 `ENGAGEMENT LETTER`,
-`Template ${LETTER_TEMPLATE_VERSION}`,
 ``,
 `Effective date: ${longDate(i.effectiveDate)}`,
 ``,

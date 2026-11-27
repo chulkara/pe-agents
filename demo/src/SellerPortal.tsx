@@ -9,6 +9,7 @@ import {buyerStanding} from '../lib/buyerStanding';
 import {SaleReadyView} from './saleReady/SaleReady';
 import OwnerHome from './OwnerHome';
 import type {Transaction} from '../lib/transactions';
+import {saleStage} from '../lib/ownerHome';
 import {welcomeToShow,possessive,portalProgress,privacyReminder,requestOrder,unread,type DocRequest,type PortalBundle,type PortalFile,type Buyer} from '../lib/portal';
 import type {PortalStore} from '../lib/portalStore';
 import './portal.css';
@@ -84,7 +85,8 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
         {!gated&&<MemorandumReview b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
         {!gated&&<OwnerDataRoom room={room} portalId={portalId} readOnly={readOnly} firm={p.firmName}/>}
         {!gated&&<OwnerOfferComparison store={store} portalId={portalId} readOnly={readOnly}/>}
-        {!gated&&<AboutBusiness b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
+        {/* The business story is for the memorandum buyers read; once the sale has closed it is no longer asked for. */}
+        {!gated&&saleStage(b,txs)<4&&<AboutBusiness b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
         {b.buyers.length>0&&<section id="portal-buyers" className="portal-section"><h2>Interested buyers</h2>
           <div className="portal-buyers">{b.buyers.map(x=>{const st=buyerStanding(x,txs,stageHelp[x.stage]);return <article key={x.id}><div className="portal-buyer-head"><h3>{x.name}</h3><VerificationPill badge={x.verification} owner/><span className={'k-pill'+(st.tone?' k-pill-'+st.tone:'')}>{st.label}</span></div>{x.summary&&<p>{x.summary}</p>}<small>{st.help} Updated {fmtDate(x.updatedAt)}.</small></article>;})}</div>
         </section>}
