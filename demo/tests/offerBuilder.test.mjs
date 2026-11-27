@@ -89,10 +89,10 @@ test('only a fixed rate, a single term and a whole-term schedule get payment fig
   for(const r of ['Prime + 2%','prime plus 2%','SOFR plus 3%','Variable, starting at 7%','5% then 7%',''])assert.equal(fixedRate(r),null,r);
   assert.equal(termYears('5 years'),5);assert.equal(termYears('60 months'),5);assert.equal(termYears('5 years, the first 2 years interest only'),null);assert.equal(termYears(''),null);
   const prime=takeHome({cashAtClose:900000,sellerNote:100000,earnout:0,noteInterest:'Prime + 2%',noteTerm:'5 years',noteRepayment:'Equal monthly payments'});
-  assert.equal(prime.note.monthly,null);assert.equal(prime.note.total,null);assert.match(prime.note.explained,/not a single fixed rate, so only the principal is shown/);
+  assert.equal(prime.note.monthly,null);assert.equal(prime.note.total,null);assert.match(prime.note.explained,/not a single fixed yearly rate, so only the principal is shown/);
   for(const r of ['Interest only for the first 12 months, then equal monthly payments','Interest-only until year 2, then amortizing','Equal monthly payments with a balloon in year 3'])
     assert.equal(noteSchedule(r),'other',r);
-  assert.equal(noteSchedule('Monthly interest-only payments, balloon at the end of year 5'),'interest only');
+  assert.equal(noteSchedule('Monthly interest-only payments, balloon at the end of year 5',5),'interest only');assert.equal(noteSchedule('Monthly interest-only payments, balloon at the end of year 3',5),'other','balloon year must match the term');
   const mixed=takeHome({cashAtClose:900000,sellerNote:100000,earnout:0,noteInterest:'6%',noteTerm:'5 years',noteRepayment:'Interest only for the first 12 months, then equal monthly payments'});
   assert.equal(mixed.note.monthly,null);assert.match(mixed.note.explained,/Only the principal is shown/);
 });
@@ -104,4 +104,18 @@ test('the fee follows the signed basis: both standard bases compute, any other i
   assert.equal(cashOnly.fee,null);assert.equal(cashOnly.feeAtClose,0);assert.equal(cashOnly.feeStatus,'other basis');
   assert.match(cashOnly.caveat,/version 3\) calculates Kalling’s fee on: “Cash at closing only”[\s\S]*not included; your advisor will confirm it/);
   assert.equal(takeHome(t).feeStatus,'unsigned');
+});
+
+test('rates, frequencies and deferrals are read only when stated exactly (Codex review 3)',()=>{
+  for(const r of ['1% per month','1% a month','0.5% monthly','6% per quarter','6% a year for 2 years then 8%'])assert.equal(fixedRate(r),null,r);
+  for(const [r,v] of [['6%',6],['6% a year',6],['6.5% fixed',6.5],['7% APR',7],['6% per annum',6]])assert.equal(fixedRate(r),v,r);
+  const monthlyRate=takeHome({cashAtClose:900000,sellerNote:100000,earnout:0,noteInterest:'1% per month',noteTerm:'5 years',noteRepayment:'Equal monthly payments'});
+  assert.equal(monthlyRate.note.monthly,null,'1% a month is never read as 1% a year');assert.match(monthlyRate.note.explained,/not a single fixed yearly rate/);
+  for(const r of ['Equal weekly payments','Equal biweekly payments','No payments for the first 90 days, then equal monthly payments','No payments for 90 days','Deferred 6 months'])
+    assert.equal(noteSchedule(r,5),'other',r);
+  const weekly=takeHome({cashAtClose:900000,sellerNote:100000,earnout:0,noteInterest:'6% a year',noteTerm:'5 years',noteRepayment:'Equal weekly payments'});
+  assert.equal(weekly.note.monthly,null);assert.equal(weekly.note.standby,false);
+  const deferral=takeHome({cashAtClose:900000,sellerNote:100000,earnout:0,noteInterest:'6% a year',noteTerm:'5 years',noteRepayment:'No payments for 90 days'});
+  assert.equal(deferral.note.standby,false,'a 90-day deferral is not standby');assert.doesNotMatch(deferral.note.explained,/once the bank loan allows/);
+  assert.equal(noteSchedule('Standby for the life of the SBA loan'),'standby');assert.equal(noteSchedule('Fully amortizing, monthly'),'equal monthly');
 });

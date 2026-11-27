@@ -43,21 +43,28 @@ export const coverageLine=(s:Pick<Structure,'coverage'|'meetsCoverage'>)=>s.cove
   `Earnings cover the payments ${s.coverage.toFixed(2)} times${s.meetsCoverage?`; lenders usually want at least ${SBA_MIN_COVERAGE}.`:`; lenders usually want at least ${SBA_MIN_COVERAGE}, so this may not be approved.`}`;
 
 // ---- Owner side ----
-/** A fixed yearly rate, or null. A rate tied to an index (prime, SOFR), variable, or with a margin is not
- *  a fixed rate, so no payment is computed from it. */
-export function fixedRate(s?:string):number|null{const t=String(s??'').trim();if(/prime|sofr|libor|treasury|index|variable|floating|adjust|margin|spread|\+|plus/i.test(t))return null;const all=t.match(/\d+(?:\.\d+)?\s*%/g);if(!all||all.length!==1)return null;return Number(all[0].replace('%',''));}
-/** A single stated term in years, or null when the text gives none or more than one length. */
-export function termYears(s?:string):number|null{const t=String(s??'');const all=t.match(/\d+(?:\.\d+)?\s*(?:years?|months?)/gi);if(!all||all.length!==1)return null;const n=Number(all[0].match(/[\d.]+/)![0]);return /month/i.test(all[0])?n/12:n;}
+/** A fixed yearly rate, or null. Only a plain yearly percentage is read ("6%", "6% a year", "6.5% fixed",
+ *  "6% APR"). Anything else (a monthly rate, prime plus a margin, a variable rate, two rates) is not
+ *  read, so no payment is computed from it. */
+export function fixedRate(s?:string):number|null{
+  const m=String(s??'').trim().match(/^(\d+(?:\.\d+)?)\s*%\s*(?:fixed\s*)?(?:(?:a|per)\s+year|per\s+annum|annual(?:ly)?|yearly|apr)?(?:,?\s*fixed)?\.?$/i);
+  return m?Number(m[1]):null;
+}
+/** A single stated term in years ("5 years", "60 months"), or null for anything else. */
+export function termYears(s?:string):number|null{
+  const m=String(s??'').trim().match(/^(\d+(?:\.\d+)?)\s*(years?|months?)\.?$/i);
+  return m?(/month/i.test(m[2])?Number(m[1])/12:Number(m[1])):null;
+}
 export type NoteSchedule='equal monthly'|'interest only'|'standby'|'not stated'|'other';
-/** How the offer says the note is repaid. Only schedules we can compute exactly get payment figures. */
-export function noteSchedule(repayment?:string):NoteSchedule{
-  const t=String(repayment??'').trim();if(!t)return 'not stated';
-  if(/standby|no payments/i.test(t))return 'standby';
-  if(/quarter|annual|yearly|semi/i.test(t))return 'other';
-  // A schedule that changes part way (interest only, then amortizing) is not computed as either.
-  const changes=/then|after|followed|first|until|beginning|starting|step/i;
-  if(/interest[\s-]*only/i.test(t))return changes.test(t)||/amortiz|principal and interest|equal/i.test(t)?'other':'interest only';
-  if(/equal|level|amortiz|principal and interest/i.test(t))return changes.test(t)||/balloon/i.test(t)?'other':'equal monthly';
+/** How the offer says the note is repaid. Only a few exact, whole-term monthly schedules are read; any
+ *  other wording (weekly, deferred for a time, changing part way) is shown as written, principal only.
+ *  A balloon year must match the note's term. */
+export function noteSchedule(repayment?:string,term?:number|null):NoteSchedule{
+  const t=String(repayment??'').trim().replace(/\s+/g,' ');if(!t)return 'not stated';
+  if(/^(?:no payments while the (?:sba |bank )?loan is outstanding(?: \(full standby\))?|(?:full )?standby(?: for the life of the (?:sba|bank) loan)?)\.?$/i.test(t))return 'standby';
+  if(/^(?:(?:equal|level) monthly payments(?: of principal and interest)?|monthly (?:principal and interest|amortizing) payments|fully amortizing,? monthly(?: payments)?)\.?$/i.test(t))return 'equal monthly';
+  const io=t.match(/^(?:monthly interest[ -]only payments?|interest[ -]only,? paid monthly)(?:,? (?:with )?(?:a |the )?balloon(?: payment)? (?:at|on) (?:maturity|the end of the term|the end of year (\d+)))?\.?$/i);
+  if(io)return io[1]&&Number(io[1])!==term?'other':'interest only';
   return 'other';
 }
 export type TakeHome={atClose:number;feeAtClose:number;cashAtClose:number;
@@ -88,10 +95,10 @@ export function takeHome(t:Pick<OfferTerms,'cashAtClose'|'sellerNote'|'earnout'|
   const feeAtClose=owed(atCloseBase),earnoutFee=owed(atCloseBase+earnoutMax)-feeAtClose;
   let note:TakeHome['note']=null;
   if(t.sellerNote>0){
-    const P=t.sellerNote,rate=fixedRate(t.noteInterest),term=termYears(t.noteTerm),schedule=noteSchedule(t.noteRepayment);
+    const P=t.sellerNote,rate=fixedRate(t.noteInterest),term=termYears(t.noteTerm),schedule=noteSchedule(t.noteRepayment,termYears(t.noteTerm));
     let monthly:number|null=null,total:number|null=null,explained:string;
     if(schedule==='standby')explained=rate!==null?`Paid later by the buyer, at ${rate}% a year, once the bank loan allows. No payments while it is outstanding.`:'Paid later by the buyer, once the bank loan allows. No payments while it is outstanding.';
-    else if(rate===null||!term)explained=`Paid later by the buyer; ${String(t.noteInterest??'').trim()?'the interest is not a single fixed rate':'the interest is not stated'}${term?'':' or the term is not a single length'}, so only the principal is shown.`;
+    else if(rate===null||!term)explained=`Paid later by the buyer; ${String(t.noteInterest??'').trim()?'the interest is not a single fixed yearly rate':'the interest is not stated'}${term?'':' or the term is not a single length'}, so only the principal is shown.`;
     else if(schedule==='equal monthly'){const y=annualPayment(P,rate,term);monthly=Math.round(y/12);total=Math.round(y*term);explained=`Paid by the buyer in equal monthly payments over ${term} years at ${rate}% a year.`;}
     else if(schedule==='interest only'){monthly=Math.round(P*rate/100/12);total=Math.round(P+P*rate/100*term);explained=`The buyer pays interest only, ${usd(monthly)} a month at ${rate}% a year, then the full ${usd(P)} at the end of ${term} years.`;}
     else if(schedule==='not stated')explained='Paid later by the buyer; the repayment schedule is not stated, so only the principal is shown.';
