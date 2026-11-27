@@ -85,6 +85,10 @@ const step=(n,t)=>console.log(`${n}. ${t}`);
   await adv.locator('textarea[name=instruction]').fill('Fictional owner confirmed version 1 by telephone for this software test.');await adv.getByRole('button',{name:'Record owner instruction for version 1',exact:true}).click();await adv.waitForSelector('text=Owner instruction recorded.');
   assert.notEqual(await adv.inputValue('.deal-stage select'),'Under LOI');await adv.waitForSelector('text=No execution transaction yet');step(11,'owner instruction recorded; signed LOI remains unconfirmed');
   await owner.reload();await owner.waitForSelector('text=Document requests');assert.match(await owner.locator('body').innerText(),/Offer made/);
+  {const cmp=await owner.innerText('#portal-offers');
+   // The owner reads offers in plain words, without empty rows or an unexplained review status.
+   assert.match(cmp,/Compare shared offers/);assert.match(cmp,/Price, not counting any earnout/);assert.match(cmp,/Cash at closing/);
+   for(const w of ['Headline maximum consideration','Fixed consideration','Maximum contingent earnout','Not reviewed'])assert.ok(!cmp.includes(w),'owner offers show '+w);}
   {await owner.waitForSelector('.ob-home');const t=await owner.innerText('.ob-home');assert.match(t,/\$1,748,000\s*at closing/);assert.match(t,/Kalling's fee due at closing\s*-\$152,000/);assert.match(t,/8% at closing, minimum \$60,000, from your signed engagement letter, version 1\. Before taxes/);{const vp=owner.viewportSize();await owner.setViewportSize({width:390,height:900});if(OUT)await owner.locator('.ob-home').screenshot({path:OUT+'/take-home-390.png'});assert.equal(await owner.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'take-home fits 390px');await owner.setViewportSize(vp);}console.log('owner sees take-home after the fee from the signed letter');}
 
   // Back button returns to the same Deal Room tab.

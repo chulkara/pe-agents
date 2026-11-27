@@ -22,6 +22,8 @@ if(!['127.0.0.1','localhost'].includes(new URL(U).hostname))throw Error('Executi
       await page.locator('#surface').selectOption(surface);
       await frame.getByRole('heading',{name:headings[surface],exact:true,level:1}).waitFor();
       if(['advisor','owner','buyer'].includes(surface))await frame.getByRole('heading',{name:surface==='owner'?'Your completed sale':'Your completed acquisition',exact:true}).waitFor();
+      // After the sale, the owner's past offers fold away instead of listing every field.
+      if(surface==='owner'){assert.match(await frame.locator('#portal-offers h2').innerText(),/Offers you compared/);assert.equal(await frame.locator('#portal-offers details[open]').count(),0);}
       for(const width of ['1440','1024','390']){
         await page.locator('#width').selectOption(width);
         await page.getByRole('button',{name:'Assert layout and privacy',exact:true}).click();
