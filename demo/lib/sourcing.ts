@@ -6,8 +6,9 @@ import type {Region} from './brokerage.ts';
 
 export type LicenseRecord={licenseNo:string;name:string;address:string;city:string;state:string;zip:string;county:string;firstLicensed:string;expires:string;status:string};
 export type ProspectStatus='New'|'Letter drafted'|'Letter approved'|'Mailed'|'Replied'|'Not interested'|'Do not contact';
-export type Decision={status:ProspectStatus;letter?:string;approvedBy?:string;approvedAt?:string;mailedAt?:string;note?:string;updatedAt:string};
+export type Decision={status:ProspectStatus;letter?:string;approvedBy?:string;approvedAt?:string;mailedAt?:string;note?:string;updatedBy?:string;updatedAt:string};
 export type SourcingState={source:string;importedAt:string;records:LicenseRecord[];decisions:Record<string,Decision>;doNotContact:string[]};
+export type SourcingDecisions=Pick<SourcingState,'decisions'|'doNotContact'>;
 export type Tier='Contact first'|'Worth a letter'|'Later';
 export type Prospect={record:LicenseRecord;region:Region|null;years:number;sharedAddress:number;renewalDue:boolean;score:number;tier:Tier;reason:string;decision?:Decision};
 
@@ -115,9 +116,13 @@ const next_:Record<ProspectStatus,ProspectStatus[]>={
 };
 export function setDecision(s:SourcingState,licenseNo:string,next:Partial<Decision>&{status:ProspectStatus}):SourcingState{
   if(!s.records.some(r=>r.licenseNo===licenseNo))throw Error('That owner is not in the current list.');
+  return {...s,...transitionDecision(s,licenseNo,next)};
+}
+export function transitionDecision(s:SourcingDecisions,licenseNo:string,next:Partial<Decision>&{status:ProspectStatus}):SourcingDecisions{
   const prev=s.decisions[licenseNo],from:ProspectStatus=s.doNotContact.includes(licenseNo)?'Do not contact':prev?.status||'New';
   if(!next_[from].includes(next.status))throw Error(from==='Do not contact'?'This owner asked not to be contacted.':next.status==='Mailed'?'Approve the letter before marking it mailed.':`This owner is already at "${from}". Decisions only move forward.`);
   if(next.letter!==undefined&&String(next.letter).length>4000)throw Error('Keep the letter under 4,000 characters.');
+  if(next.status!=='Letter drafted'&&next.status!=='Letter approved'&&next.letter!==undefined&&next.letter!==prev?.letter)throw Error('The letter can only change when drafting or approving it.');
   if(next.status==='Letter approved'){
     if(!clean(next.letter??prev?.letter,4000))throw Error('Draft the letter before approving it.');
     if(!clean(next.approvedBy,120))throw Error('Approving a letter needs the name of the person approving it.');
@@ -127,7 +132,7 @@ export function setDecision(s:SourcingState,licenseNo:string,next:Partial<Decisi
   }
   const d:Decision={...prev,...next,letter:next.letter!==undefined?String(next.letter):prev?.letter,approvedAt:next.status==='Letter approved'?now():prev?.approvedAt,mailedAt:next.status==='Mailed'?now():prev?.mailedAt,updatedAt:now()};
   const dnc=next.status==='Do not contact'&&!s.doNotContact.includes(licenseNo)?[...s.doNotContact,licenseNo]:s.doNotContact;
-  return {...s,decisions:{...s.decisions,[licenseNo]:d},doNotContact:dnc};
+  return {decisions:{...s.decisions,[licenseNo]:d},doNotContact:dnc};
 }
 /** Replaces the list but keeps every decision and the do-not-contact list. */
 export function importRecords(s:SourcingState,records:LicenseRecord[],source:string):SourcingState{

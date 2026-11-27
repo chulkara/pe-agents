@@ -20,6 +20,7 @@ import {PortalContextRef} from '../OwnerPortalAdmin';
 import {useContext} from 'react';
 import {orderNeeds,saleReadyNeed,waitingDays} from '../../lib/needs';
 import {SourcingPanel} from './sourcing';
+import type {SourcingDecisionStore} from '../../lib/sourcingStore';
 
 export type AdvisorProps={w:Workspace;commit:(next:Workspace)=>Promise<boolean>;actor:string;readOnly:boolean;openDeal:(companyId:string,tab?:string)=>void;go:(page:string)=>void};
 const dt=(s?:string)=>s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
@@ -105,7 +106,7 @@ export function DealsPage(p:AdvisorProps){
   </div>;
 }
 
-export function SellersPage(p:AdvisorProps){
+export function SellersPage(p:AdvisorProps&{sourcing?:{hostedStore?:SourcingDecisionStore;canApprove:boolean;sessionKey:string}}){
   const x=useAdvisor(),portal=useContext(PortalContextRef);const [busy,setBusy]=useState(''),[err,setErr]=useState('');
   const linked=(l:Lead)=>p.w.companies.find(c=>(c as DealCompany).leadId===l.id);
   const [open,setOpen]=useState('');
@@ -133,7 +134,7 @@ export function SellersPage(p:AdvisorProps){
         <div className="adv-buttons">{c&&<Button arrow onClick={()=>p.openDeal(c.id)}>Open Deal Room</Button>}{!p.readOnly&&!['Not a fit','Engaged','Qualified'].includes(l.status)&&open!==l.id&&<Button tone="primary" disabled={!!busy} onClick={()=>setOpen(l.id)}>Qualify</Button>}</div>
         {open===l.id&&<QualifyPanel initial={emptyQualification(c)} estimate={est?`${money(est.low)} to ${money(est.high)} on ${money(est.revenue)} revenue`:undefined} busy={busy===l.id} onCancel={()=>setOpen('')} onQualified={q=>void qualifyLead(l,q)} onNotFit={(r,n,q)=>void notFit(l,r,n,q)}/>}
       </article>;})}</div>}</Panel>
-    <SourcingPanel actor={p.actor} readOnly={p.readOnly}/>
+    {p.sourcing&&<SourcingPanel key={p.sourcing.sessionKey} actor={p.actor} hostedStore={p.sourcing.hostedStore} canApprove={p.sourcing.canApprove}/>}
     <Panel title="Owner contacts">{owners.length?<KeylineList>{owners.map(c=><li key={c.id}><div className="adv-grow"><strong>{c.owner}</strong><small>{c.name}. {regionOf(c)}{c.email?'. '+c.email:''}{c.phone?'. '+c.phone:''}</small></div><StagePill stage={stageOf(x,c)}/><Button tone="quiet" onClick={()=>p.openDeal(c.id,'Owner')}>Owner</Button></li>)}</KeylineList>:<EmptyState title="No owner contacts yet">Owners appear here once a business is in Deals with an owner name.</EmptyState>}</Panel>
   </div>;
 }
