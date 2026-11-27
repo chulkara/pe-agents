@@ -28,8 +28,10 @@ export function OfferBuilder({listing,busy,submit}:{listing:{askingPrice:number;
 }
 
 /** Owner: what each shared offer means in money, after Kalling's fee from the signed letter. */
-export function OfferTakeHome({offers,letter}:{offers:SharedOffer[];letter?:{terms:LetterTerms;version:number}}){
+export function OfferTakeHome({offers,letter,feeError=false}:{offers:SharedOffer[];letter?:{terms:LetterTerms;version:number};feeError?:boolean}){
   if(!offers.length)return null;
+  // Without the letter we cannot say what the fee is, so no take-home figure is shown at all.
+  if(feeError)return <div className="ob-home" aria-label="What you take home"><h3>What each offer means for you</h3><p className="ob-caveat" role="status">We could not load your engagement letter just now, so take-home amounts are not shown. This page tries again shortly.</p></div>;
   return <div className="ob-home" aria-label="What you take home">
     <h3>What each offer means for you</h3>
     <div className="ob-home-grid">{offers.map(o=>{const h=takeHome(o.terms,letter);return <article key={o.id}>

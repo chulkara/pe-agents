@@ -1,5 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {structuresFor,coverageLine,takeHome,signedFeeLetter,noteSchedule} from '../lib/offerBuilder.ts';
+import {structuresFor,coverageLine,takeHome,signedFeeLetter,noteSchedule,fixedRate,termYears} from '../lib/offerBuilder.ts';
+import {feeBases} from '../lib/engagement.ts';
+const B=feeBases[1];
 import {sbaCheck,sbaDefaults} from '../lib/sba.ts';
 import {validateTerms} from '../lib/offerVersions.ts';
 
@@ -27,13 +29,13 @@ test('a price the earnings cannot carry says so',()=>{
 
 test('take-home uses the signed letter: fee on cash and note at closing, minimum, retainer credit',()=>{
   const t={cashAtClose:1620000,sellerNote:180000,earnout:100000,noteInterest:'6% a year',noteTerm:'5 years',noteRepayment:'Equal monthly payments'};
-  const h=takeHome(t,{terms:{successFeePct:8,successFeeMin:50000,retainer:'none'},version:2});
+  const h=takeHome(t,{terms:{successFeePct:8,successFeeMin:50000,retainer:'none',feeBasis:B},version:2});
   assert.equal(h.feeAtClose,144000);assert.equal(h.atClose,1476000);
   assert.equal(h.note.monthly,3480);assert.equal(h.note.total,208794);
   assert.deepEqual(h.earnout,{max:100000,fee:8000,afterFee:92000},'8% of the earnout, since the minimum is already passed');
   assert.equal(h.ifAllPaid,1476000+208794+92000);assert.equal(h.fee.source,'Your signed engagement letter, version 2');
-  assert.equal(takeHome({...t,cashAtClose:300000,sellerNote:0},{terms:{successFeePct:8,successFeeMin:50000,retainer:'none'},version:1}).feeAtClose,50000,'minimum fee applies');
-  assert.equal(takeHome(t,{terms:{successFeePct:8,successFeeMin:0,retainer:10000},version:1}).feeAtClose,134000,'retainer is credited');
+  assert.equal(takeHome({...t,cashAtClose:300000,sellerNote:0},{terms:{successFeePct:8,successFeeMin:50000,retainer:'none',feeBasis:B},version:1}).feeAtClose,50000,'minimum fee applies');
+  assert.equal(takeHome(t,{terms:{successFeePct:8,successFeeMin:0,retainer:10000,feeBasis:B},version:1}).feeAtClose,134000,'retainer is credited');
   assert.match(h.caveat,/Before taxes, paying off any business debt, and closing adjustments/);
 });
 
@@ -65,19 +67,41 @@ test('seller-note payments follow the repayment schedule in the offer',()=>{
 });
 
 test('the fee is charged once across closing and earnout: the minimum covers the whole sale',()=>{
-  const fee={terms:{successFeePct:8,successFeeMin:50000,retainer:'none'},version:1};
+  const fee={terms:{successFeePct:8,successFeeMin:50000,retainer:'none',feeBasis:B},version:1};
   const h=takeHome({cashAtClose:300000,sellerNote:0,earnout:100000},fee);
   assert.equal(h.feeAtClose,50000);assert.deepEqual(h.earnout,{max:100000,fee:0,afterFee:100000});assert.equal(h.ifAllPaid,250000+100000,'total fee is $50,000, not $58,000');
   const past=takeHome({cashAtClose:500000,sellerNote:0,earnout:500000},fee);assert.equal(past.feeAtClose,50000);assert.equal(past.earnout.fee,30000,'8% of $1,000,000 is $80,000 in all');
-  const ret=takeHome({cashAtClose:300000,sellerNote:0,earnout:500000},{terms:{successFeePct:8,successFeeMin:0,retainer:30000},version:1});
+  const ret=takeHome({cashAtClose:300000,sellerNote:0,earnout:500000},{terms:{successFeePct:8,successFeeMin:0,retainer:30000,feeBasis:B},version:1});
   assert.equal(ret.feeAtClose,0);assert.equal(ret.earnout.fee,64000-30000,'the unused retainer credit carries to the earnout fee');
 });
 
 test('the fee comes from the latest countersigned letter; an unsigned amendment does not hide it',()=>{
-  const letter=(version,status,pct)=>({version,status,input:{ownerName:'Pat',advisorName:'Sam',terms:{successFeePct:pct,successFeeMin:0,retainer:'none'}}});
+  const letter=(version,status,pct)=>({version,status,input:{ownerName:'Pat',advisorName:'Sam',terms:{successFeePct:pct,successFeeMin:0,retainer:'none',feeBasis:B}}});
   assert.equal(signedFeeLetter([letter(1,'Countersigned',8),letter(2,'Ready to sign',6)]).version,1);
   assert.equal(takeHome({cashAtClose:1000000,sellerNote:0,earnout:0},signedFeeLetter([letter(1,'Countersigned',8),letter(2,'Ready to sign',6)])).atClose,920000);
   assert.equal(signedFeeLetter([letter(1,'Countersigned',8),letter(2,'Countersigned',6)]).terms.successFeePct,6);
   assert.equal(signedFeeLetter([letter(1,'Void',8),letter(2,'Signed by owner',6)]),undefined);
   assert.equal(signedFeeLetter([]),undefined);
+});
+
+test('only a fixed rate, a single term and a whole-term schedule get payment figures (Codex review 2)',()=>{
+  assert.equal(fixedRate('6% a year'),6);assert.equal(fixedRate('6.5% fixed'),6.5);
+  for(const r of ['Prime + 2%','prime plus 2%','SOFR plus 3%','Variable, starting at 7%','5% then 7%',''])assert.equal(fixedRate(r),null,r);
+  assert.equal(termYears('5 years'),5);assert.equal(termYears('60 months'),5);assert.equal(termYears('5 years, the first 2 years interest only'),null);assert.equal(termYears(''),null);
+  const prime=takeHome({cashAtClose:900000,sellerNote:100000,earnout:0,noteInterest:'Prime + 2%',noteTerm:'5 years',noteRepayment:'Equal monthly payments'});
+  assert.equal(prime.note.monthly,null);assert.equal(prime.note.total,null);assert.match(prime.note.explained,/not a single fixed rate, so only the principal is shown/);
+  for(const r of ['Interest only for the first 12 months, then equal monthly payments','Interest-only until year 2, then amortizing','Equal monthly payments with a balloon in year 3'])
+    assert.equal(noteSchedule(r),'other',r);
+  assert.equal(noteSchedule('Monthly interest-only payments, balloon at the end of year 5'),'interest only');
+  const mixed=takeHome({cashAtClose:900000,sellerNote:100000,earnout:0,noteInterest:'6%',noteTerm:'5 years',noteRepayment:'Interest only for the first 12 months, then equal monthly payments'});
+  assert.equal(mixed.note.monthly,null);assert.match(mixed.note.explained,/Only the principal is shown/);
+});
+
+test('the fee follows the signed basis: both standard bases compute, any other is shown and not estimated',()=>{
+  const t={cashAtClose:900000,sellerNote:100000,earnout:0};
+  for(const basis of feeBases){const h=takeHome(t,{terms:{successFeePct:8,successFeeMin:0,retainer:'none',feeBasis:basis},version:1});assert.equal(h.feeAtClose,80000,basis);assert.equal(h.feeStatus,'included');}
+  const cashOnly=takeHome(t,{terms:{successFeePct:8,successFeeMin:0,retainer:'none',feeBasis:'Cash at closing only'},version:3});
+  assert.equal(cashOnly.fee,null);assert.equal(cashOnly.feeAtClose,0);assert.equal(cashOnly.feeStatus,'other basis');
+  assert.match(cashOnly.caveat,/version 3\) calculates Kalling’s fee on: “Cash at closing only”[\s\S]*not included; your advisor will confirm it/);
+  assert.equal(takeHome(t).feeStatus,'unsigned');
 });

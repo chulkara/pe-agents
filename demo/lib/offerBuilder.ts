@@ -4,7 +4,7 @@
 // their own engagement letter. All arithmetic is here, in code; every figure says where it came from.
 import {sbaCheck,sbaDefaults,annualPayment,SBA_MIN_COVERAGE,type SbaInputs} from './sba.ts';
 import type {OfferTerms} from './offerVersions.ts';
-import type {LetterTerms} from './engagement.ts';
+import {feeBases,type LetterTerms} from './engagement.ts';
 import type {Letter} from './portal.ts';
 
 export type StructureKey='sba-10'|'sba-standby-note'|'sba-paid-note'|'all-cash';
@@ -43,21 +43,28 @@ export const coverageLine=(s:Pick<Structure,'coverage'|'meetsCoverage'>)=>s.cove
   `Earnings cover the payments ${s.coverage.toFixed(2)} times${s.meetsCoverage?`; lenders usually want at least ${SBA_MIN_COVERAGE}.`:`; lenders usually want at least ${SBA_MIN_COVERAGE}, so this may not be approved.`}`;
 
 // ---- Owner side ----
-const pct=(s?:string)=>{const m=String(s??'').match(/(\d+(?:\.\d+)?)\s*%/);return m?Number(m[1]):null;};
-const years=(s?:string)=>{const t=String(s??'');let m=t.match(/(\d+(?:\.\d+)?)\s*years?/i);if(m)return Number(m[1]);m=t.match(/(\d+)\s*months?/i);return m?Number(m[1])/12:null;};
+/** A fixed yearly rate, or null. A rate tied to an index (prime, SOFR), variable, or with a margin is not
+ *  a fixed rate, so no payment is computed from it. */
+export function fixedRate(s?:string):number|null{const t=String(s??'').trim();if(/prime|sofr|libor|treasury|index|variable|floating|adjust|margin|spread|\+|plus/i.test(t))return null;const all=t.match(/\d+(?:\.\d+)?\s*%/g);if(!all||all.length!==1)return null;return Number(all[0].replace('%',''));}
+/** A single stated term in years, or null when the text gives none or more than one length. */
+export function termYears(s?:string):number|null{const t=String(s??'');const all=t.match(/\d+(?:\.\d+)?\s*(?:years?|months?)/gi);if(!all||all.length!==1)return null;const n=Number(all[0].match(/[\d.]+/)![0]);return /month/i.test(all[0])?n/12:n;}
 export type NoteSchedule='equal monthly'|'interest only'|'standby'|'not stated'|'other';
 /** How the offer says the note is repaid. Only schedules we can compute exactly get payment figures. */
 export function noteSchedule(repayment?:string):NoteSchedule{
   const t=String(repayment??'').trim();if(!t)return 'not stated';
   if(/standby|no payments/i.test(t))return 'standby';
   if(/quarter|annual|yearly|semi/i.test(t))return 'other';
-  if(/interest[\s-]*only/i.test(t))return 'interest only';
-  if(/equal|level|amortiz|principal and interest/i.test(t))return 'equal monthly';
+  // A schedule that changes part way (interest only, then amortizing) is not computed as either.
+  const changes=/then|after|followed|first|until|beginning|starting|step/i;
+  if(/interest[\s-]*only/i.test(t))return changes.test(t)||/amortiz|principal and interest|equal/i.test(t)?'other':'interest only';
+  if(/equal|level|amortiz|principal and interest/i.test(t))return changes.test(t)||/balloon/i.test(t)?'other':'equal monthly';
   return 'other';
 }
 export type TakeHome={atClose:number;feeAtClose:number;cashAtClose:number;
   note:{principal:number;total:number|null;monthly:number|null;standby:boolean;schedule:NoteSchedule;explained:string}|null;
-  earnout:{max:number;fee:number;afterFee:number}|null;ifAllPaid:number;fee:{pct:number;min:number;retainer:number;source:string}|null;caveat:string};
+  earnout:{max:number;fee:number;afterFee:number}|null;ifAllPaid:number;fee:{pct:number;min:number;retainer:number;source:string}|null;
+  /** Why the fee is or is not included: from the signed letter, no signed letter, or a basis we do not compute. */
+  feeStatus:'included'|'unsigned'|'other basis';caveat:string};
 
 /** The engagement letter whose fee applies: the latest countersigned version. An amendment that is not
  *  countersigned yet does not replace it. */
@@ -71,17 +78,20 @@ export function signedFeeLetter(letters:Pick<Letter,'version'|'status'|'input'>[
  *  and said so. It is charged once on everything paid: the minimum covers the whole sale, earnouts
  *  included, and the retainer is credited once. Taxes, paying off business debt and closing
  *  adjustments are not estimated. */
-export function takeHome(t:Pick<OfferTerms,'cashAtClose'|'sellerNote'|'earnout'|'noteInterest'|'noteTerm'|'noteRepayment'>,letter?:{terms:Pick<LetterTerms,'successFeePct'|'successFeeMin'|'retainer'>;version:number}):TakeHome{
-  const f=letter&&letter.terms.successFeePct?{pct:letter.terms.successFeePct,min:letter.terms.successFeeMin||0,retainer:typeof letter.terms.retainer==='number'?letter.terms.retainer:0,source:`Your signed engagement letter, version ${letter.version}`}:null;
+export function takeHome(t:Pick<OfferTerms,'cashAtClose'|'sellerNote'|'earnout'|'noteInterest'|'noteTerm'|'noteRepayment'>,letter?:{terms:Pick<LetterTerms,'successFeePct'|'successFeeMin'|'retainer'|'feeBasis'>;version:number}):TakeHome{
+  // Both standard bases charge on cash and notes at close and on earnouts when paid. Any other basis is
+  // shown as written and not estimated.
+  const known=!!letter&&feeBases.includes(letter.terms.feeBasis);
+  const f=letter&&known&&letter.terms.successFeePct?{pct:letter.terms.successFeePct,min:letter.terms.successFeeMin||0,retainer:typeof letter.terms.retainer==='number'?letter.terms.retainer:0,source:`Your signed engagement letter, version ${letter.version}`}:null;
   const owed=(base:number)=>f?Math.max(0,Math.max(f.min,Math.round(base*f.pct/100))-f.retainer):0;
   const atCloseBase=t.cashAtClose+t.sellerNote,earnoutMax=Math.max(0,t.earnout||0);
   const feeAtClose=owed(atCloseBase),earnoutFee=owed(atCloseBase+earnoutMax)-feeAtClose;
   let note:TakeHome['note']=null;
   if(t.sellerNote>0){
-    const P=t.sellerNote,rate=pct(t.noteInterest),term=years(t.noteTerm),schedule=noteSchedule(t.noteRepayment),known=rate!==null&&!!term;
+    const P=t.sellerNote,rate=fixedRate(t.noteInterest),term=termYears(t.noteTerm),schedule=noteSchedule(t.noteRepayment);
     let monthly:number|null=null,total:number|null=null,explained:string;
     if(schedule==='standby')explained=rate!==null?`Paid later by the buyer, at ${rate}% a year, once the bank loan allows. No payments while it is outstanding.`:'Paid later by the buyer, once the bank loan allows. No payments while it is outstanding.';
-    else if(!known)explained='Paid later by the buyer; the interest or term is not stated, so only the principal is shown.';
+    else if(rate===null||!term)explained=`Paid later by the buyer; ${String(t.noteInterest??'').trim()?'the interest is not a single fixed rate':'the interest is not stated'}${term?'':' or the term is not a single length'}, so only the principal is shown.`;
     else if(schedule==='equal monthly'){const y=annualPayment(P,rate,term);monthly=Math.round(y/12);total=Math.round(y*term);explained=`Paid by the buyer in equal monthly payments over ${term} years at ${rate}% a year.`;}
     else if(schedule==='interest only'){monthly=Math.round(P*rate/100/12);total=Math.round(P+P*rate/100*term);explained=`The buyer pays interest only, ${usd(monthly)} a month at ${rate}% a year, then the full ${usd(P)} at the end of ${term} years.`;}
     else if(schedule==='not stated')explained='Paid later by the buyer; the repayment schedule is not stated, so only the principal is shown.';
@@ -91,6 +101,10 @@ export function takeHome(t:Pick<OfferTerms,'cashAtClose'|'sellerNote'|'earnout'|
   const earnout=earnoutMax>0?{max:earnoutMax,fee:earnoutFee,afterFee:earnoutMax-earnoutFee}:null;
   const atClose=t.cashAtClose-feeAtClose;
   const ifAllPaid=atClose+(note?.total??note?.principal??0)+(earnout?.afterFee??0);
-  return {atClose,feeAtClose,cashAtClose:t.cashAtClose,note,earnout,ifAllPaid,fee:f,
-    caveat:f?'Before taxes, paying off any business debt, and closing adjustments. Your CPA can estimate taxes.':'Your engagement letter is not signed yet, so Kalling’s fee is not included. Before taxes, paying off any business debt, and closing adjustments.'};
+  const after='Before taxes, paying off any business debt, and closing adjustments.';
+  const feeStatus:TakeHome['feeStatus']=f?'included':letter?'other basis':'unsigned';
+  return {atClose,feeAtClose,cashAtClose:t.cashAtClose,note,earnout,ifAllPaid,fee:f,feeStatus,
+    caveat:feeStatus==='included'?after+' Your CPA can estimate taxes.'
+      :feeStatus==='other basis'?`Your signed letter (version ${letter!.version}) calculates Kalling’s fee on: “${String(letter!.terms.feeBasis).trim().slice(0,200)}”. That is not estimated here, so the fee is not included; your advisor will confirm it. ${after}`
+      :'Your engagement letter is not signed yet, so Kalling’s fee is not included. '+after};
 }
