@@ -8,3 +8,10 @@ test('calendar conventions and cents retain meaning without guessed business-day
 test('amounts show whole dollars without cents, and keep cents when there are some',()=>{
   assert.equal(T.dollars(260000000),'$2,600,000');assert.equal(T.dollars(12345),'$123.45');assert.equal(T.dollars(0),'$0');
 });
+
+test('the owner never reads "not signed yet" once a signed letter of intent is recorded (Codex review of #39)',()=>{
+  assert.equal(T.ownerLoiStatus({state:'Planning',lois:[]}),'Letter of intent not signed yet');
+  assert.equal(T.ownerLoiStatus({state:'Planning',lois:[{version:1}]}),'Letter of intent signed; your advisor is checking the signatures');
+  assert.equal(T.ownerLoiStatus({state:'LOI reviewed',lois:[{version:1}]}),'Letter of intent signed');
+  assert.equal(T.ownerLoiStatus({state:'Closed',lois:[{version:1}]}),'Sale closed');
+});

@@ -73,6 +73,13 @@ export function startTransaction(d:TxDb,a:ExecutionActor,p:{offerId:string;offer
  const id=txId(),t:Transaction={id,fictional:!!l.sample,firmId:p.firmId,listingId:l.id,companyId:p.companyId,portalId:p.portalId,buyerId:b.id,buyerLabel:anonymousBuyerLabel(d,b,l.id),offerId:o.id,offerVersion:p.offerVersion,terms:structuredClone(versionOf(d,o).terms),state:'Planning',revision:1,createdAt:new Date().toISOString(),createdBy:actorName(a),lois:[],obligations:[],participants:[],identity:{},items:[],conditions:[],closes:[],cases:[],comparables:[],originalEstimate:structuredClone(p.originalEstimate),history:[event(a,'Execution started','Owner instruction recorded; signed LOI remains unconfirmed.')]};return {id,db:{...d,transactions:[...(d.transactions||[]),t]}};
 }
 export function latestLoi(t:Transaction){return t.lois.at(-1);}
+/** The letter of intent's standing in the owner's words. A signed letter that is recorded but not yet
+ *  checked is still signed: the advisor is checking the signatures. */
+export function ownerLoiStatus(t:Pick<Transaction,'state'|'lois'>):string{
+  if(t.state==='Closed')return 'Sale closed';if(t.state==='Abandoned')return 'Sale stopped';
+  if(t.state==='LOI reviewed')return 'Letter of intent signed';
+  return t.lois.length?'Letter of intent signed; your advisor is checking the signatures':'Letter of intent not signed yet';
+}
 export function loiConfirmed(d:TxDb,t:Transaction){const l=latestLoi(t);return !!l?.review&&sourceCurrent(d,t,l.review.source)&&l.signatories.length>=2&&l.signatories.some(s=>s.side==='buyer')&&l.signatories.some(s=>s.side==='seller')&&l.signatories.every(s=>sourceCurrent(d,t,s.source));}
 export function saveLoi(d:TxDb,t:Transaction,a:ExecutionActor,p:Omit<LoiVersion,'version'|'createdAt'|'createdBy'|'review'>):TxDb{
  requireWrite(d,t,a);requireTx(p.offerVersion===t.offerVersion,'The LOI must name the selected immutable offer version.');const f=currentFile(d,p.fileId);requireTx(f?.transactionId===t.id&&f.kind==='LOI','Select a stored, current LOI document.');
