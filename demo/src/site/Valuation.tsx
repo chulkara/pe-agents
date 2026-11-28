@@ -1,6 +1,6 @@
 import {useMemo,useState,type FormEvent} from 'react';
 import {AddBackFinder} from './AddBackFinder';
-import {estimateHvacValue,money,valuationSources,type HvacInputs,type Valuation} from '../../lib/hvacValuation';
+import {carriedValueInputs,estimateHvacValue,money,valuationSources,type HvacInputs,type Valuation} from '../../lib/hvacValuation';
 import {regions,type Region} from '../../lib/brokerage';
 import {useSession,href,Arrow} from './BrokerSite';
 
@@ -21,7 +21,7 @@ const quickDefaults:HvacInputs={revenue:2000000,ownerPay:150000,netProfit:220000
 export function QuickEstimate(){
   const [i,setI]=useState(quickDefaults);
   const v=useMemo(()=>{try{return estimateHvacValue(i);}catch{return null;}},[i]);
-  const params=new URLSearchParams({revenue:String(i.revenue),earnings:String(i.ownerPay+i.netProfit),service:String(i.maintenancePct)});
+  const params=new URLSearchParams({revenue:String(i.revenue),ownerPay:String(i.ownerPay),netProfit:String(i.netProfit),service:String(i.maintenancePct)});
   return <div className="ks-quick">
     <Gauge v={v}/>
     <label><span>Revenue last year <output>{money(i.revenue)}</output></span><input type="range" min={300000} max={12000000} step={50000} value={i.revenue} onChange={e=>setI({...i,revenue:+e.target.value,netProfit:Math.round(+e.target.value*0.11),ownerPay:Math.min(250000,Math.round(+e.target.value*0.075))})}/></label>
@@ -35,9 +35,9 @@ const num=(s:FormDataEntryValue|null)=>Math.max(0,Number(String(s||'').replace(/
 export function ValuePage(){
   const {store}=useSession();
   const q=new URLSearchParams(location.hash.split('?')[1]||'');
-  const [inputs,setInputs]=useState<HvacInputs>({...quickDefaults,revenue:num(q.get('revenue'))||quickDefaults.revenue,netProfit:Math.max(0,(num(q.get('earnings'))||quickDefaults.ownerPay+quickDefaults.netProfit)-quickDefaults.ownerPay),maintenancePct:q.has('service')?num(q.get('service')):quickDefaults.maintenancePct});
+  const [inputs,setInputs]=useState<HvacInputs>(()=>carriedValueInputs(q,quickDefaults));
   // Answers carried over from the quick estimate are the owner's own, not examples.
-  const carried=['revenue','earnings','service'].some(k=>q.has(k));
+  const carried=['revenue','earnings','ownerPay','netProfit','service'].some(k=>q.has(k));
   const [error,setError]=useState(''),[sent,setSent]=useState(''),[busy,setBusy]=useState(false);
   const calc=useMemo(()=>{try{return {v:estimateHvacValue(inputs),err:''};}catch(e){return {v:null,err:(e as Error).message};}},[inputs]);const v=calc.v;
   const set=(k:keyof HvacInputs)=>(e:{target:{value:string}})=>setInputs(x=>({...x,[k]:typeof quickDefaults[k]==='number'?num(e.target.value):e.target.value}));

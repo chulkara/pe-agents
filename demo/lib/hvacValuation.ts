@@ -65,3 +65,16 @@ export const valuationSources=[
   {title:'OffDeal: practical valuation guide for an HVAC business',url:'https://offdeal.io/blog/practical-valuation-guide-for-an-hvac-business'},
   {title:'NJ Board of Examiners of HVACR Contractors: FAQ',url:'https://njconsumeraffairs.gov/hvacr/Pages/FAQ.aspx'},
 ];
+
+/** The detailed estimate's starting inputs from the quick estimate's link. Carried-over answers are used
+ *  exactly: owner pay and profit come through as sent, and an earnings total alone is split so that the
+ *  two still add up to it. Anything not carried over keeps the typical-company default. */
+export function carriedValueInputs(q:URLSearchParams,defaults:HvacInputs):HvacInputs{
+  const num=(k:string)=>{const v=Number(String(q.get(k)??'').replace(/[$,\s]/g,''));return q.has(k)&&Number.isFinite(v)&&v>=0?v:null;};
+  const out={...defaults};const revenue=num('revenue'),pay=num('ownerPay'),profit=num('netProfit'),earnings=num('earnings'),service=num('service');
+  if(revenue)out.revenue=revenue;
+  if(pay!==null&&profit!==null){out.ownerPay=pay;out.netProfit=profit;}
+  else if(earnings!==null){out.ownerPay=Math.min(defaults.ownerPay,earnings);out.netProfit=earnings-out.ownerPay;}
+  if(service!==null)out.maintenancePct=Math.min(100,service);
+  return out;
+}

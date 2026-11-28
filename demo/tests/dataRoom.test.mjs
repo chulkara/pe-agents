@@ -129,10 +129,14 @@ test('the cloud store logs first and uses authenticated storage downloads, never
   await assert.rejects(()=>cloudDataRoomStore(client).open('i1'),/do not have access/);
 });
 
-test('owners tell data rooms apart in words, never by listing number',async()=>{
-  const {ownerRoomLabel}=await import('../lib/dataRoom.ts');
+test('owners tell data rooms apart in words, by how recent the listing is, never by listing number',async()=>{
+  const {ownerRoomLabel,listingsByAge}=await import('../lib/dataRoom.ts');
   assert.equal(ownerRoomLabel(0,1),'');
-  assert.deepEqual([0,1].map(n=>ownerRoomLabel(n,2)),[', your current listing',', your earlier listing']);
-  assert.deepEqual([0,1,2].map(n=>ownerRoomLabel(n,3)),[', your current listing',', earlier listing 1',', earlier listing 2']);
+  assert.deepEqual([0,1].map(n=>ownerRoomLabel(n,2)),[', your newest listing',', your earlier listing']);
+  assert.deepEqual([0,1,2].map(n=>ownerRoomLabel(n,3)),[', your newest listing',', earlier listing 1',', earlier listing 2']);
   for(const n of [0,1,2])assert.doesNotMatch(ownerRoomLabel(n,3),/KL-|\d{4}/);
+  // An older listing with a published room is shown first but is still the earlier listing (Codex review of #36).
+  const rooms=[{listingId:'old',listingNumber:'KL-1009',published:true},{listingId:'new',listingNumber:'KL-1010',published:false}];
+  const age=listingsByAge(rooms);assert.deepEqual(age,['new','old']);
+  assert.equal(ownerRoomLabel(age.indexOf('old'),2),', your earlier listing');assert.equal(ownerRoomLabel(age.indexOf('new'),2),', your newest listing');
 });
