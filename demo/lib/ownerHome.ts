@@ -15,9 +15,10 @@ export type SaleStage=typeof saleStages[number]['key'];
 type Tx=Pick<Transaction,'state'>;
 
 export function saleStage(b:Pick<PortalBundle,'buyers'>,txs:Tx[]):number{
-  const live=txs.filter(t=>t.state!=='Abandoned');
-  if(live.some(t=>t.state==='Closed'))return 4;
-  if(live.length)return 3;
+  // A sale in progress outranks an older closed one: the stage is 'Sold' only when no sale is still open.
+  const live=txs.filter(t=>t.state!=='Abandoned'),open=live.filter(t=>t.state!=='Closed');
+  if(open.length)return 3;
+  if(live.length)return 4;
   const stages=b.buyers.map(x=>x.stage);
   if(stages.includes('Offer made'))return 2;
   if(stages.some(s=>s!=='Not proceeding'))return 1;

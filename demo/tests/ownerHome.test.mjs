@@ -58,3 +58,11 @@ test('after the sale closes the owner is not asked for the business story, but s
   assert.doesNotMatch(nextAction(b,[{state:'Planning'}]).title,/questions about your business/,'not during closing');
   b.buyers=[{stage:'Under NDA'}];assert.match(nextAction(b,[]).title,/questions about your business/,'still asked while meeting buyers');
 });
+
+test('an older closed sale does not make a newer, open sale look finished (Codex review of #40)',()=>{
+  const b=base();b.buyers=[{stage:'Offer made'}];
+  assert.equal(saleStage(b,[{state:'Closed'},{state:'Planning'}]),3,'a newer sale is still closing');
+  assert.equal(saleStage(b,[{state:'Closed'},{state:'LOI reviewed'}]),3);
+  assert.equal(saleStage(b,[{state:'Closed'}]),4);assert.equal(saleStage(b,[{state:'Closed'},{state:'Abandoned'}]),4);
+  assert.equal(saleStage(b,[{state:'Abandoned'}]),2,'a stopped attempt falls back to the buyers');
+});
