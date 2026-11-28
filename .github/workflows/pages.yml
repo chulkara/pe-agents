@@ -57,6 +57,7 @@ jobs:
           npm run e2e:matches
           npm run e2e:ask
           npm run e2e:sourcing
+          npm run e2e:owner
       - name: Check execution, permissions and three screen widths
         if: ${{ !cancelled() && steps.fixture_server.outcome == 'success' }}
         run: npm run e2e:execution

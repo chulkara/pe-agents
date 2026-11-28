@@ -13,6 +13,12 @@ export type DocRequest={id:string;portalId:string;title:string;needed:string;why
 export type PortalFile={id:string;portalId:string;name:string;mime:string;size:number;sha256:string;status:'reserved'|'stored';uploadedBy:string;side:Side;createdAt:string};
 export type Message={id:string;portalId:string;side:Side;author:string;body:string;createdAt:string};
 export type NextStep={id:string;portalId:string;text:string;owner:'You'|'Firm';due:string;done:boolean};
+/** The welcome a portal gets when it is created with an engagement letter. Once the owner has signed,
+ *  only its two signing sentences are out of date: they are taken out, and anything else in the
+ *  welcome, including instructions an advisor added, still shows. */
+const LETTER_WELCOME_ASK='Start by reading and signing the engagement letter below.',LETTER_WELCOME_OPENS='Your document requests open once both of us have signed.';
+export const letterWelcome=(firm:string,business:string)=>`Thank you for choosing ${firm} to help sell ${business}. ${LETTER_WELCOME_ASK} ${LETTER_WELCOME_OPENS}`;
+export const welcomeToShow=(text:string,ownerSigned:boolean)=>(ownerSigned?text.replace(LETTER_WELCOME_ASK,'').replace(LETTER_WELCOME_OPENS,''):text).replace(/[ \t]{2,}/g,' ').trim();
 export const letterStatuses=['Draft','Ready to sign','Viewed by owner','Signed by owner','Countersigned','Void'] as const;
 export type LetterStatus=typeof letterStatuses[number];
 export type Signature={name:string;email:string;at:string;consent:true};

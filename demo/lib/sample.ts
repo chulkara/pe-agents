@@ -37,7 +37,7 @@ export async function seedSample(kv:ReturnType<typeof memoryKV>){
   const b=await firm.load(id);
   for(const r of b.requests){const s=reqs.find(x=>x[0]===r.title)?.[4];if(s==='Accepted')await firm.review(r.id,'Accepted','');}
   await owner.saveAnswers(id,{history:'My father started the business in 2007 with one van out of our garage in Green Brook. I took it over in 2014 and we have grown to six technicians.',services:'Mostly residential service and replacement across Somerset and Middlesex counties, from Green Brook out to Bridgewater and Edison, about 420 maintenance plans, and a few small commercial accounts.'});
-  await firm.saveBuyer(id,{name:'Buyer 1, owner-operator',summary:'A licensed HVAC service manager from Central Jersey, buying with an SBA loan. Financing pre-checked.',stage:'Reviewing information'});
+  await firm.saveBuyer(id,{name:'Buyer 1, owner-operator',summary:'A licensed HVAC service manager from Central Jersey, planning to buy with an SBA loan.',stage:'Reviewing information'});
   await firm.saveBuyer(id,{name:'Buyer 2, regional company',summary:'A heating and cooling company expanding into Somerset County.',stage:'Under NDA'});
   await firm.saveSteps(id,[{text:'Answer the questions about your business',owner:'You',due:due(7),done:false},{text:'Send year-to-date financials for 2026',owner:'You',due:due(10),done:false},{text:'Introductory call with Buyer 1, with Karan on the line',owner:'Firm',due:due(5),done:false}]);
   const after=await firm.load(id);
