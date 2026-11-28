@@ -16,7 +16,7 @@ import {ProgressBar} from './design/ui';
 import OwnerLetter,{SignedLetterLink} from './LetterView';
 import {AboutBusiness,MemorandumReview} from './OwnerReview';
 import OwnerDataRoom from './OwnerDataRoom';
-import {OwnerOfferComparison} from './buyer/Offers';
+import {OwnerOfferComparison} from './buyer/Offers';import {saleStage} from '../lib/ownerHome';
 import {VerificationPill} from './buyer/Verification';
 import type {DataRoomStore} from '../lib/dataRoomStore';
 
@@ -83,7 +83,7 @@ export default function SellerPortal({store,portalId,preview=false,top,room,pros
         </section>}
         {!gated&&<MemorandumReview b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
         {!gated&&<OwnerDataRoom room={room} portalId={portalId} readOnly={readOnly} firm={p.firmName}/>}
-        {!gated&&<OwnerOfferComparison store={store} portalId={portalId} readOnly={readOnly}/>}
+        {!gated&&<OwnerOfferComparison store={store} portalId={portalId} readOnly={readOnly} saleClosed={saleStage(b,txs)===4}/>}
         {!gated&&<AboutBusiness b={b} store={store} readOnly={readOnly} refresh={refresh}/>}
         {b.buyers.length>0&&<section id="portal-buyers" className="portal-section"><h2>Interested buyers</h2>
           <div className="portal-buyers">{b.buyers.map(x=>{const st=buyerStanding(x,txs,stageHelp[x.stage]);return <article key={x.id}><div className="portal-buyer-head"><h3>{x.name}</h3><VerificationPill badge={x.verification} owner/><span className={'k-pill'+(st.tone?' k-pill-'+st.tone:'')}>{st.label}</span></div>{x.summary&&<p>{x.summary}</p>}<small>{st.help} Updated {fmtDate(x.updatedAt)}.</small></article>;})}</div>
