@@ -32,7 +32,7 @@ function LocalOwner({token}:{token:string}){
   const [email,setEmail]=useState(ss.get(LOCAL_OWNER)),[error,setError]=useState(''),[portalId,setPortalId]=useState(''),[portals,setPortals]=useState<Portal[]|null>(null);
   const store=useMemo(()=>email?localPortalStore({actor:{side:'seller',name:'Owner',email},firmId:'local-demo',firmName:'',team:[]}):null,[email]);
   useEffect(()=>{if(!store)return;void (async()=>{try{if(token){const id=await (store as ReturnType<typeof localPortalStore>).acceptInvite(email,token);ss.set(TOKEN_KEY,'');setPortalId(id);}const list=await store.myPortals();setPortals(list);if(list.length===1)setPortalId(list[0].id);}catch(e){setError((e as Error).message);ss.set(LOCAL_OWNER,'');setEmail('');}})();},[store]);// eslint-disable-line react-hooks/exhaustive-deps
-  const team=useMemo(()=>{const p=localDb()?.portals.find(x=>x.id===portalId);return p?localPortalStore({actor:{side:'seller',name:p.ownerName,email},firmId:p.firmId,firmName:p.firmName,team:[p.help.name+' (this browser)']}):null;},[portalId,email]);
+  const team=useMemo(()=>{const p=localDb()?.portals.find(x=>x.id===portalId);return p?localPortalStore({actor:{side:'seller',name:p.ownerName,email},firmId:p.firmId,firmName:p.firmName,team:[p.help.name]}):null;},[portalId,email]);
   const localRoom=useMemo(()=>localDataRoomStore({kind:'public'}),[]);
   const localPros=useMemo(()=>{const p=localDb()?.portals.find(x=>x.id===portalId);return email?localProfessionalStore({party:{kind:'seller',email,name:p?.ownerName||'The owner'}}):undefined;},[portalId,email]);
   const localHelpers=useMemo(()=>{const p=localDb()?.portals.find(x=>x.id===portalId);return email?localHelperStore({owner:{side:'seller',name:p?.ownerName||'Owner',email}}):undefined;},[portalId,email]);

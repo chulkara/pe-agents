@@ -25,7 +25,7 @@
 .pro-link-btn{font:inherit;font-size:14px;background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;justify-self:start}
 .pro-remove{color:var(--k-purple,#5a2a82)}
 .pro-btn:focus-visible,.pro-link-btn:focus-visible,.pro-check input:focus-visible{outline:2px solid var(--k-peri,#7b8cff);outline-offset:2px}
-.pro-add summary,.pro-share summary,.pro-log summary{cursor:pointer;font-weight:500}
+.pro-add summary,.pro-share summary,.pro-log summary{cursor:pointer;font-weight:500;padding:11px 0;line-height:22px}
 .pro-share form{display:grid;gap:12px;margin-top:10px}
 .pro-share fieldset{border:0;padding:0;margin:0;display:grid;gap:6px}.pro-share legend{font-size:13px;color:var(--k-grey-2,#666);margin-bottom:4px}
 .pro-check{display:flex;gap:10px;align-items:flex-start;font-size:15px}.pro-check input{width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:var(--k-black,#000)}

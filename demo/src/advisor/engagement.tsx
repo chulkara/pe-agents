@@ -3,7 +3,7 @@ import {useContext,useMemo,useState} from 'react';
 import type {Company,Workspace} from '../../lib/domain';
 import {qualificationGaps,licenseHolders,notFitReasons,qualify,markNotFit,letterDefaults,letterProblems,renderLetter,feeBases,prefilledRequests,afterSigningSteps,LETTER_TEMPLATE_VERSION,type QualificationInput,type NotFitReason,type LetterInput,type EngagedCompany} from '../../lib/engagement';
 import {setStage,dealStage,type DealCompany} from '../../lib/deals';
-import {currentLetter,type Letter} from '../../lib/portal';
+import {currentLetter,letterWelcome,type Letter} from '../../lib/portal';
 import {inviteLink} from '../../lib/portalStore';
 import {letterPdf} from '../../lib/pdf';
 import {money} from '../../lib/hvacValuation';
@@ -58,7 +58,7 @@ export function EngagementPanel({c,w,commit,actor,readOnly}:{c:Company;w:Workspa
   const setT=<K extends keyof Terms>(k:K,v:Terms[K])=>setInp(i=>({...i,terms:{...i.terms,[k]:v}}));
   const full={...inp,firmAddress:inp.firmAddress||firm.address||''};
   async function ensurePortal(){if(pe)return pe.portal.id;if(!c.owner||!c.email)throw Error('Add the owner’s name and email in Edit details first.');
-    const id=await store!.create({companyId:c.id,businessName:c.name,ownerName:c.owner,ownerEmail:c.email,help:advisor,welcome:`Thank you for choosing ${firm.name} to help sell ${c.name}. Start by reading and signing the engagement letter below. Your document requests open once both of us have signed.`});
+    const id=await store!.create({companyId:c.id,businessName:c.name,ownerName:c.owner,ownerEmail:c.email,help:advisor,welcome:letterWelcome(firm.name,c.name)});
     await store!.setRequestsHidden(id,true);for(const r of prefilledRequests({today:new Date(),region:(c as DealCompany).region,contact:advisor}))await store!.saveRequest(id,r);return id;}
   const save=()=>act(async()=>{const id=await ensurePortal();await store!.saveLetter(id,{id:cur?.status==='Draft'?cur.id:undefined,templateVersion:LETTER_TEMPLATE_VERSION,input:full as unknown as Letter['input'],text:renderLetter(full)});},'Draft saved.');
   const ready=()=>act(async()=>{const id=await ensurePortal();const lid=await store!.saveLetter(id,{id:cur?.status==='Draft'?cur.id:undefined,templateVersion:LETTER_TEMPLATE_VERSION,input:full as unknown as Letter['input'],text:renderLetter(full)});await store!.letterReady(lid);setLink(inviteLink(await store!.invite(id)));},'The letter is ready. Send the owner the link below.');
