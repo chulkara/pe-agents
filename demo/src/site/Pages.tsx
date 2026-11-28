@@ -5,7 +5,7 @@ import {Nameplate} from './Market';
 const steps=[
   {t:'Find out what it’s worth',time:'Week 1',you:'Answer a few questions and talk it through with an advisor.',we:'Compare your numbers with HVAC sales in the region and tell you what buyers will push on.'},
   {t:'Get ready to sell',time:'Weeks 2 to 5',you:'Upload statements, agreements and licenses to your private owner portal, at your own pace.',we:'Recast earnings, write the anonymous listing and the confidential memorandum, and agree a price with you.'},
-  {t:'Meet vetted buyers',time:'Months 2 to 4',you:'Review buyer summaries and take the calls you want.',we:'Market the listing without your name, collect signed NDAs, and check each buyer’s funds and experience before sharing anything.'},
+  {t:'Meet vetted buyers',time:'Months 2 to 4',you:'Review buyer summaries and take the calls you want.',we:'Market the listing without your name, collect signed confidentiality agreements, and check each buyer’s funds and experience before sharing anything.'},
   {t:'Choose an offer',time:'Months 3 to 5',you:'Compare offers side by side and decide.',we:'Negotiate price, terms, seller financing and your transition role, then manage the letter of intent.'},
   {t:'Close and hand over',time:'Months 5 to 9',you:'Work with your attorney and accountant on the purchase agreement.',we:'Run diligence requests, coordinate the lender and license transition, and keep the closing on schedule.'},
 ];
@@ -61,7 +61,7 @@ export function HomePage(){
       <div><h2>See where your sale stands at any time</h2><p>Every seller gets a private owner portal. It shows which buyers are interested and how far along they are, which documents are still needed and why, and what happens next. You can message your advisor there, and uploads save as you go.</p><a className="ks-btn ks-btn-light" href={href('/sell')}>What sellers see<Arrow/></a></div>
       <ul className="ks-portal-mock" aria-label="Example of the owner portal">
         <li><span>Buyer 2 · Strategic HVAC operator</span><b>Reviewing</b></li>
-        <li><span>Buyer 1, owner-operator with an SBA lender</span><b>Under NDA</b></li>
+        <li><span>Buyer 1, owner-operator with an SBA lender</span><b>Signed confidentiality agreement</b></li>
         <li><span>Profit and loss, last 3 years</span><b>Complete</b></li>
         <li><span>Maintenance agreement list</span><b className="due">Due Dec 4</b></li>
       </ul>
@@ -81,7 +81,7 @@ export function HomePage(){
     <section className="ks-wrap ks-sec">
       <div className="ks-sec-head"><h2>Different from a typical broker</h2></div>
       <div className="ks-compare">
-        {([['Who we sell','Any business','HVAC and refrigeration companies in NJ and NY'],['First valuation','A meeting, then a report weeks later','An instant estimate with every adjustment shown, then an advisor review'],['Knowing what’s happening','Phone calls and email threads','A live owner portal: buyers, documents and next steps'],['Buyer screening','Varies','Signed NDA, a buyer profile and an advisor’s approval before your name is revealed'],['Preparation','Done by hand','Research, document requests and drafts prepared with AI, checked by your advisor']] as const).map(([k,a,b])=><div key={k} className="ks-compare-row"><h3>{k}</h3><p><span>Typical broker</span>{a}</p><p><span>Kalling</span>{b}</p></div>)}
+        {([['Who we sell','Any business','HVAC and refrigeration companies in NJ and NY'],['First valuation','A meeting, then a report weeks later','An instant estimate with every adjustment shown, then an advisor review'],['Knowing what’s happening','Phone calls and email threads','A live owner portal: buyers, documents and next steps'],['Buyer screening','Varies','A signed confidentiality agreement, a buyer profile and an advisor’s approval before your name is revealed'],['Preparation','Done by hand','Research, document requests and drafts prepared with AI, checked by your advisor']] as const).map(([k,a,b])=><div key={k} className="ks-compare-row"><h3>{k}</h3><p><span>Typical broker</span>{a}</p><p><span>Kalling</span>{b}</p></div>)}
       </div>
     </section>
 
