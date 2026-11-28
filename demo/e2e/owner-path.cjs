@@ -33,6 +33,10 @@ async function phoneCheck(page,where,{shot}={}){
     assert.match(await site.locator('.ks-page-head').innerText(),/typical company, to start you off\. Replace them with yours/);
     await site.goto(U+'#/value?revenue=3000000&earnings=600000&service=40');await site.waitForSelector('.ks-page-head');
     assert.match(await site.locator('.ks-page-head').innerText(),/Your three answers are carried over\. The other numbers are a typical company/,'carried-over answers are not called examples');
+    // Follow a second link while the page is open: the inputs must change to match it (Codex review of #36).
+    await site.goto(U+'#/value?revenue=4100000&ownerPay=140000&netProfit=455000&service=40');await site.waitForTimeout(300);
+    const vals=await site.locator('.ks-field input').evaluateAll(xs=>xs.map(x=>x.value));
+    assert.ok(vals.includes('4,100,000'),'revenue follows the new link');assert.ok(vals.includes('455,000'),'profit follows the new link');assert.ok(vals.includes('140,000'),'owner pay follows the new link');
     await site.goto(U+'#/value');await site.waitForSelector('.ks-page-head');
     assert.equal(await site.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'valuation scrolls sideways');
     if(OUT)await site.screenshot({path:OUT+'/1-valuation-390.png',fullPage:true});

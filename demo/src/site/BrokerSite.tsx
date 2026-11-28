@@ -42,7 +42,8 @@ export default function BrokerSite(){
   if(!a)page=<HomePage/>;
   else if(a==='unsubscribe')page=<UnsubscribeAlerts store={store.alerts} token={route.query.get('token')||''}/>;
   else if(a==='sell')page=<SellPage/>;
-  else if(a==='value')page=<ValuePage/>;
+  // A new link (new carried-over answers) starts a fresh page, so the inputs always match what it says.
+  else if(a==='value')page=<ValuePage key={route.query.toString()}/>;
   else if(a==='listings'&&b)page=<ListingPage id={b}/>;
   else if(a==='listings')page=<ListingsPage route={route}/>;
   else if(a==='buy')page=<BuyPage/>;
