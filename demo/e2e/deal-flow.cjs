@@ -73,7 +73,10 @@ const step=(n,t)=>console.log(`${n}. ${t}`);
   await shot(owner,'owner-home-1440');
 
   // 9. The buyer makes an offer.
-  await site.goto(listingUrl);await site.reload();await site.waitForTimeout(600);await site.locator('.ks-offer select[name=kind]').selectOption('Letter of intent');await site.fill('.ks-offer input[name=price]','1900000');await site.fill('.ks-offer input[name=cashAtClose]','1900000');await site.getByRole('button',{name:'Submit offer'}).click();await site.waitForTimeout(500);step(9,'offer submitted');
+  await site.goto(listingUrl);await site.reload();await site.waitForTimeout(600);
+  {const opt=site.locator('.ob-option',{hasText:'SBA loan, 10% down'});assert.match(await opt.innerText(),/You bring[\s\S]*Loan[\s\S]*Earnings cover the payments/);await opt.click();
+   assert.match(await site.locator('.ks-offer input[name=financing], .ks-offer textarea[name=financing]').first().inputValue(),/SBA 7\(a\)/);{const vp=site.viewportSize();await site.setViewportSize({width:390,height:900});if(OUT)await site.locator('.ob-options').screenshot({path:OUT+'/offer-builder-390.png'});assert.equal(await site.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'buyer offer builder fits 390px');await site.setViewportSize(vp);}console.log('offer builder fills the terms from a structure');}
+  await site.locator('.ks-offer select[name=kind]').selectOption('Letter of intent');await site.fill('.ks-offer input[name=price]','1900000');await site.fill('.ks-offer input[name=cashAtClose]','1900000');await site.getByRole('button',{name:'Submit offer'}).click();await site.waitForTimeout(500);step(9,'offer submitted');
 
   // 10. The advisor shares the exact offer; 11. the recorded owner instruction opens unconfirmed execution.
   await adv.reload();await adv.waitForSelector('.deal-head h1');await adv.getByRole('button',{name:'Share offer with seller'}).first().click();await adv.waitForTimeout(300);
@@ -82,6 +85,7 @@ const step=(n,t)=>console.log(`${n}. ${t}`);
   await adv.locator('textarea[name=instruction]').fill('Fictional owner confirmed version 1 by telephone for this software test.');await adv.getByRole('button',{name:'Record owner instruction for version 1',exact:true}).click();await adv.waitForSelector('text=Owner instruction recorded.');
   assert.notEqual(await adv.inputValue('.deal-stage select'),'Under LOI');await adv.waitForSelector('text=No execution transaction yet');step(11,'owner instruction recorded; signed LOI remains unconfirmed');
   await owner.reload();await owner.waitForSelector('text=Document requests');assert.match(await owner.locator('body').innerText(),/Offer made/);
+  {await owner.waitForSelector('.ob-home');const t=await owner.innerText('.ob-home');assert.match(t,/\$1,748,000\s*at closing/);assert.match(t,/Kalling's fee due at closing\s*-\$152,000/);assert.match(t,/8% at closing, minimum \$60,000, from your signed engagement letter, version 1\. Before taxes/);{const vp=owner.viewportSize();await owner.setViewportSize({width:390,height:900});if(OUT)await owner.locator('.ob-home').screenshot({path:OUT+'/take-home-390.png'});assert.equal(await owner.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'take-home fits 390px');await owner.setViewportSize(vp);}console.log('owner sees take-home after the fee from the signed letter');}
 
   // Back button returns to the same Deal Room tab.
   await adv.getByRole('button',{name:'Deals',exact:true}).click();await adv.waitForSelector('.adv-board, .adv-table');await adv.goBack();await adv.waitForSelector('.deal-head h1');

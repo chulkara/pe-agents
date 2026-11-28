@@ -1,4 +1,5 @@
 import {matchListings} from '../../lib/matching';
+import {OfferBuilder} from '../buyer/OfferBuilder';
 import {ExecutionWorkspace} from '../execution/ExecutionWorkspace';
 import {useEffect,useState,type FormEvent} from 'react';
 import {money} from '../../lib/hvacValuation';
@@ -126,7 +127,7 @@ function NdaForm({l,name,busy,submit,onCancel}:{l:ViewListing;name:string;busy:b
   </form>;
 }
 function OfferForm({l,busy,submit}:{l:ViewListing;busy:boolean;submit:(o:Parameters<ReturnType<typeof useSession>['store']['offer']>[1])=>void}){
-  return <div className="ks-offer"><h2>Make an offer</h2><TermsEditor busy={busy} initial={{kind:'Indication of interest',price:l.askingPrice,cashAtClose:l.askingPrice,sellerNote:0,earnout:0,financing:'',closeDays:90,conditions:''}} submit={submit}/></div>;
+  return <div className="ks-offer"><h2>Make an offer</h2><OfferBuilder listing={l} busy={busy} submit={submit}/></div>;
 }
 
 export function BuyPage(){
