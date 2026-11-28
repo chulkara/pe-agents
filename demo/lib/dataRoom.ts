@@ -165,10 +165,13 @@ export function suggestName(fileName:string,requests:string[]=[]){
   return words.charAt(0).toUpperCase()+words.slice(1);
 }
 
-/** How an owner's data rooms are told apart in headings, in words rather than listing numbers. Rooms
- *  are ordered open first, then newest; one room needs no label. */
-export function ownerRoomLabel(index:number,total:number):string{
+/** How an owner's data rooms are told apart in headings, in words rather than listing numbers. The label
+ *  goes by how recent the listing is (0 is the newest), not by which room is open, so an older listing
+ *  that still has a published room is never called the newest. One room needs no label. */
+export function ownerRoomLabel(age:number,total:number):string{
   if(total<2)return '';
-  if(index===0)return ', your current listing';
-  return total>2?`, earlier listing ${index}`:', your earlier listing';
+  if(age===0)return ', your newest listing';
+  return total>2?`, earlier listing ${age}`:', your earlier listing';
 }
+/** Listings from newest to oldest, by listing number. */
+export const listingsByAge=(rooms:{listingId:string;listingNumber:string}[])=>[...rooms].sort((a,b)=>b.listingNumber.localeCompare(a.listingNumber,undefined,{numeric:true})).map(r=>r.listingId);
