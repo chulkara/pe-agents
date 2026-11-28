@@ -30,7 +30,9 @@ export type ClosingAmounts={currency:'USD';basis:'Asset consideration'|'Equity c
 export type CloseRecord={id:string;version:number;date:string;amounts:ClosingAmounts;evidence:ExecutionSource[];by:string;at:string;note:string;packageRevision:number;loiVersion:number;handover:{guestIds:string[];buyerFiles:string[];sellerFiles:string[]};correctionReason?:string};
 export type CaseVersion={version:number;title:string;body:string;fields:string[];channels:('Website'|'Email')[];rights:string;status:'Draft'|'Changes requested'|'Declined'|'Approved'|'Published'|'Withdrawn';createdAt:string;createdBy:string;decision?:{by:string;at:string;note:string};publishedAt?:string;delivery?:{recipient:string;version:number;approvedBy:string;status:'Simulated'|'Cancelled'}};
 export type ComparableRevision={version:number;closeVersion:number;state:string;businessType:string;period:string;basis:'Cash'|'Accrual';metric:'SDE'|'EBITDA';earnings:number;revenue:number;recastVersion:number;sources:ExecutionSource[];authority:{note:string;professional:string;scope:'Internal deidentified analysis';at:string};reviewer:string;at:string;disputed:boolean;note:string};
-export type Transaction={id:string;fictional:boolean;firmId:string;listingId:string;companyId:string;portalId:string;buyerId:string;buyerLabel:string;offerId:string;offerVersion:number;terms:OfferTerms;state:'Planning'|'LOI reviewed'|'Abandoned'|'Closed';revision:number;createdAt:string;createdBy:string;lois:LoiVersion[];obligations:Obligation[];participants:Participant[];identity:{seller?:Evidence;buyer?:Evidence};items:DiligenceItem[];conditions:ClosingCondition[];planningClose?:string;closePackage?:{revision:number;loiVersion:number;by:string;at:string;note:string};closes:CloseRecord[];cases:CaseVersion[];comparables:ComparableRevision[];originalEstimate:{version:string;low:number|null;mid:number|null;high:number|null;asOf:string;source:string}|null;history:TxEvent[];stopReason?:string};
+export type Transaction={id:string;fictional:boolean;firmId:string;listingId:string;companyId:string;portalId:string;buyerId:string;buyerLabel:string;offerId:string;offerVersion:number;terms:OfferTerms;state:'Planning'|'LOI reviewed'|'Abandoned'|'Closed';revision:number;createdAt:string;createdBy:string;lois:LoiVersion[];obligations:Obligation[];participants:Participant[];identity:{seller?:Evidence;buyer?:Evidence};items:DiligenceItem[];conditions:ClosingCondition[];planningClose?:string;closePackage?:{revision:number;loiVersion:number;by:string;at:string;note:string};closes:CloseRecord[];cases:CaseVersion[];comparables:ComparableRevision[];originalEstimate:{version:string;low:number|null;mid:number|null;high:number|null;asOf:string;source:string}|null;history:TxEvent[];stopReason?:string;
+ /** Set in a party's view: a signed letter of intent is recorded, even if its document is not shared with them yet. */
+ loiRecorded?:boolean};
 export type ExecutionData={transactions?:Transaction[];executionFiles?:ExecutionFile[];executionReads?:ExecutionRead[];executionInvites?:{participantId:string;transactionId:string;token:string;usedAt?:string}[];proposalReviews?:import('./proposalReview.ts').ProposalReview[]};
 export type TxDb=BrokerDb&ExecutionData;
 export const actorKey=(a:ExecutionActor)=>a.kind==='advisor'?a.id:a.kind==='buyer'?'buyer':a.kind==='seller'?'seller':a.kind==='guest'?a.id:'public';
@@ -75,10 +77,10 @@ export function startTransaction(d:TxDb,a:ExecutionActor,p:{offerId:string;offer
 export function latestLoi(t:Transaction){return t.lois.at(-1);}
 /** The letter of intent's standing in the owner's words. A signed letter that is recorded but not yet
  *  checked is still signed: the advisor is checking the signatures. */
-export function ownerLoiStatus(t:Pick<Transaction,'state'|'lois'>):string{
+export function ownerLoiStatus(t:Pick<Transaction,'state'|'lois'|'loiRecorded'>):string{
   if(t.state==='Closed')return 'Sale closed';if(t.state==='Abandoned')return 'Sale stopped';
   if(t.state==='LOI reviewed')return 'Letter of intent signed';
-  return t.lois.length?'Letter of intent signed; your advisor is checking the signatures':'Letter of intent not signed yet';
+  return t.lois.length||t.loiRecorded?'Letter of intent signed; your advisor is checking the signatures':'Letter of intent not signed yet';
 }
 export function loiConfirmed(d:TxDb,t:Transaction){const l=latestLoi(t);return !!l?.review&&sourceCurrent(d,t,l.review.source)&&l.signatories.length>=2&&l.signatories.some(s=>s.side==='buyer')&&l.signatories.some(s=>s.side==='seller')&&l.signatories.every(s=>sourceCurrent(d,t,s.source));}
 export function saveLoi(d:TxDb,t:Transaction,a:ExecutionActor,p:Omit<LoiVersion,'version'|'createdAt'|'createdBy'|'review'>):TxDb{
@@ -117,8 +119,10 @@ export function projectTransaction(d:TxDb,t:Transaction,a:ExecutionActor):Transa
  const sources=(s:ExecutionSource[])=>s.filter(x=>allowed.has(x.fileId));
  const identity=!!t.identity.seller&&!!t.identity.buyer;
  return {...structuredClone(t),...(a.kind==='guest'?{terms:undefined as unknown as OfferTerms,offerId:'',offerVersion:0,planningClose:undefined}:{}),buyerId:'',firmId:'',companyId:'',originalEstimate:null,participants:[],identity:{},history:[],stopReason:undefined,
+  // A party can always tell a signed letter of intent has been recorded, even before its document is shared with them.
+  loiRecorded:a.kind!=='guest'&&t.lois.length>0,
   lois:t.lois.filter(l=>allowed.has(l.fileId)).map(l=>({...l,sellerEntity:identity?l.sellerEntity:'Seller',buyerEntity:identity?l.buyerEntity:t.buyerLabel,signatories:identity?l.signatories:[],review:l.review&&allowed.has(l.review.source.fileId)?l.review:undefined})),
-  obligations:t.obligations.filter(o=>allowed.has(o.source.fileId)),items:t.items.filter(visible).map(i=>({...structuredClone(i),sources:sources(i.sources),history:[],review:i.review?{...i.review,externalAuthority:undefined}:undefined})),conditions:t.conditions.filter(visible).map(i=>({...structuredClone(i),sources:sources(i.sources),history:[]})),
+  obligations:t.obligations.filter(o=>allowed.has(o.source.fileId)),items:t.items.filter(visible).map(i=>({...structuredClone(i),requestor:identity?i.requestor:'',sources:sources(i.sources),history:[],review:i.review?{...i.review,externalAuthority:undefined}:undefined})),conditions:t.conditions.filter(visible).map(i=>({...structuredClone(i),sources:sources(i.sources),history:[]})),
   closes:a.kind==='guest'?[]:t.closes.map(c=>({...c,evidence:sources(c.evidence),handover:{guestIds:[],buyerFiles:[],sellerFiles:[]}})),comparables:[],cases:a.kind==='seller'?structuredClone(t.cases):[],closePackage:t.closePackage?{...t.closePackage,note:'Prepared for a completion review.'}:undefined};
 }
 export function abandonTransaction(d:TxDb,t:Transaction,a:ExecutionActor,reason:string){requireWrite(d,t,a);safeText(reason,20,2000);return putTransaction(d,{...t,state:'Abandoned',stopReason:reason,participants:t.participants.map(p=>({...p,status:'Revoked'})),closePackage:undefined},a,'Negotiations stopped',reason);}

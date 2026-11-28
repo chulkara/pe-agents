@@ -29,7 +29,7 @@ if(!['127.0.0.1','localhost'].includes(new URL(U).hostname))throw Error('Executi
         for(const w of ['Fixed consideration','Cash consideration at close','Maximum contingent consideration','Accountable coordinator','Execution documents','Transaction attempt'])assert.ok(!text.includes(w),'owner sees '+w);
         assert.equal(await frame.locator('#portal-about').count(),0,'no business questions after the sale has closed');
         assert.doesNotMatch(text,/\$[\d,]+\.00\b/,'whole amounts show without cents');assert.doesNotMatch(text,/\d{4}-\d{2}-\d{2} New York/,'deadlines read as dates');
-        for(const w of ['Price, not counting any earnout','Cash at closing','Earnout, the most it can pay','Sale documents','Questions and requests','Asked by'])assert.ok(text.includes(w),'owner should see '+w);
+        for(const w of ['Price, not counting any earnout','Cash at closing','Earnout, the most it can pay','Sale documents','Questions and requests'])assert.ok(text.includes(w),'owner should see '+w);
         assert.equal(await frame.getByRole('button',{name:'Letter of intent'}).count(),1,'the LOI tab is spelled out for the owner');
       }
       for(const width of ['1440','1024','390']){

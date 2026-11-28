@@ -15,3 +15,16 @@ test('the owner never reads "not signed yet" once a signed letter of intent is r
   assert.equal(T.ownerLoiStatus({state:'LOI reviewed',lois:[{version:1}]}),'Letter of intent signed');
   assert.equal(T.ownerLoiStatus({state:'Closed',lois:[{version:1}]}),'Sale closed');
 });
+
+test('the owner sees a recorded signed letter as signed even before its document is shared, and never the requester without permission (Codex review of #39)',()=>{
+  let {d,t,seller}=transactionFixture();const f=fileInput(t);d=F.addFile(d,t,advisor,f);t=d.transactions[0];
+  d=T.saveLoi(d,t,advisor,{fileId:f.id,offerVersion:1,sellerEntity:'Fictional Seller LLC',buyerEntity:'Fictional Buyer LLC',structure:'Asset transaction; terms to counsel',executionDate:'2026-11-13',signatories:[{side:'seller',name:'Fictional Seller',role:'Manager',source:source(f)},{side:'buyer',name:'Fictional Buyer',role:'Manager',source:source(f)}]});t=d.transactions[0];
+  const view=T.projectTransaction(d,t,seller);
+  assert.equal(view.lois.length,0,'the document is not shared with the owner yet');assert.equal(view.loiRecorded,true);
+  assert.equal(T.ownerLoiStatus(view),'Letter of intent signed; your advisor is checking the signatures');
+  assert.equal(T.projectTransaction(d,t,advisor).loiRecorded,undefined,'advisors read the full record instead');
+  const item={id:'q1',title:'Fictional question',category:'Financial',why:'',nextAction:'',owner:'Fictional Advisor',requestor:'Fictional Buyer Person',reviewer:'Fictional Advisor',contributors:[],due:{kind:'Unknown',reason:'to agree'},audience:['seller','buyer'],priority:'Normal',blocking:false,authority:'Internal',status:'Open',revision:1,dependsOn:[],sources:[],thread:[],history:[]};
+  const v2=T.projectTransaction(d,{...t,items:[item]},seller);
+  assert.equal(v2.items.length,1);assert.equal(v2.items[0].requestor,'','no requester name without both identity permissions');
+  assert.equal(T.projectTransaction(d,{...t,items:[item]},advisor).items[0].requestor,'Fictional Buyer Person','advisors still see it');
+});
