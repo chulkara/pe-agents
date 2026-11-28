@@ -108,7 +108,10 @@ test('the fee follows the signed basis: both standard bases compute, any other i
 
 test('rates, frequencies and deferrals are read only when stated exactly (Codex review 3)',()=>{
   for(const r of ['1% per month','1% a month','0.5% monthly','6% per quarter','6% a year for 2 years then 8%'])assert.equal(fixedRate(r),null,r);
-  for(const [r,v] of [['6%',6],['6% a year',6],['6.5% fixed',6.5],['7% APR',7],['6% per annum',6]])assert.equal(fixedRate(r),v,r);
+  for(const [r,v] of [['6%',6],['6% a year',6],['6.5% fixed',6.5],['6% per annum',6],['6% interest',6]])assert.equal(fixedRate(r),v,r);
+  // An APR can include fees, so it is not the note's interest rate (Codex review 4).
+  for(const r of ['6% APR','6% apr','6% a year APR'])assert.equal(fixedRate(r),null,r);
+  const apr=takeHome({cashAtClose:900000,sellerNote:100000,earnout:0,noteInterest:'6% APR',noteTerm:'5 years',noteRepayment:'Equal monthly payments'});assert.equal(apr.note.monthly,null);assert.equal(apr.note.total,null);
   const monthlyRate=takeHome({cashAtClose:900000,sellerNote:100000,earnout:0,noteInterest:'1% per month',noteTerm:'5 years',noteRepayment:'Equal monthly payments'});
   assert.equal(monthlyRate.note.monthly,null,'1% a month is never read as 1% a year');assert.match(monthlyRate.note.explained,/not a single fixed yearly rate/);
   for(const r of ['Equal weekly payments','Equal biweekly payments','No payments for the first 90 days, then equal monthly payments','No payments for 90 days','Deferred 6 months'])
