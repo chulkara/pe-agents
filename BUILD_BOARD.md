@@ -12,6 +12,7 @@ Status: `Next` (not started) · `Building` · `In review` (PR open) · `Blocked`
 | 3 | Polish sprint: one owner path, flawless on a phone | Claude | `claude/polish-owner-path-20261126` | In review | #36 (part 1), #39 (part 2), #40 (part 3) | Codex | Free valuation to closed sale; every screen and word reviewed. No new features until done |
 | 4 | Voice onboarding | Unassigned | | Next | | | Decided: an on-device speech model, so the owner's voice never leaves their device. No rush |
 | 5 | Design system | Karan, then Claude | | Blocked | | | Waiting on Karan's font, color and image samples; then applied to every screen and future feature |
+| 6 | Sourcing decisions, saved | Codex | `codex/sourcing-decisions-20261127` | In review | #38 | Claude | Brief: `demo/docs/briefs/sourcing-decisions-hosted.md`. Opt-outs permanent, forward-only, advisor-only; before any real license data |
 
 Shipped from this board: Monday polish (#29), Ask the data room in the demo (#30), Ask the data room hosted (#33, database update applied Nov 26), Seller sourcing agent first cut (#32). Next for sourcing: real license data, after saved decisions in the database. See the master document.
 
