@@ -20,4 +20,13 @@ const BASE=process.env.BASE||'http://127.0.0.1:4173/',OUT=process.argv[2];
   if(OUT)await p.screenshot({path:OUT+'/sample.png'});
   await p.getByRole('button',{name:'Start over'}).click();await p.waitForSelector('#portal-sale-ready');
   assert.equal(await p.getByText('Is the license really the biggest thing?').count(),0,'Start over resets');
+  // The public pages an owner reads first, on a phone: plain words and footer links big enough to tap.
+  const sp=await b.newPage({...devices['iPhone 13']});sp.on('pageerror',e=>errs.push(e.message));
+  await sp.addInitScript(()=>{localStorage.setItem('kalling-marketplace-demo-v1','true');localStorage.setItem('kalling-cloud-disconnected-v1','true');});
+  await sp.goto(BASE+'#/');await sp.waitForSelector('.ks-portal-mock');assert.match(await sp.innerText('.ks-portal-mock'),/Signed confidentiality agreement/);const home2=await sp.innerText('body');
+  assert.doesNotMatch(home2,/Under NDA|Signed NDA,/,'owner sections of the home page use plain words');
+  const small=await sp.evaluate(()=>[...document.querySelectorAll('.ks-footer a')].filter(a=>a.getBoundingClientRect().height<40).map(a=>a.textContent));
+  assert.deepEqual(small,[],'footer links are at least 40px tall');
+  await sp.goto(BASE+'#/sell');await sp.getByRole('heading',{name:'Selling your HVAC company'}).waitFor();assert.doesNotMatch(await sp.innerText('body'),/\bNDAs?\b/,'the selling guide says confidentiality agreement');
+  assert.equal(await sp.evaluate(()=>document.documentElement.scrollWidth),390,'no sideways scroll on the selling guide');
   assert.deepEqual(errs,[]);console.log('sample: passed');await b.close();})().catch(e=>{console.error(e);process.exit(1);});

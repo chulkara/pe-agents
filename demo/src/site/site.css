@@ -227,7 +227,7 @@ a:hover>.ks-arrow,a:hover .ks-arrow{transform:translate(2px,-2px)}
 .ks-footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;padding-bottom:64px}
 .ks-footer-lede{font-size:24px;letter-spacing:-.02em;line-height:1.3;max-width:18em}
 .ks-footer h2{font-size:14px;letter-spacing:0;color:rgba(255,255,255,.55);margin-bottom:12px}
-.ks-footer a{display:block;text-decoration:none;padding:4px 0;font-size:15px}.ks-footer a:hover{text-decoration:underline}
+.ks-footer a{display:block;text-decoration:none;padding:11px 0;font-size:15px;line-height:22px}.ks-footer a:hover{text-decoration:underline}
 .ks-wordmark{font-size:clamp(120px,26vw,420px);font-weight:600;letter-spacing:-.07em;line-height:.78;margin:0 0 0 -.04em!important;color:#fff;user-select:none}
 .ks-legal{border-top:1px solid rgba(255,255,255,.2);margin-top:28px;padding-top:20px;display:flex;justify-content:space-between;gap:24px;font-size:13px;color:rgba(255,255,255,.55)}.ks-legal p:first-child{max-width:60em}
 /* Responsive */
@@ -325,3 +325,4 @@ a:hover>.ks-arrow,a:hover .ks-arrow{transform:translate(2px,-2px)}
 .ks-match-list li{display:grid;grid-template-rows:1fr auto;gap:10px;min-width:0}
 .ks-match-why{margin:0;font-size:14.5px;line-height:1.5;color:var(--ink2)}.ks-match-why b{color:var(--ink);font-weight:600}
 @media (max-width:640px){.ks-match-list{grid-template-columns:1fr}.ks-matches h2{font-size:24px}}
+.ks-stories{padding:56px 0 96px}.ks-stories h1{margin:0 0 16px}.ks-stories p{max-width:64ch}
