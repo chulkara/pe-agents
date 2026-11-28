@@ -43,11 +43,12 @@ export const coverageLine=(s:Pick<Structure,'coverage'|'meetsCoverage'>)=>s.cove
   `Earnings cover the payments ${s.coverage.toFixed(2)} times${s.meetsCoverage?`; lenders usually want at least ${SBA_MIN_COVERAGE}.`:`; lenders usually want at least ${SBA_MIN_COVERAGE}, so this may not be approved.`}`;
 
 // ---- Owner side ----
-/** A fixed yearly rate, or null. Only a plain yearly percentage is read ("6%", "6% a year", "6.5% fixed",
- *  "6% APR"). Anything else (a monthly rate, prime plus a margin, a variable rate, two rates) is not
- *  read, so no payment is computed from it. */
+/** A fixed yearly interest rate, or null. Only a plain yearly percentage is read ("6%", "6% a year",
+ *  "6.5% fixed", "6% per annum"). Anything else is not read, so no payment is computed from it: a monthly
+ *  rate, prime plus a margin, a variable rate, two rates, or an APR (which can include fees, so it is not
+ *  the note's interest rate). */
 export function fixedRate(s?:string):number|null{
-  const m=String(s??'').trim().match(/^(\d+(?:\.\d+)?)\s*%\s*(?:fixed\s*)?(?:(?:a|per)\s+year|per\s+annum|annual(?:ly)?|yearly|apr)?(?:,?\s*fixed)?\.?$/i);
+  const m=String(s??'').trim().match(/^(\d+(?:\.\d+)?)\s*%\s*(?:fixed\s*)?(?:(?:a|per)\s+year|per\s+annum|annual(?:ly)?|yearly|interest)?(?:,?\s*fixed)?\.?$/i);
   return m?Number(m[1]):null;
 }
 /** A single stated term in years ("5 years", "60 months"), or null for anything else. */
